@@ -171,11 +171,7 @@ namespace Protes
                            (savedMode == "External") ? DatabaseMode.External :
                            DatabaseMode.Local;
 
-            if (_currentMode == DatabaseMode.External)
-            {
-                _externalConnectionString = Properties.Settings.Default.External_ConnectionString ?? "";
-            }
-
+            // No need to load _externalConnectionString — built dynamically
             AutoConnectCheckBox.IsChecked = Properties.Settings.Default.AutoConnect;
             UpdateDatabaseModeCheckmarks();
         }
@@ -184,8 +180,14 @@ namespace Protes
         {
             var localItem = (MenuItem)OptionsMenu.Items[0];
             var externalItem = (MenuItem)OptionsMenu.Items[1];
+
             localItem.IsChecked = (_currentMode == DatabaseMode.Local);
             externalItem.IsChecked = (_currentMode == DatabaseMode.External);
+
+            // Enable if Host and Database are configured
+            var hasConfig = !string.IsNullOrWhiteSpace(Properties.Settings.Default.External_Host) &&
+                            !string.IsNullOrWhiteSpace(Properties.Settings.Default.External_Database);
+            externalItem.IsEnabled = hasConfig;
         }
 
         private void UpdateStatusBar()
@@ -219,24 +221,64 @@ namespace Protes
 
         private void UseExternalDb_Click(object sender, RoutedEventArgs e)
         {
-            var conn = Microsoft.VisualBasic.Interaction.InputBox(
-                "Enter MySQL connection string (e.g., Server=localhost;Database=MrE;Uid=root;Pwd=;):",
-                "External Database", Properties.Settings.Default.External_ConnectionString);
+            var host = Properties.Settings.Default.External_Host;
+            var port = Properties.Settings.Default.External_Port;
+            var database = Properties.Settings.Default.External_Database;
+            var username = Properties.Settings.Default.External_Username;
 
-            if (!string.IsNullOrWhiteSpace(conn))
+            if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(database))
             {
-                _currentMode = DatabaseMode.External;
-                _externalConnectionString = conn;
-                Properties.Settings.Default.DatabaseMode = "External";
-                Properties.Settings.Default.External_ConnectionString = conn; // ← Add this setting
-                Properties.Settings.Default.Save();
-                UpdateDatabaseModeCheckmarks();
-                UpdateStatusBar();
-                MessageBox.Show("External database configured.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(
+                    "External database configuration is incomplete.\n\n" +
+                    "Please go to Settings → External Database to configure your connection.",
+                    "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            else
+
+            var password = "";
+            var connString = $"Server={host};Port={port};Database={database};Uid={username};Pwd={password};";
+
+            _currentMode = DatabaseMode.External;
+            Properties.Settings.Default.DatabaseMode = "External";
+            Properties.Settings.Default.Save();
+
+            UpdateDatabaseModeCheckmarks();
+            UpdateStatusBar();
+
+            // Pass connection string directly to connect logic
+            ConnectToExternalDatabase(connString);
+        }
+
+        private void ConnectToExternalDatabase(string connectionString)
+        {
+            try
             {
-                LoadPersistedSettings();
+                using (var conn = new MySqlConnection(connectionString))
+                {
+                    conn.Open();
+                    using (var cmd = new MySqlCommand("SHOW TABLES LIKE 'Notes';", conn))
+                    {
+                        if (cmd.ExecuteScalar() == null)
+                            throw new InvalidOperationException("Table 'Notes' not found in the external database.");
+                    }
+                }
+
+                _externalConnectionString = connectionString; // Only store for loading notes
+                LoadNotesFromDatabase();
+                _isConnected = true;
+                NotesDataGrid.Visibility = Visibility.Visible;
+                DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
+                UpdateStatusBar();
+                UpdateButtonStates();
+                MessageBox.Show("Connected successfully!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (InvalidOperationException ex)
+            {
+                MessageBox.Show($"Schema Error:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Connection failed:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

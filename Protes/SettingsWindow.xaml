@@ -10,9 +10,7 @@
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <!-- Tabs content -->
             <RowDefinition Height="Auto"/>
-            <!-- Bottom buttons -->
         </Grid.RowDefinitions>
 
         <!-- Tabs -->
@@ -22,33 +20,27 @@
                     <Grid Margin="10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
-                            <!-- Current DB -->
                             <RowDefinition Height="Auto"/>
-                            <!-- Action buttons -->
                             <RowDefinition Height="*"/>
-                            <!-- Available Databases (expands) -->
                             <RowDefinition Height="Auto"/>
-                            <!-- Load Selected -->
                             <RowDefinition Height="Auto"/>
-                            <!-- Note -->
                         </Grid.RowDefinitions>
 
                         <!-- Current Database -->
                         <GroupBox Grid.Row="0" Header="Current Database" Margin="0,0,0,15">
                             <TextBlock x:Name="CurrentDbPathText" Text="C:\Users\...\notes.db"
-                           TextWrapping="Wrap"
-                           FontStyle="Italic"/>
+                                       TextWrapping="Wrap"
+                                       FontStyle="Italic"/>
                         </GroupBox>
 
                         <!-- Actions -->
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
-                            <Button x:Name="LocalSaveButton" Content="Save" Padding="10,5" Margin="0,0,10,0" Click="LocalSaveButton_Click"/>
-                            <Button x:Name="SaveAsButton" Content="Save As…" Padding="10,5" Margin="0,0,10,0" Click="SaveAsButton_Click"/>
                             <Button x:Name="NewDbButton" Content="New…" Padding="10,5" Margin="0,0,10,0" Click="NewDbButton_Click"/>
-                            <Button x:Name="LoadDbButton" Content="Load…" Padding="10,5" Click="LoadDbButton_Click"/>
+                            <Button x:Name="ExportDbButton" Content="Export…" Padding="10,5" Margin="0,0,10,0" Click="ExportDbButton_Click"/>
+                            <Button x:Name="ImportDbButton" Content="Import…" Padding="10,5" Click="ImportDbButton_Click"/>
                         </StackPanel>
 
-                        <!-- Available Databases List (now expands) -->
+                        <!-- Available Databases List -->
                         <GroupBox Grid.Row="2" Header="Available Databases" Margin="0,0,0,15">
                             <ListBox x:Name="LocalDbList">
                                 <ListBox.ItemTemplate>
@@ -65,9 +57,9 @@
                         <!-- Load Selected Button -->
                         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,15">
                             <Button x:Name="LoadSelectedButton"
-                        Content="Load Selected"
-                        Padding="10,5"
-                        Click="LoadSelectedButton_Click">
+                                    Content="Load Selected"
+                                    Padding="10,5"
+                                    Click="LoadSelectedButton_Click">
                                 <Button.Style>
                                     <Style TargetType="Button">
                                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -85,7 +77,7 @@
                         </StackPanel>
 
                         <TextBlock Grid.Row="4" Text="Note: Databases are stored in the Protes app data folder." 
-                       FontStyle="Italic" Foreground="Gray"/>
+                                   FontStyle="Italic" Foreground="Gray"/>
                     </Grid>
                 </ScrollViewer>
             </TabItem>
@@ -99,21 +91,43 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Schema Requirements -->
+                        <!-- Schema Requirements with Inner Tabs -->
                         <GroupBox Grid.Row="0" Header="Required Table Schema" Margin="0,0,0,20">
-                            <StackPanel>
-                                <TextBlock Text="Your external database must contain a table named:" FontWeight="Bold"/>
-                                <TextBlock Text="→ Notes" Margin="10,5" Foreground="Red"/>
-                                <TextBlock Text="With the following columns:" Margin="0,10,0,5" FontWeight="Bold"/>
-                                <TextBlock Text="• Id (INTEGER PRIMARY KEY)" Margin="10,0"/>
-                                <TextBlock Text="• Title (TEXT, NOT NULL)" Margin="10,0"/>
-                                <TextBlock Text="• Content (TEXT)" Margin="10,0"/>
-                                <TextBlock Text="• Tags (TEXT)" Margin="10,0"/>
-                                <TextBlock Text="• LastModified (TEXT in 'yyyy-MM-dd HH:mm' format)" Margin="10,0"/>
-                            </StackPanel>
+                            <TabControl>
+                                <TabItem Header="Requirements">
+                                    <StackPanel Margin="10">
+                                        <TextBlock Text="Your external database must contain a table named:" FontWeight="Bold"/>
+                                        <TextBlock Text="→ Notes" Margin="10,5" Foreground="Red"/>
+                                        <TextBlock Text="With the following columns:" Margin="0,10,0,5" FontWeight="Bold"/>
+                                        <TextBlock Text="• Id (INTEGER PRIMARY KEY)" Margin="10,0"/>
+                                        <TextBlock Text="• Title (TEXT, NOT NULL)" Margin="10,0"/>
+                                        <TextBlock Text="• Content (TEXT)" Margin="10,0"/>
+                                        <TextBlock Text="• Tags (TEXT)" Margin="10,0"/>
+                                        <TextBlock Text="• LastModified (TEXT in 'yyyy-MM-dd HH:mm' format)" Margin="10,0"/>
+                                    </StackPanel>
+                                </TabItem>
+                                <TabItem Header="Create Table (MySQL)">
+                                    <Grid Margin="10">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <TextBox x:Name="CreateTableSqlBox"
+                                                 Grid.Row="0"
+                                                 Text="CREATE TABLE Notes (&#x0a;    Id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,&#x0a;    Title VARCHAR(255) NOT NULL,&#x0a;    Content TEXT,&#x0a;    Tags VARCHAR(255),&#x0a;    LastModified DATETIME&#x0a;);"
+                                                 TextWrapping="NoWrap"
+                                                 AcceptsReturn="True"
+                                                 IsReadOnly="True"
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 FontFamily="Consolas"
+                                                 FontSize="12"/>
+                                        <Button Grid.Row="1" Content="Copy SQL" Margin="0,10,0,0" Click="CopySqlButton_Click"/>
+                                    </Grid>
+                                </TabItem>
+                            </TabControl>
                         </GroupBox>
 
-                        <!-- Connection Fields -->
+                        <!-- Connection Details -->
                         <GroupBox Grid.Row="1" Header="Connection Details">
                             <Grid Margin="5">
                                 <Grid.ColumnDefinitions>

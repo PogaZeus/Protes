@@ -94,17 +94,5 @@ namespace Protes.Properties {
                 this["External_Username"] = value;
             }
         }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string External_ConnectionString {
-            get {
-                return ((string)(this["External_ConnectionString"]));
-            }
-            set {
-                this["External_ConnectionString"] = value;
-            }
-        }
     }
 }

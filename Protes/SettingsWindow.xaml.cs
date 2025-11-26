@@ -73,7 +73,7 @@ namespace Protes.Views
             MessageBox.Show("Current database is already saved.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private void SaveAsButton_Click(object sender, RoutedEventArgs e)
+        private void ExportDbButton_Click(object sender, RoutedEventArgs e)
         {
             var saveDialog = new SaveFileDialog
             {
@@ -136,8 +136,13 @@ namespace Protes.Views
                 }
             }
         }
-
-        private void LoadDbButton_Click(object sender, RoutedEventArgs e)
+        private void CopySqlButton_Click(object sender, RoutedEventArgs e)
+        {
+            string sql = CreateTableSqlBox.Text;
+            Clipboard.SetText(sql);
+            MessageBox.Show("SQL script copied to clipboard!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        private void ImportDbButton_Click(object sender, RoutedEventArgs e)
         {
             var openDialog = new OpenFileDialog
             {
