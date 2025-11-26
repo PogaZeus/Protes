@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Protes.Properties;
 using MySqlConnector;
+using System.Data.SQLite;
 
 namespace Protes
 {
@@ -117,27 +118,43 @@ namespace Protes
                 {
                     try
                     {
-                        var newModified = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
-
-                        // Update database
-                        using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                        if (_currentMode == DatabaseMode.Local)
                         {
-                            conn.Open();
-                            using (var cmd = new System.Data.SQLite.SQLiteCommand(
-                                "UPDATE Notes SET Title = @title, LastModified = @now WHERE Id = @id", conn))
+                            using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                             {
-                                cmd.Parameters.AddWithValue("@id", fullNote.Id);
-                                cmd.Parameters.AddWithValue("@title", newTitle);
-                                cmd.Parameters.AddWithValue("@now", newModified);
-                                cmd.ExecuteNonQuery();
+                                conn.Open();
+                                using (var cmd = new SQLiteCommand(
+                                    "UPDATE Notes SET Title = @title, LastModified = @now WHERE Id = @id", conn))
+                                {
+                                    cmd.Parameters.AddWithValue("@id", fullNote.Id);
+                                    cmd.Parameters.AddWithValue("@title", newTitle);
+                                    cmd.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
+                                    cmd.ExecuteNonQuery();
+                                }
+                            }
+                        }
+                        else if (_currentMode == DatabaseMode.External)
+                        {
+                            using (var conn = new MySqlConnection(_externalConnectionString))
+                            {
+                                conn.Open();
+                                using (var cmd = new MySqlCommand(
+                                    "UPDATE Notes SET Title = @title, LastModified = @now WHERE Id = @id", conn))
+                                {
+                                    cmd.Parameters.AddWithValue("@id", fullNote.Id);
+                                    cmd.Parameters.AddWithValue("@title", newTitle);
+                                    cmd.Parameters.AddWithValue("@now", DateTime.Now); // MySqlConnector handles DateTime
+                                    cmd.ExecuteNonQuery();
+                                }
                             }
                         }
 
                         // Update cache and UI with new values
+                        var newModifiedStr = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
                         fullNote.Title = newTitle;
-                        fullNote.LastModified = newModified;
+                        fullNote.LastModified = newModifiedStr;
                         _editingItem.Title = newTitle;
-                        _editingItem.LastModified = newModified;
+                        _editingItem.LastModified = newModifiedStr;
                     }
                     catch (Exception ex)
                     {
@@ -218,15 +235,10 @@ namespace Protes
             UpdateStatusBar();
             MessageBox.Show("Local database (SQLite) selected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
         }
-
         private void UseExternalDb_Click(object sender, RoutedEventArgs e)
         {
-            var host = Properties.Settings.Default.External_Host;
-            var port = Properties.Settings.Default.External_Port;
-            var database = Properties.Settings.Default.External_Database;
-            var username = Properties.Settings.Default.External_Username;
-
-            if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(database))
+            var connString = BuildExternalConnectionString();
+            if (connString == null)
             {
                 MessageBox.Show(
                     "External database configuration is incomplete.\n\n" +
@@ -235,9 +247,6 @@ namespace Protes
                 return;
             }
 
-            var password = "";
-            var connString = $"Server={host};Port={port};Database={database};Uid={username};Pwd={password};";
-
             _currentMode = DatabaseMode.External;
             Properties.Settings.Default.DatabaseMode = "External";
             Properties.Settings.Default.Save();
@@ -245,10 +254,8 @@ namespace Protes
             UpdateDatabaseModeCheckmarks();
             UpdateStatusBar();
 
-            // Pass connection string directly to connect logic
             ConnectToExternalDatabase(connString);
         }
-
         private void ConnectToExternalDatabase(string connectionString)
         {
             try
@@ -278,7 +285,8 @@ namespace Protes
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Connection failed:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Connection failed:\n{ex.Message}\n\nInner: {ex.InnerException?.Message}",
+                                "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -313,20 +321,31 @@ namespace Protes
                 }
                 else if (_currentMode == DatabaseMode.External)
                 {
-                    if (string.IsNullOrWhiteSpace(_externalConnectionString))
+                    // ✅ Build connection string from saved settings (fixes "missing" error)
+                    var host = Properties.Settings.Default.External_Host;
+                    var port = Properties.Settings.Default.External_Port?.ToString() ?? "3306";
+                    var database = Properties.Settings.Default.External_Database;
+                    var username = Properties.Settings.Default.External_Username;
+                    var password = Properties.Settings.Default.External_Password ?? "";
+
+                    if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(database))
                     {
-                        MessageBox.Show("External database connection string is missing.", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show("External database configuration is incomplete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
 
+                    if (string.IsNullOrWhiteSpace(port) || port == "0")
+                        port = "3306";
+
+                    var connString = $"Server={host};Port={port};Database={database};Uid={username};Pwd={password};";
+
                     // Test connection
-                    using (var conn = new MySqlConnection(_externalConnectionString))
+                    using (var conn = new MySqlConnection(connString))
                     {
                         conn.Open();
 
                         // Check if 'Notes' table exists
-                        using (var cmd = new MySqlCommand(
-                            "SHOW TABLES LIKE 'Notes';", conn))
+                        using (var cmd = new MySqlCommand("SHOW TABLES LIKE 'Notes';", conn))
                         {
                             var result = cmd.ExecuteScalar();
                             if (result == null)
@@ -335,6 +354,9 @@ namespace Protes
                             }
                         }
                     }
+
+                    // ✅ Store for CRUD operations (Save, Update, Delete)
+                    _externalConnectionString = connString;
                 }
 
                 LoadNotesFromDatabase();
@@ -353,7 +375,8 @@ namespace Protes
             catch (Exception ex)
             {
                 // General connection/error
-                MessageBox.Show($"Connection failed:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Connection failed:\n{ex.Message}\n\nInner: {ex.InnerException?.Message}",
+                                "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -495,17 +518,36 @@ namespace Protes
         {
             try
             {
-                using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                if (_currentMode == DatabaseMode.Local)
                 {
-                    conn.Open();
-                    using (var cmd = new System.Data.SQLite.SQLiteCommand(
-                        "INSERT INTO Notes (Title, Content, Tags, LastModified) VALUES (@title, @content, @tags, @now)", conn))
+                    using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                     {
-                        cmd.Parameters.AddWithValue("@title", title ?? "");
-                        cmd.Parameters.AddWithValue("@content", content ?? "");
-                        cmd.Parameters.AddWithValue("@tags", tags ?? "");
-                        cmd.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
-                        cmd.ExecuteNonQuery();
+                        conn.Open();
+                        using (var cmd = new System.Data.SQLite.SQLiteCommand(
+                            "INSERT INTO Notes (Title, Content, Tags, LastModified) VALUES (@title, @content, @tags, @now)", conn))
+                        {
+                            cmd.Parameters.AddWithValue("@title", title ?? "");
+                            cmd.Parameters.AddWithValue("@content", content ?? "");
+                            cmd.Parameters.AddWithValue("@tags", tags ?? "");
+                            cmd.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+                }
+                else if (_currentMode == DatabaseMode.External)
+                {
+                    using (var conn = new MySqlConnection(_externalConnectionString))
+                    {
+                        conn.Open();
+                        using (var cmd = new MySqlCommand(
+                            "INSERT INTO Notes (Title, Content, Tags, LastModified) VALUES (@title, @content, @tags, @now)", conn))
+                        {
+                            cmd.Parameters.AddWithValue("@title", title ?? "");
+                            cmd.Parameters.AddWithValue("@content", content ?? "");
+                            cmd.Parameters.AddWithValue("@tags", tags ?? "");
+                            cmd.Parameters.AddWithValue("@now", DateTime.Now); // MySqlConnector handles DateTime correctly
+                            cmd.ExecuteNonQuery();
+                        }
                     }
                 }
             }
@@ -607,20 +649,42 @@ namespace Protes
         {
             try
             {
-                using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                if (_currentMode == DatabaseMode.Local)
                 {
-                    conn.Open();
-                    using (var cmd = new System.Data.SQLite.SQLiteCommand(
-                        @"UPDATE Notes 
-                          SET Title = @title, Content = @content, Tags = @tags, LastModified = @now 
-                          WHERE Id = @id", conn))
+                    using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                     {
-                        cmd.Parameters.AddWithValue("@id", id);
-                        cmd.Parameters.AddWithValue("@title", title ?? "");
-                        cmd.Parameters.AddWithValue("@content", content ?? "");
-                        cmd.Parameters.AddWithValue("@tags", tags ?? "");
-                        cmd.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
-                        cmd.ExecuteNonQuery();
+                        conn.Open();
+                        using (var cmd = new System.Data.SQLite.SQLiteCommand(
+                            @"UPDATE Notes 
+                      SET Title = @title, Content = @content, Tags = @tags, LastModified = @now 
+                      WHERE Id = @id", conn))
+                        {
+                            cmd.Parameters.AddWithValue("@id", id);
+                            cmd.Parameters.AddWithValue("@title", title ?? "");
+                            cmd.Parameters.AddWithValue("@content", content ?? "");
+                            cmd.Parameters.AddWithValue("@tags", tags ?? "");
+                            cmd.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+                }
+                else if (_currentMode == DatabaseMode.External)
+                {
+                    using (var conn = new MySqlConnection(_externalConnectionString))
+                    {
+                        conn.Open();
+                        using (var cmd = new MySqlCommand(
+                            @"UPDATE Notes 
+                      SET Title = @title, Content = @content, Tags = @tags, LastModified = @now 
+                      WHERE Id = @id", conn))
+                        {
+                            cmd.Parameters.AddWithValue("@id", id);
+                            cmd.Parameters.AddWithValue("@title", title ?? "");
+                            cmd.Parameters.AddWithValue("@content", content ?? "");
+                            cmd.Parameters.AddWithValue("@tags", tags ?? "");
+                            cmd.Parameters.AddWithValue("@now", DateTime.Now);
+                            cmd.ExecuteNonQuery();
+                        }
                     }
                 }
             }
@@ -629,8 +693,27 @@ namespace Protes
                 MessageBox.Show($"Failed to update note: {ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        // ✅ Helper method — MUST be inside MainWindow
+        private string BuildExternalConnectionString()
+        {
+            var host = Properties.Settings.Default.External_Host;
+            var port = Properties.Settings.Default.External_Port?.ToString() ?? "3306";
+            var database = Properties.Settings.Default.External_Database;
+            var username = Properties.Settings.Default.External_Username;
+            var password = Properties.Settings.Default.External_Password ?? "";
+
+            if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(database))
+                return null; // Incomplete config
+
+            if (string.IsNullOrWhiteSpace(port) || port == "0")
+                port = "3306";
+
+            return $"Server={host};Port={port};Database={database};Uid={username};Pwd={password};";
+        }
     }
 
+    // Now define nested/top-level types in namespace
     public class NoteItem
     {
         public long Id { get; set; }
@@ -655,4 +738,4 @@ namespace Protes
         Local,
         External
     }
-}
+} 

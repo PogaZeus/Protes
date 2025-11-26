@@ -188,6 +188,7 @@ namespace Protes.Views
             Properties.Settings.Default.External_Port = PortTextBox.Text;
             Properties.Settings.Default.External_Database = DatabaseTextBox.Text;
             Properties.Settings.Default.External_Username = UsernameTextBox.Text;
+            Properties.Settings.Default.External_Password = PasswordBox.Password;
             // Password is NOT saved (security best practice)
 
             Properties.Settings.Default.Save();
