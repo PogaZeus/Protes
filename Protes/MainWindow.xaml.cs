@@ -15,7 +15,8 @@ namespace Protes
         private DatabaseMode _currentMode = DatabaseMode.None;
         private bool _isConnected = false;
         private List<FullNote> _fullNotesCache = new List<FullNote>();
-
+        private NoteItem _editingItem;
+        private string _originalTitle;
         public MainWindow()
         {
             InitializeComponent();
@@ -68,6 +69,90 @@ namespace Protes
                         disconnectMenuItem.IsEnabled = _isConnected;
                 }
             }
+        }
+
+        private void NotesDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
+        {
+            if (e.Column.DisplayIndex == 0) // Title column is first (index 0)
+            {
+                _editingItem = e.Row.Item as NoteItem;
+                _originalTitle = _editingItem?.Title;
+            }
+            else
+            {
+                // Cancel edit for non-Title columns (extra safety)
+                e.Cancel = true;
+            }
+        }
+
+        private void NotesDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            if (e.EditAction == DataGridEditAction.Cancel || e.Column.DisplayIndex != 0)
+                return;
+
+            if (_editingItem == null || string.IsNullOrEmpty(_originalTitle))
+                return;
+
+            var textBox = e.EditingElement as TextBox;
+            var newTitle = textBox?.Text ?? _originalTitle;
+
+            // Only prompt if value actually changed
+            if (newTitle == _originalTitle)
+                return;
+
+            var result = MessageBox.Show(
+                $"Update note title from:\n\n\"{_originalTitle}\" \n\nto:\n\n\"{newTitle}\"?",
+                "Confirm Title Change",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                // Find by ID (robust to title/modification changes)
+                var fullNote = _fullNotesCache.Find(n => n.Id == _editingItem.Id);
+
+                if (fullNote != null)
+                {
+                    try
+                    {
+                        var newModified = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+
+                        // Update database
+                        using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                        {
+                            conn.Open();
+                            using (var cmd = new System.Data.SQLite.SQLiteCommand(
+                                "UPDATE Notes SET Title = @title, LastModified = @now WHERE Id = @id", conn))
+                            {
+                                cmd.Parameters.AddWithValue("@id", fullNote.Id);
+                                cmd.Parameters.AddWithValue("@title", newTitle);
+                                cmd.Parameters.AddWithValue("@now", newModified);
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+
+                        // Update cache and UI with new values
+                        fullNote.Title = newTitle;
+                        fullNote.LastModified = newModified;
+                        _editingItem.Title = newTitle;
+                        _editingItem.LastModified = newModified;
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to update title:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        _editingItem.Title = _originalTitle;
+                    }
+                }
+            }
+            else
+            {
+                // User canceled → revert
+                _editingItem.Title = _originalTitle;
+            }
+
+            // Clean up
+            _editingItem = null;
+            _originalTitle = null;
         }
 
         private void EnsureAppDataFolder()
@@ -224,9 +309,7 @@ namespace Protes
 
             if (NotesDataGrid.SelectedItem is NoteItem selectedNote)
             {
-                var fullNote = _fullNotesCache.Find(n =>
-                    n.Title == selectedNote.Title &&
-                    n.LastModified == selectedNote.LastModified);
+                var fullNote = _fullNotesCache.Find(n => n.Id == selectedNote.Id);
 
                 if (fullNote != null)
                 {
@@ -278,9 +361,7 @@ namespace Protes
 
                 if (result == MessageBoxResult.Yes)
                 {
-                    var fullNote = _fullNotesCache.Find(n =>
-                        n.Title == selectedNote.Title &&
-                        n.LastModified == selectedNote.LastModified);
+                    var fullNote = _fullNotesCache.Find(n => n.Id == selectedNote.Id);
 
                     if (fullNote != null)
                     {
@@ -345,9 +426,7 @@ namespace Protes
         {
             if (NotesDataGrid.SelectedItem is NoteItem selectedNote && _isConnected)
             {
-                var fullNote = _fullNotesCache.Find(n =>
-                    n.Title == selectedNote.Title &&
-                    n.LastModified == selectedNote.LastModified);
+                var fullNote = _fullNotesCache.Find(n => n.Id == selectedNote.Id);
 
                 if (fullNote != null)
                 {
@@ -360,7 +439,6 @@ namespace Protes
                 }
             }
         }
-
         private void LoadNotesFromDatabase()
         {
             if (_currentMode != DatabaseMode.Local) return;
@@ -386,7 +464,7 @@ namespace Protes
                             var preview = content.Length > 60 ? content.Substring(0, 57) + "..." : content;
 
                             _fullNotesCache.Add(new FullNote { Id = id, Title = title, Content = content, Tags = tags, LastModified = modified });
-                            notes.Add(new NoteItem { Title = title, Preview = preview, LastModified = modified, Tags = tags });
+                            notes.Add(new NoteItem { Id = id, Title = title, Preview = preview, LastModified = modified, Tags = tags });
                         }
                     }
                 }
@@ -428,6 +506,7 @@ namespace Protes
 
     public class NoteItem
     {
+        public long Id { get; set; }
         public string Title { get; set; }
         public string Preview { get; set; }
         public string LastModified { get; set; }

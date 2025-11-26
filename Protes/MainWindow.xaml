@@ -10,9 +10,7 @@
             <RowDefinition Height="Auto"/>
             <!-- Menu -->
             <RowDefinition Height="Auto"/>
-            <!-- Icon Tray -->
-            <RowDefinition Height="Auto"/>
-            <!-- New/Edit/Delete + Search -->
+            <!-- Icon Tray + Note Actions + Search -->
             <RowDefinition Height="*"/>
             <!-- Notes Table -->
             <RowDefinition Height="Auto"/>
@@ -35,59 +33,68 @@
             </MenuItem>
         </Menu>
 
-        <!-- === ICON TRAY === -->
+        <!-- === ICON TRAY + NOTE ACTIONS + SEARCH (Combined Row) === -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="10,5"
-                    HorizontalAlignment="Left" VerticalAlignment="Top">
+            HorizontalAlignment="Left" VerticalAlignment="Top">
+            <!-- Connection & Settings Icons -->
             <Button x:Name="ConnectIconBtn" Content="🔌" FontSize="16" Width="32" Height="32"
-                    ToolTip="Connect" Click="Connect_Click" Margin="0,0,8,0"/>
+            ToolTip="Connect" Click="Connect_Click" Margin="0,0,8,0"/>
             <Button x:Name="DisconnectIconBtn" Content="🚫" FontSize="16" Width="32" Height="32"
-                    ToolTip="Disconnect" Click="Disconnect_Click" Margin="0,0,16,0"/>
-            <!-- Auto Connect Checkbox -->
+            ToolTip="Disconnect" Click="Disconnect_Click" Margin="0,0,16,0"/>
             <CheckBox x:Name="AutoConnectCheckBox" 
               Content="Auto Connect (Local Only)" 
               VerticalAlignment="Center"
               Checked="AutoConnectCheckBox_Checked"
               Unchecked="AutoConnectCheckBox_Checked" Margin="0,0,16,0"/>
-
             <Button x:Name="SettingsIconBtn" Content="⚙️" FontSize="16" Width="32" Height="32"
-                    ToolTip="Settings" Click="OpenSettings_Click"/>
-        </StackPanel>
+            ToolTip="Settings" Click="OpenSettings_Click" Margin="0,0,12,0"/>
 
-        <!-- === NEW NOTE + EDIT NOTE + DELETE NOTE + SEARCH === -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="10,10">
+            <!-- Vertical Separator (compatible with .NET Framework) -->
+            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
+
+            <!-- Note Action Buttons and Search -->
             <Button x:Name="NewNoteButton" Content="New Note" Padding="12,5"
-                    FontSize="14" Click="NewNoteButton_Click" Margin="0,0,15,0"/>
+            FontSize="14" Click="NewNoteButton_Click" Margin="0,0,12,0"/>
             <Button x:Name="EditNoteButton" Content="Edit Note" Padding="12,5"
-                    FontSize="14" Click="EditNoteButton_Click" Margin="0,0,15,0"/>
+            FontSize="14" Click="EditNoteButton_Click" Margin="0,0,12,0"/>
             <Button x:Name="DeleteNoteButton" Content="Delete Note" Padding="12,5"
-                    FontSize="14" Click="DeleteNoteButton_Click" Margin="0,0,15,0"/>
+            FontSize="14" Click="DeleteNoteButton_Click" Margin="0,0,20,0"/>
             <TextBox x:Name="SearchBox" Width="300" Height="28"
-                     VerticalContentAlignment="Center"
-                     TextChanged="SearchBox_TextChanged"
-                     VerticalAlignment="Center"/>
+             VerticalContentAlignment="Center"
+             TextChanged="SearchBox_TextChanged"
+             VerticalAlignment="Center"/>
         </StackPanel>
 
         <!-- === NOTES TABLE (DATA GRID) === -->
-        <DataGrid Grid.Row="3" x:Name="NotesDataGrid" Margin="10"
-                  AutoGenerateColumns="False" IsReadOnly="True"
-                  SelectionMode="Single" Visibility="Collapsed"
-                  MouseDoubleClick="NotesDataGrid_MouseDoubleClick">
+        <DataGrid Grid.Row="2" x:Name="NotesDataGrid" Margin="10"
+          AutoGenerateColumns="False"
+          IsReadOnly="False"
+          CanUserAddRows="False" 
+          SelectionMode="Single"
+          Visibility="Collapsed"
+          BeginningEdit="NotesDataGrid_BeginningEdit"
+          CellEditEnding="NotesDataGrid_CellEditEnding"
+          MouseDoubleClick="NotesDataGrid_MouseDoubleClick">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="2*"/>
-                <DataGridTextColumn Header="Preview" Binding="{Binding Preview}" Width="3*"/>
-                <DataGridTextColumn Header="Modified" Binding="{Binding LastModified}" Width="120"/>
-                <DataGridTextColumn Header="Tags" Binding="{Binding Tags}" Width="*"/>
+                <!-- Editable Title -->
+                <DataGridTextColumn Header="Title" Binding="{Binding Title, UpdateSourceTrigger=PropertyChanged}" Width="2*"/>
+                <!-- Read-only Preview -->
+                <DataGridTextColumn Header="Preview" Binding="{Binding Preview}" IsReadOnly="True" Width="3*"/>
+                <!-- Editable Tags -->
+                <DataGridTextColumn Header="Tags" Binding="{Binding Tags, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+                <!-- Read-only Modified (now at the end) -->
+                <DataGridTextColumn Header="Modified" Binding="{Binding LastModified}" IsReadOnly="True" Width="120"/>
             </DataGrid.Columns>
         </DataGrid>
 
         <!-- Optional: Placeholder when disconnected -->
-        <TextBlock Grid.Row="3" x:Name="DisconnectedPlaceholder"
+        <TextBlock Grid.Row="2" x:Name="DisconnectedPlaceholder"
                    Text="Not connected to a database. Choose 'Local' or 'External Database' from Options."
                    HorizontalAlignment="Center" VerticalAlignment="Center"
                    FontSize="16" Foreground="Gray" TextWrapping="Wrap" Margin="20"/>
 
         <!-- === STATUS BAR === -->
-        <StatusBar Grid.Row="4">
+        <StatusBar Grid.Row="3">
             <StatusBar.Items>
                 <TextBlock x:Name="ConnectionStatusText" Text="Disconnected"/>
                 <Separator Style="{StaticResource {x:Static StatusBar.SeparatorStyleKey}}" Margin="8,0"/>
