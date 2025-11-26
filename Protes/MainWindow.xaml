@@ -20,7 +20,7 @@
         </Grid.RowDefinitions>
 
         <!-- === MENU BAR === -->
-        <Menu Grid.Row="0">
+        <Menu Grid.Row="0" x:Name="MainMenu">
             <MenuItem Header="_File">
                 <MenuItem Header="_Connect" Click="Connect_Click"/>
                 <MenuItem Header="_Disconnect" Click="Disconnect_Click"/>
@@ -42,6 +42,13 @@
                     ToolTip="Connect" Click="Connect_Click" Margin="0,0,8,0"/>
             <Button x:Name="DisconnectIconBtn" Content="🚫" FontSize="16" Width="32" Height="32"
                     ToolTip="Disconnect" Click="Disconnect_Click" Margin="0,0,16,0"/>
+            <!-- Auto Connect Checkbox -->
+            <CheckBox x:Name="AutoConnectCheckBox" 
+              Content="Auto Connect (Local Only)" 
+              VerticalAlignment="Center"
+              Checked="AutoConnectCheckBox_Checked"
+              Unchecked="AutoConnectCheckBox_Checked" Margin="0,0,16,0"/>
+
             <Button x:Name="SettingsIconBtn" Content="⚙️" FontSize="16" Width="32" Height="32"
                     ToolTip="Settings" Click="OpenSettings_Click"/>
         </StackPanel>

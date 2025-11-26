@@ -34,5 +34,17 @@ namespace Protes.Properties {
                 this["DatabaseMode"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AutoConnect {
+            get {
+                return ((bool)(this["AutoConnect"]));
+            }
+            set {
+                this["AutoConnect"] = value;
+            }
+        }
     }
 }

@@ -22,6 +22,52 @@ namespace Protes
             LoadPersistedSettings();
             EnsureAppDataFolder();
             UpdateStatusBar();
+            UpdateButtonStates();
+
+            // Auto-connect if enabled and mode is Local
+            if (Properties.Settings.Default.AutoConnect && _currentMode == DatabaseMode.Local)
+            {
+                // Use dispatcher to ensure UI is ready
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    Connect_Click(this, new RoutedEventArgs());
+                }));
+            }
+        }
+
+        private void AutoConnectCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            Properties.Settings.Default.AutoConnect = AutoConnectCheckBox.IsChecked == true;
+            Properties.Settings.Default.Save();
+        }
+        private void UpdateButtonStates()
+        {
+            // Enable/disable note action buttons based on connection state
+            NewNoteButton.IsEnabled = _isConnected;
+            EditNoteButton.IsEnabled = _isConnected;
+            DeleteNoteButton.IsEnabled = _isConnected;
+            SearchBox.IsEnabled = _isConnected;
+
+            // Enable/disable connection icon buttons
+            ConnectIconBtn.IsEnabled = !_isConnected;
+            DisconnectIconBtn.IsEnabled = _isConnected;
+
+            // File menu items (Connect / Disconnect)
+            if (MainMenu != null && MainMenu.Items.Count > 0)
+            {
+                var fileMenuItem = MainMenu.Items[0] as MenuItem; // "_File"
+                if (fileMenuItem?.Items.Count >= 2)
+                {
+                    var connectMenuItem = fileMenuItem.Items[0] as MenuItem;   // "_Connect"
+                    var disconnectMenuItem = fileMenuItem.Items[1] as MenuItem; // "_Disconnect"
+
+                    if (connectMenuItem != null)
+                        connectMenuItem.IsEnabled = !_isConnected;
+
+                    if (disconnectMenuItem != null)
+                        disconnectMenuItem.IsEnabled = _isConnected;
+                }
+            }
         }
 
         private void EnsureAppDataFolder()
@@ -34,18 +80,13 @@ namespace Protes
         private void LoadPersistedSettings()
         {
             var savedMode = Properties.Settings.Default.DatabaseMode;
-            if (savedMode == "Local")
-            {
-                _currentMode = DatabaseMode.Local;
-            }
-            else if (savedMode == "External")
-            {
-                _currentMode = DatabaseMode.External;
-            }
-            else
-            {
-                _currentMode = DatabaseMode.Local;
-            }
+            _currentMode = (savedMode == "Local") ? DatabaseMode.Local :
+                           (savedMode == "External") ? DatabaseMode.External :
+                           DatabaseMode.Local;
+
+            // Load and apply AutoConnect setting
+            AutoConnectCheckBox.IsChecked = Properties.Settings.Default.AutoConnect;
+
             UpdateDatabaseModeCheckmarks();
         }
 
@@ -124,12 +165,12 @@ namespace Protes
                         conn.Open();
                         using (var cmd = new System.Data.SQLite.SQLiteCommand(
                             @"CREATE TABLE IF NOT EXISTS Notes (
-                                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                Title TEXT NOT NULL,
-                                Content TEXT,
-                                Tags TEXT,
-                                LastModified TEXT
-                            )", conn))
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        Title TEXT NOT NULL,
+                        Content TEXT,
+                        Tags TEXT,
+                        LastModified TEXT
+                    )", conn))
                         {
                             cmd.ExecuteNonQuery();
                         }
@@ -141,6 +182,7 @@ namespace Protes
                 NotesDataGrid.Visibility = Visibility.Visible;
                 DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
                 UpdateStatusBar();
+                UpdateButtonStates(); // Enable note actions, disable Connect button
                 MessageBox.Show("Connected successfully!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -156,6 +198,7 @@ namespace Protes
             NotesDataGrid.Visibility = Visibility.Collapsed;
             DisconnectedPlaceholder.Visibility = Visibility.Visible;
             UpdateStatusBar();
+            UpdateButtonStates(); // Disable note actions, enable Connect button
             MessageBox.Show("Disconnected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 

@@ -5,5 +5,8 @@
     <Setting Name="DatabaseMode" Type="System.String" Scope="User">
       <Value Profile="(Default)">Local</Value>
     </Setting>
+    <Setting Name="AutoConnect" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
