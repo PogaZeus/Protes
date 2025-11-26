@@ -276,6 +276,22 @@ namespace Protes
             }
         }
 
+        // Switch Local Database
+        public void SwitchDatabase(string newDatabasePath)
+        {
+            if (!_isConnected)
+            {
+                // Just update path for next connect
+                _databasePath = newDatabasePath;
+                return;
+            }
+
+            // If currently connected, disconnect and reconnect
+            _databasePath = newDatabasePath;
+            Disconnect_Click(this, new RoutedEventArgs());
+            Connect_Click(this, new RoutedEventArgs());
+        }
+
         private void Disconnect_Click(object sender, RoutedEventArgs e)
         {
             _isConnected = false;
@@ -294,7 +310,8 @@ namespace Protes
 
         private void OpenSettings_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Settings: Coming soon!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            var settingsWindow = new SettingsWindow(_databasePath, this); 
+            settingsWindow.ShowDialog();
         }
 
         // ===== NOTE ACTIONS =====

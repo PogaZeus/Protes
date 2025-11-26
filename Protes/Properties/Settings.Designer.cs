@@ -46,5 +46,53 @@ namespace Protes.Properties {
                 this["AutoConnect"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string External_Host {
+            get {
+                return ((string)(this["External_Host"]));
+            }
+            set {
+                this["External_Host"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1433")]
+        public string External_Port {
+            get {
+                return ((string)(this["External_Port"]));
+            }
+            set {
+                this["External_Port"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string External_Database {
+            get {
+                return ((string)(this["External_Database"]));
+            }
+            set {
+                this["External_Database"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string External_Username {
+            get {
+                return ((string)(this["External_Username"]));
+            }
+            set {
+                this["External_Username"] = value;
+            }
+        }
     }
 }

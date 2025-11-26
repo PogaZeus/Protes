@@ -1,0 +1,158 @@
+﻿<Window x:Class="Protes.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Protes - Settings" 
+        Height="600" Width="750"
+        FontFamily="Segoe UI" 
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip">
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <!-- Tabs content -->
+            <RowDefinition Height="Auto"/>
+            <!-- Bottom buttons -->
+        </Grid.RowDefinitions>
+
+        <!-- Tabs -->
+        <TabControl x:Name="SettingsTabControl" Grid.Row="0" Margin="0,0,0,10">
+            <TabItem Header="Local Database">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <!-- Current DB -->
+                            <RowDefinition Height="Auto"/>
+                            <!-- Action buttons -->
+                            <RowDefinition Height="*"/>
+                            <!-- Available Databases (expands) -->
+                            <RowDefinition Height="Auto"/>
+                            <!-- Load Selected -->
+                            <RowDefinition Height="Auto"/>
+                            <!-- Note -->
+                        </Grid.RowDefinitions>
+
+                        <!-- Current Database -->
+                        <GroupBox Grid.Row="0" Header="Current Database" Margin="0,0,0,15">
+                            <TextBlock x:Name="CurrentDbPathText" Text="C:\Users\...\notes.db"
+                           TextWrapping="Wrap"
+                           FontStyle="Italic"/>
+                        </GroupBox>
+
+                        <!-- Actions -->
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
+                            <Button x:Name="LocalSaveButton" Content="Save" Padding="10,5" Margin="0,0,10,0" Click="LocalSaveButton_Click"/>
+                            <Button x:Name="SaveAsButton" Content="Save As…" Padding="10,5" Margin="0,0,10,0" Click="SaveAsButton_Click"/>
+                            <Button x:Name="NewDbButton" Content="New…" Padding="10,5" Margin="0,0,10,0" Click="NewDbButton_Click"/>
+                            <Button x:Name="LoadDbButton" Content="Load…" Padding="10,5" Click="LoadDbButton_Click"/>
+                        </StackPanel>
+
+                        <!-- Available Databases List (now expands) -->
+                        <GroupBox Grid.Row="2" Header="Available Databases" Margin="0,0,0,15">
+                            <ListBox x:Name="LocalDbList">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding FileName}" FontWeight="Bold"/>
+                                            <TextBlock Text="{Binding FullPath}" FontStyle="Italic" FontSize="10" Foreground="Gray"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </GroupBox>
+
+                        <!-- Load Selected Button -->
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,15">
+                            <Button x:Name="LoadSelectedButton"
+                        Content="Load Selected"
+                        Padding="10,5"
+                        Click="LoadSelectedButton_Click">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ElementName=LocalDbList, Path=SelectedItems.Count}" Value="0">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding ElementName=LocalDbList, Path=SelectedItems.Count}" Value="1">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </StackPanel>
+
+                        <TextBlock Grid.Row="4" Text="Note: Databases are stored in the Protes app data folder." 
+                       FontStyle="Italic" Foreground="Gray"/>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="External Database">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Schema Requirements -->
+                        <GroupBox Grid.Row="0" Header="Required Table Schema" Margin="0,0,0,20">
+                            <StackPanel>
+                                <TextBlock Text="Your external database must contain a table named:" FontWeight="Bold"/>
+                                <TextBlock Text="→ Notes" Margin="10,5" Foreground="Red"/>
+                                <TextBlock Text="With the following columns:" Margin="0,10,0,5" FontWeight="Bold"/>
+                                <TextBlock Text="• Id (INTEGER PRIMARY KEY)" Margin="10,0"/>
+                                <TextBlock Text="• Title (TEXT, NOT NULL)" Margin="10,0"/>
+                                <TextBlock Text="• Content (TEXT)" Margin="10,0"/>
+                                <TextBlock Text="• Tags (TEXT)" Margin="10,0"/>
+                                <TextBlock Text="• LastModified (TEXT in 'yyyy-MM-dd HH:mm' format)" Margin="10,0"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- Connection Fields -->
+                        <GroupBox Grid.Row="1" Header="Connection Details">
+                            <Grid Margin="5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Host:" Margin="0,5"/>
+                                <TextBox x:Name="HostTextBox" Grid.Row="0" Grid.Column="1" Margin="10,5" Height="26"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Port:" Margin="0,5"/>
+                                <TextBox x:Name="PortTextBox" Grid.Row="1" Grid.Column="1" Margin="10,5" Height="26" Text="1433"/>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Database:" Margin="0,5"/>
+                                <TextBox x:Name="DatabaseTextBox" Grid.Row="2" Grid.Column="1" Margin="10,5" Height="26"/>
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Username:" Margin="0,5"/>
+                                <TextBox x:Name="UsernameTextBox" Grid.Row="3" Grid.Column="1" Margin="10,5" Height="26"/>
+
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Password:" Margin="0,5"/>
+                                <PasswordBox x:Name="PasswordBox" Grid.Row="4" Grid.Column="1" Margin="10,5" Height="26"/>
+                            </Grid>
+                        </GroupBox>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <!-- Bottom Buttons -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Save" Padding="12,5" Margin="0,0,10,0" Click="SaveButton_Click"/>
+            <Button Content="Cancel" Padding="12,5" Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
