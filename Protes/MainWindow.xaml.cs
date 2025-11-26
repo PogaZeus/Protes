@@ -532,9 +532,12 @@ namespace Protes
                 MessageBox.Show("Please select a note to delete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
-        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            // You can implement real search logic later
+            if (_isConnected)
+            {
+                LoadNotesFromDatabase(SearchBox.Text);
+            }
         }
         private void SaveNoteToDatabase(string title, string content, string tags)
         {
@@ -579,11 +582,6 @@ namespace Protes
             }
         }
 
-        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            // TODO: Implement filtering
-        }
-
         private void NotesDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (NotesDataGrid.SelectedItem is NoteItem selectedNote && _isConnected)
@@ -602,32 +600,42 @@ namespace Protes
             }
         }
 
-        private void LoadNotesFromDatabase()
+        private void LoadNotesFromDatabase(string searchTerm = "")
         {
             var notes = new List<NoteItem>();
             _fullNotesCache.Clear();
+
+            // Build LIKE pattern: "MyNote" → "%MyNote%"
+            string likePattern = string.IsNullOrEmpty(searchTerm) ? "%" : $"%{searchTerm}%";
 
             try
             {
                 if (_currentMode == DatabaseMode.Local)
                 {
-                    using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                    using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                     {
                         conn.Open();
-                        using (var cmd = new System.Data.SQLite.SQLiteCommand("SELECT Id, Title, Content, Tags, LastModified FROM Notes ORDER BY LastModified DESC", conn))
-                        using (var reader = cmd.ExecuteReader())
+                        using (var cmd = new SQLiteCommand(@"
+                    SELECT Id, Title, Content, Tags, LastModified 
+                    FROM Notes 
+                    WHERE Title LIKE @search OR Content LIKE @search OR Tags LIKE @search
+                    ORDER BY LastModified DESC", conn))
                         {
-                            while (reader.Read())
+                            cmd.Parameters.AddWithValue("@search", likePattern);
+                            using (var reader = cmd.ExecuteReader())
                             {
-                                var id = (long)reader["Id"];
-                                var title = reader["Title"].ToString();
-                                var content = reader["Content"].ToString();
-                                var tags = reader["Tags"].ToString();
-                                var modified = reader["LastModified"].ToString();
-                                var preview = content.Length > 60 ? content.Substring(0, 57) + "..." : content;
+                                while (reader.Read())
+                                {
+                                    var id = (long)reader["Id"];
+                                    var title = reader["Title"].ToString();
+                                    var content = reader["Content"].ToString();
+                                    var tags = reader["Tags"].ToString();
+                                    var modified = reader["LastModified"].ToString();
+                                    var preview = content.Length > 60 ? content.Substring(0, 57) + "..." : content;
 
-                                _fullNotesCache.Add(new FullNote { Id = id, Title = title, Content = content, Tags = tags, LastModified = modified });
-                                notes.Add(new NoteItem { Id = id, Title = title, Preview = preview, LastModified = modified, Tags = tags });
+                                    _fullNotesCache.Add(new FullNote { Id = id, Title = title, Content = content, Tags = tags, LastModified = modified });
+                                    notes.Add(new NoteItem { Id = id, Title = title, Preview = preview, LastModified = modified, Tags = tags });
+                                }
                             }
                         }
                     }
@@ -637,24 +645,29 @@ namespace Protes
                     using (var conn = new MySqlConnection(_externalConnectionString))
                     {
                         conn.Open();
-                        using (var cmd = new MySqlCommand("SELECT Id, Title, Content, Tags, LastModified FROM Notes ORDER BY LastModified DESC", conn))
-                        using (var reader = cmd.ExecuteReader())
+                        using (var cmd = new MySqlCommand(@"
+                    SELECT Id, Title, Content, Tags, LastModified 
+                    FROM Notes 
+                    WHERE Title LIKE @search OR Content LIKE @search OR Tags LIKE @search
+                    ORDER BY LastModified DESC", conn))
                         {
-                            while (reader.Read())
+                            cmd.Parameters.AddWithValue("@search", likePattern);
+                            using (var reader = cmd.ExecuteReader())
                             {
-                                var id = Convert.ToInt64(reader["Id"]);
-                                var title = reader["Title"].ToString();
-                                var content = reader["Content"].ToString();
-                                var tags = reader["Tags"].ToString();
-                                // If LastModified is DATETIME, convert to string
-                                var modified = reader["LastModified"] is DateTime dt
-                                    ? dt.ToString("yyyy-MM-dd HH:mm")
-                                    : reader["LastModified"].ToString();
+                                while (reader.Read())
+                                {
+                                    var id = Convert.ToInt64(reader["Id"]);
+                                    var title = reader["Title"].ToString();
+                                    var content = reader["Content"].ToString();
+                                    var tags = reader["Tags"].ToString();
+                                    var modified = reader["LastModified"] is DateTime dt
+                                        ? dt.ToString("yyyy-MM-dd HH:mm")
+                                        : reader["LastModified"].ToString();
+                                    var preview = content.Length > 60 ? content.Substring(0, 57) + "..." : content;
 
-                                var preview = content.Length > 60 ? content.Substring(0, 57) + "..." : content;
-
-                                _fullNotesCache.Add(new FullNote { Id = id, Title = title, Content = content, Tags = tags, LastModified = modified });
-                                notes.Add(new NoteItem { Id = id, Title = title, Preview = preview, LastModified = modified, Tags = tags });
+                                    _fullNotesCache.Add(new FullNote { Id = id, Title = title, Content = content, Tags = tags, LastModified = modified });
+                                    notes.Add(new NoteItem { Id = id, Title = title, Preview = preview, LastModified = modified, Tags = tags });
+                                }
                             }
                         }
                     }
