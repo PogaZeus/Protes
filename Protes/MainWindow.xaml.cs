@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Protes.Properties;
+using MySqlConnector;
 
 namespace Protes
 {
@@ -17,6 +18,7 @@ namespace Protes
         private List<FullNote> _fullNotesCache = new List<FullNote>();
         private NoteItem _editingItem;
         private string _originalTitle;
+        private string _externalConnectionString = "";
         public MainWindow()
         {
             InitializeComponent();
@@ -169,9 +171,12 @@ namespace Protes
                            (savedMode == "External") ? DatabaseMode.External :
                            DatabaseMode.Local;
 
-            // Load and apply AutoConnect setting
-            AutoConnectCheckBox.IsChecked = Properties.Settings.Default.AutoConnect;
+            if (_currentMode == DatabaseMode.External)
+            {
+                _externalConnectionString = Properties.Settings.Default.External_ConnectionString ?? "";
+            }
 
+            AutoConnectCheckBox.IsChecked = Properties.Settings.Default.AutoConnect;
             UpdateDatabaseModeCheckmarks();
         }
 
@@ -215,13 +220,15 @@ namespace Protes
         private void UseExternalDb_Click(object sender, RoutedEventArgs e)
         {
             var conn = Microsoft.VisualBasic.Interaction.InputBox(
-                "Enter connection string (e.g., Server=localhost;Database=protes;Uid=user;Pwd=pass;):",
-                "External Database", "");
+                "Enter MySQL connection string (e.g., Server=localhost;Database=MrE;Uid=root;Pwd=;):",
+                "External Database", Properties.Settings.Default.External_ConnectionString);
 
             if (!string.IsNullOrWhiteSpace(conn))
             {
                 _currentMode = DatabaseMode.External;
+                _externalConnectionString = conn;
                 Properties.Settings.Default.DatabaseMode = "External";
+                Properties.Settings.Default.External_ConnectionString = conn; // ← Add this setting
                 Properties.Settings.Default.Save();
                 UpdateDatabaseModeCheckmarks();
                 UpdateStatusBar();
@@ -245,11 +252,12 @@ namespace Protes
             {
                 if (_currentMode == DatabaseMode.Local)
                 {
+                    // Existing SQLite logic
                     using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                     {
                         conn.Open();
-                        using (var cmd = new System.Data.SQLite.SQLiteCommand(
-                            @"CREATE TABLE IF NOT EXISTS Notes (
+                        using (var cmd = new System.Data.SQLite.SQLiteCommand(@"
+                    CREATE TABLE IF NOT EXISTS Notes (
                         Id INTEGER PRIMARY KEY AUTOINCREMENT,
                         Title TEXT NOT NULL,
                         Content TEXT,
@@ -261,17 +269,48 @@ namespace Protes
                         }
                     }
                 }
+                else if (_currentMode == DatabaseMode.External)
+                {
+                    if (string.IsNullOrWhiteSpace(_externalConnectionString))
+                    {
+                        MessageBox.Show("External database connection string is missing.", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    // Test connection
+                    using (var conn = new MySqlConnection(_externalConnectionString))
+                    {
+                        conn.Open();
+
+                        // Check if 'Notes' table exists
+                        using (var cmd = new MySqlCommand(
+                            "SHOW TABLES LIKE 'Notes';", conn))
+                        {
+                            var result = cmd.ExecuteScalar();
+                            if (result == null)
+                            {
+                                throw new InvalidOperationException("Table 'Notes' not found in the external database.");
+                            }
+                        }
+                    }
+                }
 
                 LoadNotesFromDatabase();
                 _isConnected = true;
                 NotesDataGrid.Visibility = Visibility.Visible;
                 DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
                 UpdateStatusBar();
-                UpdateButtonStates(); // Enable note actions, disable Connect button
+                UpdateButtonStates();
                 MessageBox.Show("Connected successfully!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Custom error: table missing
+                MessageBox.Show($"Schema Error:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (Exception ex)
             {
+                // General connection/error
                 MessageBox.Show($"Connection failed:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -458,33 +497,62 @@ namespace Protes
         }
         private void LoadNotesFromDatabase()
         {
-            if (_currentMode != DatabaseMode.Local) return;
-
             var notes = new List<NoteItem>();
             _fullNotesCache.Clear();
 
             try
             {
-                using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                if (_currentMode == DatabaseMode.Local)
                 {
-                    conn.Open();
-                    using (var cmd = new System.Data.SQLite.SQLiteCommand("SELECT Id, Title, Content, Tags, LastModified FROM Notes ORDER BY LastModified DESC", conn))
-                    using (var reader = cmd.ExecuteReader())
+                    using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                     {
-                        while (reader.Read())
+                        conn.Open();
+                        using (var cmd = new System.Data.SQLite.SQLiteCommand("SELECT Id, Title, Content, Tags, LastModified FROM Notes ORDER BY LastModified DESC", conn))
+                        using (var reader = cmd.ExecuteReader())
                         {
-                            var id = (long)reader["Id"];
-                            var title = reader["Title"].ToString();
-                            var content = reader["Content"].ToString();
-                            var tags = reader["Tags"].ToString();
-                            var modified = reader["LastModified"].ToString();
-                            var preview = content.Length > 60 ? content.Substring(0, 57) + "..." : content;
+                            while (reader.Read())
+                            {
+                                var id = (long)reader["Id"];
+                                var title = reader["Title"].ToString();
+                                var content = reader["Content"].ToString();
+                                var tags = reader["Tags"].ToString();
+                                var modified = reader["LastModified"].ToString();
+                                var preview = content.Length > 60 ? content.Substring(0, 57) + "..." : content;
 
-                            _fullNotesCache.Add(new FullNote { Id = id, Title = title, Content = content, Tags = tags, LastModified = modified });
-                            notes.Add(new NoteItem { Id = id, Title = title, Preview = preview, LastModified = modified, Tags = tags });
+                                _fullNotesCache.Add(new FullNote { Id = id, Title = title, Content = content, Tags = tags, LastModified = modified });
+                                notes.Add(new NoteItem { Id = id, Title = title, Preview = preview, LastModified = modified, Tags = tags });
+                            }
                         }
                     }
                 }
+                else if (_currentMode == DatabaseMode.External)
+                {
+                    using (var conn = new MySqlConnection(_externalConnectionString))
+                    {
+                        conn.Open();
+                        using (var cmd = new MySqlCommand("SELECT Id, Title, Content, Tags, LastModified FROM Notes ORDER BY LastModified DESC", conn))
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                var id = Convert.ToInt64(reader["Id"]);
+                                var title = reader["Title"].ToString();
+                                var content = reader["Content"].ToString();
+                                var tags = reader["Tags"].ToString();
+                                // If LastModified is DATETIME, convert to string
+                                var modified = reader["LastModified"] is DateTime dt
+                                    ? dt.ToString("yyyy-MM-dd HH:mm")
+                                    : reader["LastModified"].ToString();
+
+                                var preview = content.Length > 60 ? content.Substring(0, 57) + "..." : content;
+
+                                _fullNotesCache.Add(new FullNote { Id = id, Title = title, Content = content, Tags = tags, LastModified = modified });
+                                notes.Add(new NoteItem { Id = id, Title = title, Preview = preview, LastModified = modified, Tags = tags });
+                            }
+                        }
+                    }
+                }
+
                 NotesDataGrid.ItemsSource = notes;
             }
             catch (Exception ex)
