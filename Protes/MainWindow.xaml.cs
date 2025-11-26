@@ -20,6 +20,7 @@ namespace Protes
         private NoteItem _editingItem;
         private string _originalTitle;
         private string _externalConnectionString = "";
+
         public MainWindow()
         {
             InitializeComponent();
@@ -44,6 +45,7 @@ namespace Protes
             Properties.Settings.Default.AutoConnect = AutoConnectCheckBox.IsChecked == true;
             Properties.Settings.Default.Save();
         }
+
         private void UpdateButtonStates()
         {
             // Enable/disable note action buttons based on connection state
@@ -235,6 +237,7 @@ namespace Protes
             UpdateStatusBar();
             MessageBox.Show("Local database (SQLite) selected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+
         private void UseExternalDb_Click(object sender, RoutedEventArgs e)
         {
             var connString = BuildExternalConnectionString();
@@ -256,6 +259,7 @@ namespace Protes
 
             ConnectToExternalDatabase(connString);
         }
+
         private void ConnectToExternalDatabase(string connectionString)
         {
             try
@@ -414,7 +418,7 @@ namespace Protes
 
         private void OpenSettings_Click(object sender, RoutedEventArgs e)
         {
-            var settingsWindow = new SettingsWindow(_databasePath, this); 
+            var settingsWindow = new SettingsWindow(_databasePath, this);
             settingsWindow.ShowDialog();
         }
 
@@ -488,13 +492,28 @@ namespace Protes
                     {
                         try
                         {
-                            using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                            if (_currentMode == DatabaseMode.Local)
                             {
-                                conn.Open();
-                                using (var cmd = new System.Data.SQLite.SQLiteCommand("DELETE FROM Notes WHERE Id = @id", conn))
+                                using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                                 {
-                                    cmd.Parameters.AddWithValue("@id", fullNote.Id);
-                                    cmd.ExecuteNonQuery();
+                                    conn.Open();
+                                    using (var cmd = new SQLiteCommand("DELETE FROM Notes WHERE Id = @id", conn))
+                                    {
+                                        cmd.Parameters.AddWithValue("@id", fullNote.Id);
+                                        cmd.ExecuteNonQuery();
+                                    }
+                                }
+                            }
+                            else if (_currentMode == DatabaseMode.External)
+                            {
+                                using (var conn = new MySqlConnection(_externalConnectionString))
+                                {
+                                    conn.Open();
+                                    using (var cmd = new MySqlCommand("DELETE FROM Notes WHERE Id = @id", conn))
+                                    {
+                                        cmd.Parameters.AddWithValue("@id", fullNote.Id);
+                                        cmd.ExecuteNonQuery();
+                                    }
                                 }
                             }
 
@@ -513,7 +532,10 @@ namespace Protes
                 MessageBox.Show("Please select a note to delete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
-
+        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            // You can implement real search logic later
+        }
         private void SaveNoteToDatabase(string title, string content, string tags)
         {
             try
@@ -579,6 +601,7 @@ namespace Protes
                 }
             }
         }
+
         private void LoadNotesFromDatabase()
         {
             var notes = new List<NoteItem>();
@@ -695,7 +718,7 @@ namespace Protes
         }
 
         // ✅ Helper method — MUST be inside MainWindow
-        private string BuildExternalConnectionString()
+        internal string BuildExternalConnectionString()
         {
             var host = Properties.Settings.Default.External_Host;
             var port = Properties.Settings.Default.External_Port?.ToString() ?? "3306";
@@ -711,7 +734,25 @@ namespace Protes
 
             return $"Server={host};Port={port};Database={database};Uid={username};Pwd={password};";
         }
-    }
+
+        internal void SetExternalConnectionString(string connectionString)
+        {
+            _externalConnectionString = connectionString;
+        }
+
+        public void TriggerConnect()
+        {
+            Connect_Click(this, new RoutedEventArgs());
+        }
+
+        // ✅ Public method to safely set mode from SettingsWindow
+        public void SetDatabaseMode(DatabaseMode mode)
+        {
+            _currentMode = mode;
+            UpdateDatabaseModeCheckmarks();
+            UpdateStatusBar();
+        }
+    } // 👈 MainWindow class ends here
 
     // Now define nested/top-level types in namespace
     public class NoteItem
@@ -738,4 +779,4 @@ namespace Protes
         Local,
         External
     }
-} 
+} // 👈 Namespace ends here

@@ -14,13 +14,6 @@ namespace Protes.Views
         private string _currentDatabasePath;
         private MainWindow _mainWindow;
 
-        // External DB fields
-        private string _externalHost = "";
-        private string _externalPort = "1433";
-        private string _externalDatabase = "";
-        private string _externalUsername = "";
-        private string _externalPassword = "";
-
         public SettingsWindow(string currentDatabasePath, MainWindow mainWindow)
         {
             InitializeComponent();
@@ -29,7 +22,6 @@ namespace Protes.Views
             _appDataFolder = Path.GetDirectoryName(_currentDatabasePath) ?? Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Protes");
 
-            // Ensure folder exists
             if (!Directory.Exists(_appDataFolder))
                 Directory.CreateDirectory(_appDataFolder);
 
@@ -59,19 +51,13 @@ namespace Protes.Views
         private void LoadExternalSettings()
         {
             HostTextBox.Text = Properties.Settings.Default.External_Host ?? "";
-            PortTextBox.Text = Properties.Settings.Default.External_Port ?? "1433";
+            PortTextBox.Text = Properties.Settings.Default.External_Port?.ToString() ?? "3306";
             DatabaseTextBox.Text = Properties.Settings.Default.External_Database ?? "";
             UsernameTextBox.Text = Properties.Settings.Default.External_Username ?? "";
             // Password is not loaded for security
         }
 
         // ===== LOCAL DATABASE ACTIONS =====
-
-        private void LocalSaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            // "Save" just confirms current DB is saved (no file op needed)
-            MessageBox.Show("Current database is already saved.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
 
         private void ExportDbButton_Click(object sender, RoutedEventArgs e)
         {
@@ -110,7 +96,6 @@ namespace Protes.Views
             {
                 try
                 {
-                    // Create new empty SQLite DB with schema
                     using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={saveDialog.FileName};Version=3;"))
                     {
                         conn.Open();
@@ -136,12 +121,14 @@ namespace Protes.Views
                 }
             }
         }
+
         private void CopySqlButton_Click(object sender, RoutedEventArgs e)
         {
             string sql = CreateTableSqlBox.Text;
             Clipboard.SetText(sql);
             MessageBox.Show("SQL script copied to clipboard!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+
         private void ImportDbButton_Click(object sender, RoutedEventArgs e)
         {
             var openDialog = new OpenFileDialog
@@ -164,38 +151,12 @@ namespace Protes.Views
                 return;
             }
 
-            // Update current path
             _currentDatabasePath = newDbPath;
             CurrentDbPathText.Text = newDbPath;
-
-            // Notify MainWindow to reconnect
             _mainWindow.SwitchDatabase(newDbPath);
-
-            // Refresh list
             LoadLocalDatabases();
         }
 
-        // ===== EXTERNAL DATABASE =====
-
-        // We'll capture values on Save (or you can bind on LostFocus if preferred)
-
-        // ===== BOTTOM BUTTONS =====
-
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            // Save external settings
-            Properties.Settings.Default.External_Host = HostTextBox.Text;
-            Properties.Settings.Default.External_Port = PortTextBox.Text;
-            Properties.Settings.Default.External_Database = DatabaseTextBox.Text;
-            Properties.Settings.Default.External_Username = UsernameTextBox.Text;
-            Properties.Settings.Default.External_Password = PasswordBox.Password;
-            // Password is NOT saved (security best practice)
-
-            Properties.Settings.Default.Save();
-
-            DialogResult = true;
-            Close();
-        }
         private void LoadSelectedButton_Click(object sender, RoutedEventArgs e)
         {
             var selectedItem = LocalDbList.SelectedItem as DbFileInfo;
@@ -205,16 +166,63 @@ namespace Protes.Views
             }
         }
 
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        // ===== EXTERNAL DATABASE BUTTONS =====
+
+        private void SaveExternalSettings_Click(object sender, RoutedEventArgs e)
+        {
+            SaveExternalSettings();
+            MessageBox.Show("External database settings saved.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void ConnectNowButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveExternalSettings();
+
+            _mainWindow.Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    // ✅ Use public method instead of private field
+                    _mainWindow.SetDatabaseMode(DatabaseMode.External);
+
+                    // ✅ Now allowed because BuildExternalConnectionString is 'internal'
+                    var connString = _mainWindow.BuildExternalConnectionString();
+                    if (string.IsNullOrEmpty(connString))
+                    {
+                        MessageBox.Show("Configuration incomplete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    _mainWindow.SetExternalConnectionString(connString);
+                    _mainWindow.TriggerConnect();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Connection failed:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            });
+        }
+
+        private void SaveExternalSettings()
+        {
+            Properties.Settings.Default.External_Host = HostTextBox.Text;
+            Properties.Settings.Default.External_Port = PortTextBox.Text;
+            Properties.Settings.Default.External_Database = DatabaseTextBox.Text;
+            Properties.Settings.Default.External_Username = UsernameTextBox.Text;
+            Properties.Settings.Default.External_Password = PasswordBox.Password;
+            Properties.Settings.Default.Save();
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             DialogResult = false;
             Close();
         }
-    }
 
-    public class DbFileInfo
-    {
-        public string FileName { get; set; }
-        public string FullPath { get; set; }
+        public class DbFileInfo
+        {
+            public string FileName { get; set; }
+            public string FullPath { get; set; }
+        }
     }
 }
