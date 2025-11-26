@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Protes.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Mr E Tools - Protes (A database note taker)" 
+        Title="Mr E Tools - Pro Notes (Protes) Database" 
         WindowState="Maximized"
         FontFamily="Segoe UI" WindowStartupLocation="CenterScreen">
 
@@ -35,36 +35,46 @@
 
         <!-- === ICON TRAY + NOTE ACTIONS + SEARCH === -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="10,5"
-                    HorizontalAlignment="Left" VerticalAlignment="Top">
+            HorizontalAlignment="Left" VerticalAlignment="Top">
             <!-- Connection & Settings Icons -->
             <Button x:Name="ConnectIconBtn" Content="🔌" FontSize="16" Width="32" Height="32"
-                    ToolTip="Connect" Click="Connect_Click" Margin="0,0,8,0"/>
+            ToolTip="Connect" Click="Connect_Click" Margin="0,0,8,0"/>
             <Button x:Name="DisconnectIconBtn" Content="🚫" FontSize="16" Width="32" Height="32"
-                    ToolTip="Disconnect" Click="Disconnect_Click" Margin="0,0,16,0"/>
+            ToolTip="Disconnect" Click="Disconnect_Click" Margin="0,0,16,0"/>
             <CheckBox x:Name="AutoConnectCheckBox" 
-                      Content="Auto Connect (Local Only)" 
-                      VerticalAlignment="Center"
-                      Checked="AutoConnectCheckBox_Checked"
-                      Unchecked="AutoConnectCheckBox_Checked" Margin="0,0,16,0"/>
+              Content="Auto Connect on Startup" 
+              VerticalAlignment="Center"
+              Checked="AutoConnectCheckBox_Checked"
+              Unchecked="AutoConnectCheckBox_Checked" Margin="0,0,16,0"/>
             <Button x:Name="SettingsIconBtn" Content="⚙️" FontSize="16" Width="32" Height="32"
-                    ToolTip="Settings" Click="OpenSettings_Click" Margin="0,0,12,0"/>
+            ToolTip="Settings" Click="OpenSettings_Click" Margin="0,0,12,0"/>
 
-            <!-- Vertical Separator -->
             <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
 
-            <!-- Note Action Buttons -->
             <Button x:Name="NewNoteButton" Content="New" Padding="12,5"
-                    FontSize="14" Click="NewNoteButton_Click" Margin="0,0,12,0"/>
+            FontSize="14" Click="NewNoteButton_Click" Margin="0,0,12,0"/>
             <Button x:Name="EditNoteButton" Content="Edit" Padding="12,5"
-                    FontSize="14" Click="EditNoteButton_Click" Margin="0,0,12,0"/>
+            FontSize="14" Click="EditNoteButton_Click" Margin="0,0,12,0"/>
             <Button x:Name="DeleteNoteButton" Content="Delete" Padding="12,5"
-                    FontSize="14" Click="DeleteNoteButton_Click" Margin="0,0,20,0"/>
+            FontSize="14" Click="DeleteNoteButton_Click" Margin="0,0,12,0"/>
 
-            <!-- Search Box + Search Button -->
-            <TextBox x:Name="SearchBox" Width="250" Height="28"
-                     VerticalContentAlignment="Center"
-                     TextChanged="SearchBox_TextChanged"
-                     VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
+
+            <!-- 👇 NEW: Search with dropdown -->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Search:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox x:Name="SearchFieldComboBox" SelectedIndex="0" Width="100" Margin="0,0,8,0">
+                    <ComboBoxItem Content="All"/>
+                    <ComboBoxItem Content="Title"/>
+                    <ComboBoxItem Content="Content"/>
+                    <ComboBoxItem Content="Tags"/>
+                    <ComboBoxItem Content="Modified"/>
+                </ComboBox>
+                <TextBox x:Name="SearchBox" Width="200" Height="28"
+                 VerticalContentAlignment="Center"
+                 TextChanged="SearchBox_TextChanged"
+                 VerticalAlignment="Center" Margin="0,0,8,0"/>
+            </StackPanel>
         </StackPanel>
 
         <!-- === NOTES TABLE (DATA GRID) === -->

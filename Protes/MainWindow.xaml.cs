@@ -30,12 +30,32 @@ namespace Protes
             UpdateButtonStates();
 
             // Auto-connect if enabled and mode is Local
-            if (Properties.Settings.Default.AutoConnect && _currentMode == DatabaseMode.Local)
+            // Auto-connect if enabled
+            if (Properties.Settings.Default.AutoConnect)
             {
-                // Use dispatcher to ensure UI is ready
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    Connect_Click(this, new RoutedEventArgs());
+                    if (_currentMode == DatabaseMode.Local)
+                    {
+                        Connect_Click(this, new RoutedEventArgs());
+                    }
+                    else if (_currentMode == DatabaseMode.External)
+                    {
+                        // Validate external config before connecting
+                        var host = Properties.Settings.Default.External_Host;
+                        var database = Properties.Settings.Default.External_Database;
+                        if (!string.IsNullOrWhiteSpace(host) && !string.IsNullOrWhiteSpace(database))
+                        {
+                            Connect_Click(this, new RoutedEventArgs());
+                        }
+                        else
+                        {
+                            MessageBox.Show(
+                                "Auto-connect failed: External database configuration is incomplete.\n\n" +
+                                "Please go to Settings → External Database to configure your connection.",
+                                "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
+                    }
                 }));
             }
         }
@@ -536,7 +556,8 @@ namespace Protes
         {
             if (_isConnected)
             {
-                LoadNotesFromDatabase(SearchBox.Text);
+                string selectedField = (SearchFieldComboBox.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Title";
+                LoadNotesFromDatabase(SearchBox.Text, selectedField);
             }
         }
         private void SaveNoteToDatabase(string title, string content, string tags)
@@ -600,12 +621,11 @@ namespace Protes
             }
         }
 
-        private void LoadNotesFromDatabase(string searchTerm = "")
+        private void LoadNotesFromDatabase(string searchTerm = "", string searchField = "All")
         {
             var notes = new List<NoteItem>();
             _fullNotesCache.Clear();
 
-            // Build LIKE pattern: "MyNote" → "%MyNote%"
             string likePattern = string.IsNullOrEmpty(searchTerm) ? "%" : $"%{searchTerm}%";
 
             try
@@ -615,11 +635,29 @@ namespace Protes
                     using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                     {
                         conn.Open();
-                        using (var cmd = new SQLiteCommand(@"
-                    SELECT Id, Title, Content, Tags, LastModified 
-                    FROM Notes 
-                    WHERE Title LIKE @search OR Content LIKE @search OR Tags LIKE @search
-                    ORDER BY LastModified DESC", conn))
+                        string query;
+
+                        if (searchField == "All")
+                        {
+                            query = @"
+                        SELECT Id, Title, Content, Tags, LastModified 
+                        FROM Notes 
+                        WHERE Title LIKE @search 
+                           OR Content LIKE @search 
+                           OR Tags LIKE @search
+                        ORDER BY LastModified DESC";
+                        }
+                        else
+                        {
+                            string columnName = GetColumnName(searchField);
+                            query = $@"
+                        SELECT Id, Title, Content, Tags, LastModified 
+                        FROM Notes 
+                        WHERE {columnName} LIKE @search
+                        ORDER BY LastModified DESC";
+                        }
+
+                        using (var cmd = new SQLiteCommand(query, conn))
                         {
                             cmd.Parameters.AddWithValue("@search", likePattern);
                             using (var reader = cmd.ExecuteReader())
@@ -645,11 +683,29 @@ namespace Protes
                     using (var conn = new MySqlConnection(_externalConnectionString))
                     {
                         conn.Open();
-                        using (var cmd = new MySqlCommand(@"
-                    SELECT Id, Title, Content, Tags, LastModified 
-                    FROM Notes 
-                    WHERE Title LIKE @search OR Content LIKE @search OR Tags LIKE @search
-                    ORDER BY LastModified DESC", conn))
+                        string query;
+
+                        if (searchField == "All")
+                        {
+                            query = @"
+                        SELECT Id, Title, Content, Tags, LastModified 
+                        FROM Notes 
+                        WHERE Title LIKE @search 
+                           OR Content LIKE @search 
+                           OR Tags LIKE @search
+                        ORDER BY LastModified DESC";
+                        }
+                        else
+                        {
+                            string columnName = GetColumnName(searchField);
+                            query = $@"
+                        SELECT Id, Title, Content, Tags, LastModified 
+                        FROM Notes 
+                        WHERE {columnName} LIKE @search
+                        ORDER BY LastModified DESC";
+                        }
+
+                        using (var cmd = new MySqlCommand(query, conn))
                         {
                             cmd.Parameters.AddWithValue("@search", likePattern);
                             using (var reader = cmd.ExecuteReader())
@@ -660,9 +716,19 @@ namespace Protes
                                     var title = reader["Title"].ToString();
                                     var content = reader["Content"].ToString();
                                     var tags = reader["Tags"].ToString();
-                                    var modified = reader["LastModified"] is DateTime dt
-                                        ? dt.ToString("yyyy-MM-dd HH:mm")
-                                        : reader["LastModified"].ToString();
+
+                                    // ✅ C# 7.3 compatible datetime handling
+                                    var lastModifiedValue = reader["LastModified"];
+                                    string modified;
+                                    if (lastModifiedValue is DateTime dateTime)
+                                    {
+                                        modified = dateTime.ToString("yyyy-MM-dd HH:mm");
+                                    }
+                                    else
+                                    {
+                                        modified = lastModifiedValue?.ToString() ?? "";
+                                    }
+
                                     var preview = content.Length > 60 ? content.Substring(0, 57) + "..." : content;
 
                                     _fullNotesCache.Add(new FullNote { Id = id, Title = title, Content = content, Tags = tags, LastModified = modified });
@@ -678,6 +744,19 @@ namespace Protes
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to load notes:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // Helper method (no change needed)
+        private string GetColumnName(string searchField)
+        {
+            switch (searchField)
+            {
+                case "Title": return "Title";
+                case "Content": return "Content";
+                case "Tags": return "Tags";
+                case "Modified": return "LastModified";
+                default: return "Title";
             }
         }
 
