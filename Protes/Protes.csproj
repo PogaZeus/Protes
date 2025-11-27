@@ -38,12 +38,15 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>ARM64</PlatformTarget>
     <OutputPath>bin\x86\Debug\</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>bin\x86\Release\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>MrEProtesTealBevel.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
@@ -168,6 +171,21 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="MrE.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Mr_E.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="MrEProtes.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="MrEProtesWhite.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="MrEProtesTealBevel.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
