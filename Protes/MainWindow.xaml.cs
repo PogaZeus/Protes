@@ -626,7 +626,8 @@ namespace Protes
             var notes = new List<NoteItem>();
             _fullNotesCache.Clear();
 
-            string likePattern = string.IsNullOrEmpty(searchTerm) ? "%" : $"%{searchTerm}%";
+            // Escape user input to treat % and _ as literals
+            string likePattern = EscapeLikePattern(searchTerm);
 
             try
             {
@@ -642,9 +643,9 @@ namespace Protes
                             query = @"
                         SELECT Id, Title, Content, Tags, LastModified 
                         FROM Notes 
-                        WHERE Title LIKE @search 
-                           OR Content LIKE @search 
-                           OR Tags LIKE @search
+                        WHERE Title LIKE @search ESCAPE '\' 
+                           OR Content LIKE @search ESCAPE '\' 
+                           OR Tags LIKE @search ESCAPE '\'
                         ORDER BY LastModified DESC";
                         }
                         else
@@ -653,7 +654,7 @@ namespace Protes
                             query = $@"
                         SELECT Id, Title, Content, Tags, LastModified 
                         FROM Notes 
-                        WHERE {columnName} LIKE @search
+                        WHERE {columnName} LIKE @search ESCAPE '\'
                         ORDER BY LastModified DESC";
                         }
 
@@ -690,9 +691,9 @@ namespace Protes
                             query = @"
                         SELECT Id, Title, Content, Tags, LastModified 
                         FROM Notes 
-                        WHERE Title LIKE @search 
-                           OR Content LIKE @search 
-                           OR Tags LIKE @search
+                        WHERE Title LIKE @search ESCAPE '\\' 
+                           OR Content LIKE @search ESCAPE '\\' 
+                           OR Tags LIKE @search ESCAPE '\\'
                         ORDER BY LastModified DESC";
                         }
                         else
@@ -701,7 +702,7 @@ namespace Protes
                             query = $@"
                         SELECT Id, Title, Content, Tags, LastModified 
                         FROM Notes 
-                        WHERE {columnName} LIKE @search
+                        WHERE {columnName} LIKE @search ESCAPE '\\'
                         ORDER BY LastModified DESC";
                         }
 
@@ -717,7 +718,6 @@ namespace Protes
                                     var content = reader["Content"].ToString();
                                     var tags = reader["Tags"].ToString();
 
-                                    // ✅ C# 7.3 compatible datetime handling
                                     var lastModifiedValue = reader["LastModified"];
                                     string modified;
                                     if (lastModifiedValue is DateTime dateTime)
@@ -745,6 +745,16 @@ namespace Protes
             {
                 MessageBox.Show($"Failed to load notes:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        // Helper: Escape user input for safe LIKE search
+        private string EscapeLikePattern(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return "%"; // Match all when search is empty
+
+            // Escape backslash first, then % and _
+            return "%" + input.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
         }
 
         // Helper method (no change needed)
