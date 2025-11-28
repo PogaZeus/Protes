@@ -27,9 +27,23 @@ namespace Protes.Views
             Action<string, string, string, long?> onSaveRequested = null)
         {
             InitializeComponent();
+
+            // Set up real-time updates (Ln, Col)
+            ContentBox.SelectionChanged += (s, e) => UpdateCursorPosition();
+            ContentBox.TextChanged += (s, e) =>
+            {
+                UpdateCursorPosition();
+                UpdateFileFormatInfo();
+            };
+
+            UpdateCursorPosition();
+            UpdateFileFormatInfo();
+
+            // Rest of initialization
             _onSaveRequested = onSaveRequested;
             _noteId = noteId;
             _originalFontSize = ContentBox.FontSize;
+            UpdateZoomDisplay();
             TitleBox.Text = title;
             ContentBox.Text = content;
             TagsBox.Text = tags;
@@ -199,14 +213,67 @@ namespace Protes.Views
         private void ApplyZoom()
         {
             ContentBox.FontSize = _originalFontSize * _currentZoomLevel;
+            UpdateZoomDisplay(); // 👈 add this
+        }
+
+        private void UpdateZoomDisplay()
+        {
+            int percent = (int)(_currentZoomLevel * 100);
+            ZoomText.Text = $"Zoom: {percent}%";
         }
 
         // ===== STATUS BAR =====
         private void StatusBarMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var menuItem = sender as MenuItem;
-            bool isVisible = menuItem?.IsChecked == true;
-            MessageBox.Show($"Status bar is now {(isVisible ? "enabled" : "disabled")}.", "Status Bar", MessageBoxButton.OK, MessageBoxImage.Information);
+            if (sender is MenuItem menuItem)
+            {
+                MainStatusBar.Visibility = menuItem.IsChecked ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
+        private void UpdateCursorPosition()
+        {
+            if (ContentBox.Text.Length == 0)
+            {
+                LnColText.Text = "Ln 1, Col 1";
+                return;
+            }
+
+            int caretIndex = ContentBox.CaretIndex;
+            string text = ContentBox.Text;
+
+            // Count lines up to caret
+            int line = 1;
+            int col = 1;
+            for (int i = 0; i < caretIndex; i++)
+            {
+                if (text[i] == '\n')
+                {
+                    line++;
+                    col = 1;
+                }
+                else
+                {
+                    col++;
+                }
+            }
+
+            LnColText.Text = $"Ln {line}, Col {col}";
+        }
+
+        private void UpdateFileFormatInfo()
+        {
+            // Encoding: assume UTF-8 (standard for exported files)
+            EncodingText.Text = "UTF-8";
+
+            // Line endings
+            string text = ContentBox.Text;
+            if (text.Contains("\r\n"))
+                LineEndingText.Text = "CRLF";
+            else if (text.Contains("\n"))
+                LineEndingText.Text = "LF";
+            else
+                LineEndingText.Text = "None";
         }
 
         // ===== INFO =====
