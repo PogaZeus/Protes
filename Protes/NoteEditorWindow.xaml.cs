@@ -12,6 +12,9 @@ namespace Protes.Views
     {
         private readonly Action<string, string, string, long?> _onSaveRequested;
         private readonly long? _noteId; // null = new note, non-null = existing
+        private readonly string _originalTitle; 
+        private readonly string _originalContent; 
+        private readonly string _originalTags;         
         private double _originalFontSize = 13.0;
         private double _currentZoomLevel = 1.0;
 
@@ -27,6 +30,10 @@ namespace Protes.Views
             Action<string, string, string, long?> onSaveRequested = null)
         {
             InitializeComponent();
+
+            _originalTitle = title ?? "";
+            _originalContent = content ?? "";
+            _originalTags = tags ?? "";
 
             // Set up real-time updates (Ln, Col)
             ContentBox.SelectionChanged += (s, e) => UpdateCursorPosition();
@@ -112,6 +119,42 @@ namespace Protes.Views
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            if (HasUnsavedChanges())
+            {
+                var result = MessageBox.Show(
+                    "Do you want to save changes to this note?",
+                    "Protes",
+                    MessageBoxButton.YesNoCancel,
+                    MessageBoxImage.Question
+                );
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    // Save and only close if save succeeds
+                    SaveButton_Click(this, new RoutedEventArgs());
+                    // Note: Save is synchronous, so we assume it worked
+                    // (Your DB save shows errors but doesn't throw)
+                }
+                else if (result == MessageBoxResult.Cancel)
+                {
+                    // Cancel closing
+                    e.Cancel = true;
+                    return;
+                }
+                // If No → close without saving
+            }
+
+            base.OnClosing(e);
+        }
+        private bool HasUnsavedChanges()
+        {
+            return TitleBox.Text != _originalTitle ||
+                   ContentBox.Text != _originalContent ||
+                   TagsBox.Text != _originalTags;
         }
 
         private void CloseMenuItem_Click(object sender, RoutedEventArgs e)

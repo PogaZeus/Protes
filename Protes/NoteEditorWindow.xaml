@@ -101,15 +101,15 @@
 
                 <!-- Tags -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Tags:" Margin="0,0,5,0"/>
+                    <TextBlock Text="Tags:" Margin="0,3,5,0"/>
                     <TextBox x:Name="TagsBox" Width="500" Padding="3"/>
                 </StackPanel>
 
                 <!-- Buttons -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                <!--<StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="Save" Width="80" Margin="0,0,10,0" Click="SaveButton_Click"/>
                     <Button Content="Cancel" Width="80" Click="CancelButton_Click"/>
-                </StackPanel>
+                </StackPanel>-->
             </Grid>
         </Grid>
     </DockPanel>
