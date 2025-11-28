@@ -38,7 +38,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <PlatformTarget>ARM64</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <OutputPath>bin\x86\Debug\</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
@@ -48,6 +48,7 @@
   <PropertyGroup>
     <ApplicationIcon>MrEProtesTealBevel.ico</ApplicationIcon>
   </PropertyGroup>
+  <PropertyGroup />
   <ItemGroup>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.5.1\lib\net45\EntityFramework.dll</HintPath>
@@ -171,18 +172,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="MrE.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Mr_E.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="MrEProtes.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="MrEProtesWhite.ico" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="MrEProtesTealBevel.ico" />
