@@ -31,6 +31,16 @@ namespace Protes.Views
         {
             InitializeComponent();
 
+            // Display tag bar or not
+            bool displayTags = Properties.Settings.Default.DisplayTags;
+            TagsRow.Visibility = displayTags ? Visibility.Visible : Visibility.Collapsed;
+            DisplayTagsMenuItem.IsChecked = displayTags;
+
+            // Display title bar or not
+            bool displayTitle = Properties.Settings.Default.DisplayTitle;
+            TitleBar.Visibility = displayTitle ? Visibility.Visible : Visibility.Collapsed;
+            DisplayTitleMenuItem.IsChecked = displayTitle;
+
             _originalTitle = title ?? "";
             _originalContent = content ?? "";
             _originalTags = tags ?? "";
@@ -263,6 +273,34 @@ namespace Protes.Views
         {
             int percent = (int)(_currentZoomLevel * 100);
             ZoomText.Text = $"Zoom: {percent}%";
+        }
+
+        // ===== TITLE BAR =====
+        private void DisplayTitleMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+            {
+                bool isVisible = menuItem.IsChecked;
+                TitleBar.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+
+                // Save globally
+                Properties.Settings.Default.DisplayTitle = isVisible;
+                Properties.Settings.Default.Save(); // Persist to disk
+            }
+        }
+
+        // ===== TAGS BAR =====
+        private void DisplayTagsMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+            {
+                bool isVisible = menuItem.IsChecked;
+                TagsRow.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+
+                // Save globally
+                Properties.Settings.Default.DisplayTags = isVisible;
+                Properties.Settings.Default.Save(); // Persist to disk
+            }
         }
 
         // ===== STATUS BAR =====

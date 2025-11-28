@@ -106,5 +106,29 @@ namespace Protes.Properties {
                 this["External_Password"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool DisplayTags {
+            get {
+                return ((bool)(this["DisplayTags"]));
+            }
+            set {
+                this["DisplayTags"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool DisplayTitle {
+            get {
+                return ((bool)(this["DisplayTitle"]));
+            }
+            set {
+                this["DisplayTitle"] = value;
+            }
+        }
     }
 }

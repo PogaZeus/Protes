@@ -50,6 +50,8 @@
                     <MenuItem Header="Zoom _Out" Click="ZoomOutMenuItem_Click" InputGestureText="Ctrl+Minus"/>
                     <MenuItem Header="_Restore Zoom" Click="RestoreZoomMenuItem_Click" InputGestureText="Ctrl+0"/>
                 </MenuItem>
+                <MenuItem x:Name="DisplayTitleMenuItem" Header="_Title" IsCheckable="True" Click="DisplayTitleMenuItem_Click"/>
+                <MenuItem x:Name="DisplayTagsMenuItem" Header="_Tags" IsCheckable="True" Click="DisplayTagsMenuItem_Click"/>
                 <MenuItem Header="_Status bar" IsCheckable="True" IsChecked="True" Click="StatusBarMenuItem_Click"/>
             </MenuItem>
 
@@ -79,37 +81,27 @@
                 <RowDefinition Height="*"/>
                 <!-- Content -->
                 <RowDefinition Height="Auto"/>
-                <!-- Tags + Buttons -->
+                <!-- Tags -->
             </Grid.RowDefinitions>
 
             <!-- Title -->
-            <TextBox x:Name="TitleBox" Grid.Row="0" FontSize="16" FontWeight="Bold"
+            <Grid x:Name="TitleBar" Grid.Row="0" Margin="0,3,0,0">
+                <TextBox x:Name="TitleBox" FontSize="16" FontWeight="Bold"
                      Padding="1" Margin="0,0,0,3" Text="Untitled"/>
-
+            </Grid>
             <!-- Content -->
             <TextBox x:Name="ContentBox" Grid.Row="1" AcceptsReturn="True"
                      AcceptsTab="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
                      FontSize="13"/>
 
-            <!-- Tags + Buttons -->
-            <Grid Grid.Row="2" Margin="0,3,0,0">
+            <!-- Tags (full width) -->
+            <Grid x:Name="TagsRow" Grid.Row="2" Margin="0,3,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-
-                <!-- Tags -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Tags:" Margin="0,3,5,0"/>
-                    <TextBox x:Name="TagsBox" Width="500" Padding="3"/>
-                </StackPanel>
-
-                <!-- Buttons -->
-                <!--<StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Save" Width="80" Margin="0,0,10,0" Click="SaveButton_Click"/>
-                    <Button Content="Cancel" Width="80" Click="CancelButton_Click"/>
-                </StackPanel>-->
+                <TextBlock Text="Tags:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <TextBox x:Name="TagsBox" Grid.Column="1"/>
             </Grid>
         </Grid>
     </DockPanel>
