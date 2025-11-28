@@ -29,8 +29,6 @@ namespace Protes
             UpdateStatusBar();
             UpdateButtonStates();
 
-            // Auto-connect if enabled and mode is Local
-            // Auto-connect if enabled
             if (Properties.Settings.Default.AutoConnect)
             {
                 Dispatcher.BeginInvoke(new Action(() =>
@@ -41,7 +39,6 @@ namespace Protes
                     }
                     else if (_currentMode == DatabaseMode.External)
                     {
-                        // Validate external config before connecting
                         var host = Properties.Settings.Default.External_Host;
                         var database = Properties.Settings.Default.External_Database;
                         if (!string.IsNullOrWhiteSpace(host) && !string.IsNullOrWhiteSpace(database))
@@ -68,45 +65,38 @@ namespace Protes
 
         private void UpdateButtonStates()
         {
-            // Enable/disable note action buttons based on connection state
             NewNoteButton.IsEnabled = _isConnected;
             EditNoteButton.IsEnabled = _isConnected;
             DeleteNoteButton.IsEnabled = _isConnected;
             SearchBox.IsEnabled = _isConnected;
-
-            // Enable/disable connection icon buttons
             ConnectIconBtn.IsEnabled = !_isConnected;
             DisconnectIconBtn.IsEnabled = _isConnected;
 
-            // File menu items (Connect / Disconnect)
-            if (MainMenu != null && MainMenu.Items.Count > 0)
+            if (MainMenu?.Items.Count > 0)
             {
-                var fileMenuItem = MainMenu.Items[0] as MenuItem; // "_File"
+                var fileMenuItem = MainMenu.Items[0] as MenuItem;
                 if (fileMenuItem?.Items.Count >= 2)
                 {
-                    var connectMenuItem = fileMenuItem.Items[0] as MenuItem;   // "_Connect"
-                    var disconnectMenuItem = fileMenuItem.Items[1] as MenuItem; // "_Disconnect"
-
-                    if (connectMenuItem != null)
-                        connectMenuItem.IsEnabled = !_isConnected;
-
-                    if (disconnectMenuItem != null)
-                        disconnectMenuItem.IsEnabled = _isConnected;
+                    var connectMenuItem = fileMenuItem.Items[0] as MenuItem;
+                    var disconnectMenuItem = fileMenuItem.Items[1] as MenuItem;
+                    connectMenuItem?.SetValue(MenuItem.IsEnabledProperty, !_isConnected);
+                    disconnectMenuItem?.SetValue(MenuItem.IsEnabledProperty, _isConnected);
                 }
             }
         }
 
+        // ===== INLINE GRID EDITING (Title only) =====
+
         private void NotesDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
         {
-            if (e.Column.DisplayIndex == 0) // Title column is first (index 0)
+            if (e.Column.DisplayIndex == 0) // Title column
             {
                 _editingItem = e.Row.Item as NoteItem;
                 _originalTitle = _editingItem?.Title;
             }
             else
             {
-                // Cancel edit for non-Title columns (extra safety)
-                e.Cancel = true;
+                e.Cancel = true; // Only Title is editable
             }
         }
 
@@ -121,57 +111,23 @@ namespace Protes
             var textBox = e.EditingElement as TextBox;
             var newTitle = textBox?.Text ?? _originalTitle;
 
-            // Only prompt if value actually changed
             if (newTitle == _originalTitle)
                 return;
 
             var result = MessageBox.Show(
-                $"Update note title from:\n\n\"{_originalTitle}\" \n\nto:\n\n\"{newTitle}\"?",
+                $"Update note title from:\n\n\"{_originalTitle}\"\n\nto:\n\n\"{newTitle}\"?",
                 "Confirm Title Change",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
             {
-                // Find by ID (robust to title/modification changes)
                 var fullNote = _fullNotesCache.Find(n => n.Id == _editingItem.Id);
-
                 if (fullNote != null)
                 {
                     try
                     {
-                        if (_currentMode == DatabaseMode.Local)
-                        {
-                            using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
-                            {
-                                conn.Open();
-                                using (var cmd = new SQLiteCommand(
-                                    "UPDATE Notes SET Title = @title, LastModified = @now WHERE Id = @id", conn))
-                                {
-                                    cmd.Parameters.AddWithValue("@id", fullNote.Id);
-                                    cmd.Parameters.AddWithValue("@title", newTitle);
-                                    cmd.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
-                                    cmd.ExecuteNonQuery();
-                                }
-                            }
-                        }
-                        else if (_currentMode == DatabaseMode.External)
-                        {
-                            using (var conn = new MySqlConnection(_externalConnectionString))
-                            {
-                                conn.Open();
-                                using (var cmd = new MySqlCommand(
-                                    "UPDATE Notes SET Title = @title, LastModified = @now WHERE Id = @id", conn))
-                                {
-                                    cmd.Parameters.AddWithValue("@id", fullNote.Id);
-                                    cmd.Parameters.AddWithValue("@title", newTitle);
-                                    cmd.Parameters.AddWithValue("@now", DateTime.Now); // MySqlConnector handles DateTime
-                                    cmd.ExecuteNonQuery();
-                                }
-                            }
-                        }
-
-                        // Update cache and UI with new values
+                        UpdateNoteInDatabase(fullNote.Id, newTitle, fullNote.Content, fullNote.Tags);
                         var newModifiedStr = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
                         fullNote.Title = newTitle;
                         fullNote.LastModified = newModifiedStr;
@@ -187,14 +143,14 @@ namespace Protes
             }
             else
             {
-                // User canceled → revert
                 _editingItem.Title = _originalTitle;
             }
 
-            // Clean up
             _editingItem = null;
             _originalTitle = null;
         }
+
+        // ===== LIFECYCLE & SETTINGS =====
 
         private void EnsureAppDataFolder()
         {
@@ -210,7 +166,6 @@ namespace Protes
                            (savedMode == "External") ? DatabaseMode.External :
                            DatabaseMode.Local;
 
-            // No need to load _externalConnectionString — built dynamically
             AutoConnectCheckBox.IsChecked = Properties.Settings.Default.AutoConnect;
             UpdateDatabaseModeCheckmarks();
         }
@@ -222,31 +177,23 @@ namespace Protes
 
             localItem.IsChecked = (_currentMode == DatabaseMode.Local);
             externalItem.IsChecked = (_currentMode == DatabaseMode.External);
-
-            // Enable if Host and Database are configured
-            var hasConfig = !string.IsNullOrWhiteSpace(Properties.Settings.Default.External_Host) &&
-                            !string.IsNullOrWhiteSpace(Properties.Settings.Default.External_Database);
-            externalItem.IsEnabled = hasConfig;
+            externalItem.IsEnabled = !string.IsNullOrWhiteSpace(Properties.Settings.Default.External_Host) &&
+                                    !string.IsNullOrWhiteSpace(Properties.Settings.Default.External_Database);
         }
 
         private void UpdateStatusBar()
         {
             ConnectionStatusText.Text = _isConnected ? "Connected" : "Disconnected";
+
             if (_currentMode == DatabaseMode.Local)
-            {
                 DatabaseModeText.Text = "Local";
-            }
             else if (_currentMode == DatabaseMode.External)
-            {
                 DatabaseModeText.Text = "External";
-            }
             else
-            {
                 DatabaseModeText.Text = "—";
-            }
         }
 
-        // ===== MENU HANDLERS =====
+        // ===== CONNECTION =====
 
         private void UseLocalDb_Click(object sender, RoutedEventArgs e)
         {
@@ -273,7 +220,6 @@ namespace Protes
             _currentMode = DatabaseMode.External;
             Properties.Settings.Default.DatabaseMode = "External";
             Properties.Settings.Default.Save();
-
             UpdateDatabaseModeCheckmarks();
             UpdateStatusBar();
 
@@ -284,24 +230,9 @@ namespace Protes
         {
             try
             {
-                using (var conn = new MySqlConnection(connectionString))
-                {
-                    conn.Open();
-                    using (var cmd = new MySqlCommand("SHOW TABLES LIKE 'Notes';", conn))
-                    {
-                        if (cmd.ExecuteScalar() == null)
-                            throw new InvalidOperationException("Table 'Notes' not found in the external database.");
-                    }
-                }
-
-                _externalConnectionString = connectionString; // Only store for loading notes
-                LoadNotesFromDatabase();
-                _isConnected = true;
-                NotesDataGrid.Visibility = Visibility.Visible;
-                DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
-                UpdateStatusBar();
-                UpdateButtonStates();
-                MessageBox.Show("Connected successfully!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                TestExternalConnection(connectionString);
+                _externalConnectionString = connectionString;
+                FinishConnection();
             }
             catch (InvalidOperationException ex)
             {
@@ -326,11 +257,38 @@ namespace Protes
             {
                 if (_currentMode == DatabaseMode.Local)
                 {
-                    // Existing SQLite logic
-                    using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                    EnsureNotesTableExistsLocal();
+                }
+                else if (_currentMode == DatabaseMode.External)
+                {
+                    var connString = BuildExternalConnectionString();
+                    if (connString == null)
                     {
-                        conn.Open();
-                        using (var cmd = new System.Data.SQLite.SQLiteCommand(@"
+                        MessageBox.Show("External database configuration is incomplete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                    TestExternalConnection(connString);
+                    _externalConnectionString = connString;
+                }
+                FinishConnection();
+            }
+            catch (InvalidOperationException ex)
+            {
+                MessageBox.Show($"Schema Error:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Connection failed:\n{ex.Message}\n\nInner: {ex.InnerException?.Message}",
+                                "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void EnsureNotesTableExistsLocal()
+        {
+            using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+            {
+                conn.Open();
+                using (var cmd = new SQLiteCommand(@"
                     CREATE TABLE IF NOT EXISTS Notes (
                         Id INTEGER PRIMARY KEY AUTOINCREMENT,
                         Title TEXT NOT NULL,
@@ -338,86 +296,44 @@ namespace Protes
                         Tags TEXT,
                         LastModified TEXT
                     )", conn))
-                        {
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
-                }
-                else if (_currentMode == DatabaseMode.External)
                 {
-                    // ✅ Build connection string from saved settings (fixes "missing" error)
-                    var host = Properties.Settings.Default.External_Host;
-                    var port = Properties.Settings.Default.External_Port?.ToString() ?? "3306";
-                    var database = Properties.Settings.Default.External_Database;
-                    var username = Properties.Settings.Default.External_Username;
-                    var password = Properties.Settings.Default.External_Password ?? "";
-
-                    if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(database))
-                    {
-                        MessageBox.Show("External database configuration is incomplete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(port) || port == "0")
-                        port = "3306";
-
-                    var connString = $"Server={host};Port={port};Database={database};Uid={username};Pwd={password};";
-
-                    // Test connection
-                    using (var conn = new MySqlConnection(connString))
-                    {
-                        conn.Open();
-
-                        // Check if 'Notes' table exists
-                        using (var cmd = new MySqlCommand("SHOW TABLES LIKE 'Notes';", conn))
-                        {
-                            var result = cmd.ExecuteScalar();
-                            if (result == null)
-                            {
-                                throw new InvalidOperationException("Table 'Notes' not found in the external database.");
-                            }
-                        }
-                    }
-
-                    // ✅ Store for CRUD operations (Save, Update, Delete)
-                    _externalConnectionString = connString;
+                    cmd.ExecuteNonQuery();
                 }
-
-                LoadNotesFromDatabase();
-                _isConnected = true;
-                NotesDataGrid.Visibility = Visibility.Visible;
-                DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
-                UpdateStatusBar();
-                UpdateButtonStates();
-                MessageBox.Show("Connected successfully!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (InvalidOperationException ex)
-            {
-                // Custom error: table missing
-                MessageBox.Show($"Schema Error:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            catch (Exception ex)
-            {
-                // General connection/error
-                MessageBox.Show($"Connection failed:\n{ex.Message}\n\nInner: {ex.InnerException?.Message}",
-                                "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        // Switch Local Database
+        private void TestExternalConnection(string connectionString)
+        {
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                using (var cmd = new MySqlCommand("SHOW TABLES LIKE 'Notes';", conn))
+                {
+                    if (cmd.ExecuteScalar() == null)
+                        throw new InvalidOperationException("Table 'Notes' not found in the external database.");
+                }
+            }
+        }
+
+        private void FinishConnection()
+        {
+            LoadNotesFromDatabase();
+            _isConnected = true;
+            NotesDataGrid.Visibility = Visibility.Visible;
+            DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
+            UpdateStatusBar();
+            UpdateButtonStates();
+            MessageBox.Show("Connected successfully!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
         public void SwitchDatabase(string newDatabasePath)
         {
-            if (!_isConnected)
-            {
-                // Just update path for next connect
-                _databasePath = newDatabasePath;
-                return;
-            }
-
-            // If currently connected, disconnect and reconnect
             _databasePath = newDatabasePath;
-            Disconnect_Click(this, new RoutedEventArgs());
-            Connect_Click(this, new RoutedEventArgs());
+            if (_isConnected)
+            {
+                Disconnect_Click(this, new RoutedEventArgs());
+                Connect_Click(this, new RoutedEventArgs());
+            }
         }
 
         private void Disconnect_Click(object sender, RoutedEventArgs e)
@@ -427,7 +343,7 @@ namespace Protes
             NotesDataGrid.Visibility = Visibility.Collapsed;
             DisconnectedPlaceholder.Visibility = Visibility.Visible;
             UpdateStatusBar();
-            UpdateButtonStates(); // Disable note actions, enable Connect button
+            UpdateButtonStates();
             MessageBox.Show("Disconnected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
@@ -452,24 +368,66 @@ namespace Protes
                 return;
             }
 
-            if (NotesDataGrid.SelectedItem is NoteItem selectedNote)
+            if (NotesDataGrid.SelectedItem == null || !(NotesDataGrid.SelectedItem is NoteItem selectedNote))
             {
-                var fullNote = _fullNotesCache.Find(n => n.Id == selectedNote.Id);
+                MessageBox.Show("Please select a note to edit.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
-                if (fullNote != null)
-                {
-                    var editor = new NoteEditorWindow(fullNote.Title, fullNote.Content, fullNote.Tags);
-                    if (editor.ShowDialog() == true)
-                    {
-                        UpdateNoteInDatabase(fullNote.Id, editor.NoteTitle, editor.NoteContent, editor.NoteTags);
-                        LoadNotesFromDatabase();
-                    }
-                }
+            var fullNote = _fullNotesCache.Find(n => n.Id == selectedNote.Id);
+            if (fullNote == null) return;
+
+            var editor = new NoteEditorWindow(
+                title: fullNote.Title,
+                content: fullNote.Content,
+                tags: fullNote.Tags,
+                noteId: fullNote.Id,
+                onSaveRequested: OnSaveNoteRequested
+            );
+            editor.Owner = this;
+            editor.Show();
+        }
+
+        public void OpenEditorForNewlySavedNote(string title, string content, string tags)
+        {
+            LoadNotesFromDatabase(); // Refresh to get new note
+
+            var newNote = _fullNotesCache.Find(n =>
+                n.Title == title &&
+                n.Content == content &&
+                n.Tags == tags
+            );
+
+            if (newNote != null)
+            {
+                var editor = new NoteEditorWindow(
+                    title: newNote.Title,
+                    content: newNote.Content,
+                    tags: newNote.Tags,
+                    noteId: newNote.Id,
+                    onSaveRequested: OnSaveNoteRequested
+                );
+                editor.Owner = this;
+                editor.Show();
             }
             else
             {
-                MessageBox.Show("Please select a note to edit.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                // Fallback: open as new note (rare)
+                var editor = new NoteEditorWindow(
+                    title: title,
+                    content: content,
+                    tags: tags,
+                    noteId: null,
+                    onSaveRequested: OnSaveNoteRequested
+                );
+                editor.Owner = this;
+                editor.Show();
             }
+        }
+
+        private void NotesDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            EditNoteButton_Click(sender, e);
         }
 
         private void NewNoteButton_Click(object sender, RoutedEventArgs e)
@@ -480,12 +438,25 @@ namespace Protes
                 return;
             }
 
-            var editor = new NoteEditorWindow();
-            if (editor.ShowDialog() == true)
+            var editor = new NoteEditorWindow(
+                noteId: null,
+                onSaveRequested: OnSaveNoteRequested
+            );
+            editor.Owner = this;
+            editor.Show();
+        }
+
+        private void OnSaveNoteRequested(string title, string content, string tags, long? noteId)
+        {
+            if (noteId.HasValue)
             {
-                SaveNoteToDatabase(editor.NoteTitle, editor.NoteContent, editor.NoteTags);
-                LoadNotesFromDatabase();
+                UpdateNoteInDatabase(noteId.Value, title, content, tags);
             }
+            else
+            {
+                SaveNoteToDatabase(title, content, tags);
+            }
+            LoadNotesFromDatabase();
         }
 
         private void DeleteNoteButton_Click(object sender, RoutedEventArgs e)
@@ -496,62 +467,59 @@ namespace Protes
                 return;
             }
 
-            if (NotesDataGrid.SelectedItem is NoteItem selectedNote)
+            if (!(NotesDataGrid.SelectedItem is NoteItem selectedNote))
             {
-                var result = MessageBox.Show(
-                    $"Are you sure you want to delete the note titled:\n\n\"{selectedNote.Title}\"?",
-                    "Confirm Delete",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
+                MessageBox.Show("Please select a note to delete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
-                if (result == MessageBoxResult.Yes)
+            var result = MessageBox.Show(
+                $"Are you sure you want to delete the note titled:\n\n\"{selectedNote.Title}\"?",
+                "Confirm Delete",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            var fullNote = _fullNotesCache.Find(n => n.Id == selectedNote.Id);
+            if (fullNote == null) return;
+
+            try
+            {
+                if (_currentMode == DatabaseMode.Local)
                 {
-                    var fullNote = _fullNotesCache.Find(n => n.Id == selectedNote.Id);
-
-                    if (fullNote != null)
+                    using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                     {
-                        try
+                        conn.Open();
+                        using (var cmd = new SQLiteCommand("DELETE FROM Notes WHERE Id = @id", conn))
                         {
-                            if (_currentMode == DatabaseMode.Local)
-                            {
-                                using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
-                                {
-                                    conn.Open();
-                                    using (var cmd = new SQLiteCommand("DELETE FROM Notes WHERE Id = @id", conn))
-                                    {
-                                        cmd.Parameters.AddWithValue("@id", fullNote.Id);
-                                        cmd.ExecuteNonQuery();
-                                    }
-                                }
-                            }
-                            else if (_currentMode == DatabaseMode.External)
-                            {
-                                using (var conn = new MySqlConnection(_externalConnectionString))
-                                {
-                                    conn.Open();
-                                    using (var cmd = new MySqlCommand("DELETE FROM Notes WHERE Id = @id", conn))
-                                    {
-                                        cmd.Parameters.AddWithValue("@id", fullNote.Id);
-                                        cmd.ExecuteNonQuery();
-                                    }
-                                }
-                            }
-
-                            LoadNotesFromDatabase();
-                            MessageBox.Show("Note deleted successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show($"Failed to delete note:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                            cmd.Parameters.AddWithValue("@id", fullNote.Id);
+                            cmd.ExecuteNonQuery();
                         }
                     }
                 }
+                else if (_currentMode == DatabaseMode.External)
+                {
+                    using (var conn = new MySqlConnection(_externalConnectionString))
+                    {
+                        conn.Open();
+                        using (var cmd = new MySqlCommand("DELETE FROM Notes WHERE Id = @id", conn))
+                        {
+                            cmd.Parameters.AddWithValue("@id", fullNote.Id);
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+                }
+
+                LoadNotesFromDatabase();
+                MessageBox.Show("Note deleted successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Please select a note to delete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Failed to delete note:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_isConnected)
@@ -560,16 +528,19 @@ namespace Protes
                 LoadNotesFromDatabase(SearchBox.Text, selectedField);
             }
         }
+
+        // ===== DATABASE CRUD =====
+
         private void SaveNoteToDatabase(string title, string content, string tags)
         {
             try
             {
                 if (_currentMode == DatabaseMode.Local)
                 {
-                    using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                    using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                     {
                         conn.Open();
-                        using (var cmd = new System.Data.SQLite.SQLiteCommand(
+                        using (var cmd = new SQLiteCommand(
                             "INSERT INTO Notes (Title, Content, Tags, LastModified) VALUES (@title, @content, @tags, @now)", conn))
                         {
                             cmd.Parameters.AddWithValue("@title", title ?? "");
@@ -591,7 +562,7 @@ namespace Protes
                             cmd.Parameters.AddWithValue("@title", title ?? "");
                             cmd.Parameters.AddWithValue("@content", content ?? "");
                             cmd.Parameters.AddWithValue("@tags", tags ?? "");
-                            cmd.Parameters.AddWithValue("@now", DateTime.Now); // MySqlConnector handles DateTime correctly
+                            cmd.Parameters.AddWithValue("@now", DateTime.Now);
                             cmd.ExecuteNonQuery();
                         }
                     }
@@ -603,32 +574,8 @@ namespace Protes
             }
         }
 
-        private void NotesDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void UpdateNoteInDatabase(long id, string title, string content, string tags)
         {
-            if (NotesDataGrid.SelectedItem is NoteItem selectedNote && _isConnected)
-            {
-                var fullNote = _fullNotesCache.Find(n => n.Id == selectedNote.Id);
-
-                if (fullNote != null)
-                {
-                    var editor = new NoteEditorWindow(fullNote.Title, fullNote.Content, fullNote.Tags);
-                    if (editor.ShowDialog() == true)
-                    {
-                        UpdateNoteInDatabase(fullNote.Id, editor.NoteTitle, editor.NoteContent, editor.NoteTags);
-                        LoadNotesFromDatabase();
-                    }
-                }
-            }
-        }
-
-        private void LoadNotesFromDatabase(string searchTerm = "", string searchField = "All")
-        {
-            var notes = new List<NoteItem>();
-            _fullNotesCache.Clear();
-
-            // Escape user input to treat % and _ as literals
-            string likePattern = EscapeLikePattern(searchTerm);
-
             try
             {
                 if (_currentMode == DatabaseMode.Local)
@@ -636,153 +583,10 @@ namespace Protes
                     using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                     {
                         conn.Open();
-                        string query;
-
-                        if (searchField == "All")
-                        {
-                            query = @"
-                        SELECT Id, Title, Content, Tags, LastModified 
-                        FROM Notes 
-                        WHERE Title LIKE @search ESCAPE '\' 
-                           OR Content LIKE @search ESCAPE '\' 
-                           OR Tags LIKE @search ESCAPE '\'
-                        ORDER BY LastModified DESC";
-                        }
-                        else
-                        {
-                            string columnName = GetColumnName(searchField);
-                            query = $@"
-                        SELECT Id, Title, Content, Tags, LastModified 
-                        FROM Notes 
-                        WHERE {columnName} LIKE @search ESCAPE '\'
-                        ORDER BY LastModified DESC";
-                        }
-
-                        using (var cmd = new SQLiteCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@search", likePattern);
-                            using (var reader = cmd.ExecuteReader())
-                            {
-                                while (reader.Read())
-                                {
-                                    var id = (long)reader["Id"];
-                                    var title = reader["Title"].ToString();
-                                    var content = reader["Content"].ToString();
-                                    var tags = reader["Tags"].ToString();
-                                    var modified = reader["LastModified"].ToString();
-                                    var preview = content.Length > 60 ? content.Substring(0, 57) + "..." : content;
-
-                                    _fullNotesCache.Add(new FullNote { Id = id, Title = title, Content = content, Tags = tags, LastModified = modified });
-                                    notes.Add(new NoteItem { Id = id, Title = title, Preview = preview, LastModified = modified, Tags = tags });
-                                }
-                            }
-                        }
-                    }
-                }
-                else if (_currentMode == DatabaseMode.External)
-                {
-                    using (var conn = new MySqlConnection(_externalConnectionString))
-                    {
-                        conn.Open();
-                        string query;
-
-                        if (searchField == "All")
-                        {
-                            query = @"
-                        SELECT Id, Title, Content, Tags, LastModified 
-                        FROM Notes 
-                        WHERE Title LIKE @search ESCAPE '\\' 
-                           OR Content LIKE @search ESCAPE '\\' 
-                           OR Tags LIKE @search ESCAPE '\\'
-                        ORDER BY LastModified DESC";
-                        }
-                        else
-                        {
-                            string columnName = GetColumnName(searchField);
-                            query = $@"
-                        SELECT Id, Title, Content, Tags, LastModified 
-                        FROM Notes 
-                        WHERE {columnName} LIKE @search ESCAPE '\\'
-                        ORDER BY LastModified DESC";
-                        }
-
-                        using (var cmd = new MySqlCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@search", likePattern);
-                            using (var reader = cmd.ExecuteReader())
-                            {
-                                while (reader.Read())
-                                {
-                                    var id = Convert.ToInt64(reader["Id"]);
-                                    var title = reader["Title"].ToString();
-                                    var content = reader["Content"].ToString();
-                                    var tags = reader["Tags"].ToString();
-
-                                    var lastModifiedValue = reader["LastModified"];
-                                    string modified;
-                                    if (lastModifiedValue is DateTime dateTime)
-                                    {
-                                        modified = dateTime.ToString("yyyy-MM-dd HH:mm");
-                                    }
-                                    else
-                                    {
-                                        modified = lastModifiedValue?.ToString() ?? "";
-                                    }
-
-                                    var preview = content.Length > 60 ? content.Substring(0, 57) + "..." : content;
-
-                                    _fullNotesCache.Add(new FullNote { Id = id, Title = title, Content = content, Tags = tags, LastModified = modified });
-                                    notes.Add(new NoteItem { Id = id, Title = title, Preview = preview, LastModified = modified, Tags = tags });
-                                }
-                            }
-                        }
-                    }
-                }
-
-                NotesDataGrid.ItemsSource = notes;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to load notes:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        // Helper: Escape user input for safe LIKE search
-        private string EscapeLikePattern(string input)
-        {
-            if (string.IsNullOrEmpty(input))
-                return "%"; // Match all when search is empty
-
-            // Escape backslash first, then % and _
-            return "%" + input.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
-        }
-
-        // Helper method (no change needed)
-        private string GetColumnName(string searchField)
-        {
-            switch (searchField)
-            {
-                case "Title": return "Title";
-                case "Content": return "Content";
-                case "Tags": return "Tags";
-                case "Modified": return "LastModified";
-                default: return "Title";
-            }
-        }
-
-        private void UpdateNoteInDatabase(long id, string title, string content, string tags)
-        {
-            try
-            {
-                if (_currentMode == DatabaseMode.Local)
-                {
-                    using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={_databasePath};Version=3;"))
-                    {
-                        conn.Open();
-                        using (var cmd = new System.Data.SQLite.SQLiteCommand(
+                        using (var cmd = new SQLiteCommand(
                             @"UPDATE Notes 
-                      SET Title = @title, Content = @content, Tags = @tags, LastModified = @now 
-                      WHERE Id = @id", conn))
+                              SET Title = @title, Content = @content, Tags = @tags, LastModified = @now 
+                              WHERE Id = @id", conn))
                         {
                             cmd.Parameters.AddWithValue("@id", id);
                             cmd.Parameters.AddWithValue("@title", title ?? "");
@@ -800,8 +604,8 @@ namespace Protes
                         conn.Open();
                         using (var cmd = new MySqlCommand(
                             @"UPDATE Notes 
-                      SET Title = @title, Content = @content, Tags = @tags, LastModified = @now 
-                      WHERE Id = @id", conn))
+                              SET Title = @title, Content = @content, Tags = @tags, LastModified = @now 
+                              WHERE Id = @id", conn))
                         {
                             cmd.Parameters.AddWithValue("@id", id);
                             cmd.Parameters.AddWithValue("@title", title ?? "");
@@ -819,7 +623,136 @@ namespace Protes
             }
         }
 
-        // ✅ Helper method — MUST be inside MainWindow
+        private void LoadNotesFromDatabase(string searchTerm = "", string searchField = "All")
+        {
+            var notes = new List<NoteItem>();
+            _fullNotesCache.Clear();
+            string likePattern = EscapeLikePattern(searchTerm);
+
+            try
+            {
+                if (_currentMode == DatabaseMode.Local)
+                {
+                    LoadNotesFromLocal(likePattern, searchField, notes);
+                }
+                else if (_currentMode == DatabaseMode.External)
+                {
+                    LoadNotesFromExternal(likePattern, searchField, notes);
+                }
+
+                NotesDataGrid.ItemsSource = notes;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load notes:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void LoadNotesFromLocal(string likePattern, string searchField, List<NoteItem> notes)
+        {
+            using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+            {
+                conn.Open();
+                string query = GetLoadQuery(searchField, isExternal: false);
+                using (var cmd = new SQLiteCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@search", likePattern);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            AppendNote(reader, notes, isExternal: false);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void LoadNotesFromExternal(string likePattern, string searchField, List<NoteItem> notes)
+        {
+            using (var conn = new MySqlConnection(_externalConnectionString))
+            {
+                conn.Open();
+                string query = GetLoadQuery(searchField, isExternal: true);
+                using (var cmd = new MySqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@search", likePattern);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            AppendNote(reader, notes, isExternal: true);
+                        }
+                    }
+                }
+            }
+        }
+
+        private string GetLoadQuery(string searchField, bool isExternal)
+        {
+            string escapeClause = isExternal ? "ESCAPE '\\\\'" : "ESCAPE '\\'";
+            string baseQuery = "SELECT Id, Title, Content, Tags, LastModified FROM Notes";
+
+            if (searchField == "All")
+            {
+                return $@"{baseQuery}
+                          WHERE Title LIKE @search {escapeClause}
+                             OR Content LIKE @search {escapeClause}
+                             OR Tags LIKE @search {escapeClause}
+                          ORDER BY LastModified DESC";
+            }
+            else
+            {
+                string col = GetColumnName(searchField);
+                return $@"{baseQuery}
+                          WHERE {col} LIKE @search {escapeClause}
+                          ORDER BY LastModified DESC";
+            }
+        }
+
+        private void AppendNote(System.Data.IDataReader reader, List<NoteItem> notes, bool isExternal)
+        {
+            var id = isExternal ? Convert.ToInt64(reader["Id"]) : (long)reader["Id"];
+            var title = reader["Title"].ToString();
+            var content = reader["Content"].ToString();
+            var tags = reader["Tags"].ToString();
+            string modified;
+
+            if (isExternal && reader["LastModified"] is DateTime dt)
+            {
+                modified = dt.ToString("yyyy-MM-dd HH:mm");
+            }
+            else
+            {
+                modified = reader["LastModified"].ToString();
+            }
+
+            var preview = content.Length > 60 ? content.Substring(0, 57) + "..." : content;
+
+            _fullNotesCache.Add(new FullNote { Id = id, Title = title, Content = content, Tags = tags, LastModified = modified });
+            notes.Add(new NoteItem { Id = id, Title = title, Preview = preview, LastModified = modified, Tags = tags });
+        }
+
+        private string EscapeLikePattern(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return "%";
+            return "%" + input.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
+        }
+
+        private string GetColumnName(string searchField)
+        {
+            switch (searchField)
+            {
+                case "Title": return "Title";
+                case "Content": return "Content";
+                case "Tags": return "Tags";
+                case "Modified": return "LastModified";
+                default: return "Title";
+            }
+        }
+
+        // ===== HELPERS =====
+
         internal string BuildExternalConnectionString()
         {
             var host = Properties.Settings.Default.External_Host;
@@ -829,7 +762,7 @@ namespace Protes
             var password = Properties.Settings.Default.External_Password ?? "";
 
             if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(database))
-                return null; // Incomplete config
+                return null;
 
             if (string.IsNullOrWhiteSpace(port) || port == "0")
                 port = "3306";
@@ -847,16 +780,21 @@ namespace Protes
             Connect_Click(this, new RoutedEventArgs());
         }
 
-        // ✅ Public method to safely set mode from SettingsWindow
         public void SetDatabaseMode(DatabaseMode mode)
         {
             _currentMode = mode;
             UpdateDatabaseModeCheckmarks();
             UpdateStatusBar();
         }
-    } // 👈 MainWindow class ends here
 
-    // Now define nested/top-level types in namespace
+        private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            var aboutWindow = new Protes.Views.AboutWindow();
+            aboutWindow.Owner = this;
+            aboutWindow.ShowDialog();
+        }
+    }
+
     public class NoteItem
     {
         public long Id { get; set; }
@@ -881,4 +819,4 @@ namespace Protes
         Local,
         External
     }
-} // 👈 Namespace ends here
+}

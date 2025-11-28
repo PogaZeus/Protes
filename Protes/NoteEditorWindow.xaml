@@ -11,18 +11,55 @@
         <!-- Menu at the very top -->
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
+                <MenuItem Header="_New" Click="NewNoteMenuItem_Click" InputGestureText="Ctrl+N"/>
                 <MenuItem Header="_Save" Click="SaveButton_Click" InputGestureText="Ctrl+S"/>
+                <MenuItem Header="Save _As..." Click="SaveAsMenuItem_Click"/>
                 <Separator/>
                 <MenuItem Header="_Export As">
                     <MenuItem Header="Text File (*.txt)" Click="ExportAsTxt_Click"/>
                     <MenuItem Header="Markdown File (*.md)" Click="ExportAsMd_Click"/>
                     <MenuItem Header="CSV File (*.csv)" Click="ExportAsCsv_Click"/>
                 </MenuItem>
+                <Separator/>
+                <MenuItem Header="C_lose" Click="CloseMenuItem_Click" InputGestureText="Alt+F4"/>
+            </MenuItem>
+
+            <MenuItem Header="_Edit">
+                <MenuItem Header="Cu_t" Command="ApplicationCommands.Cut" InputGestureText="Ctrl+X"/>
+                <MenuItem Header="_Copy" Command="ApplicationCommands.Copy" InputGestureText="Ctrl+C"/>
+                <MenuItem Header="_Paste" Command="ApplicationCommands.Paste" InputGestureText="Ctrl+V"/>
+                <MenuItem Header="_Delete" Command="ApplicationCommands.Delete"/>
+                <Separator/>
+                <MenuItem Header="_Find" Click="FindMenuItem_Click" InputGestureText="Ctrl+F"/>
+                <MenuItem Header="Find Ne_xt" Click="FindNextMenuItem_Click" InputGestureText="F3"/>
+                <MenuItem Header="Find Pre_vious" Click="FindPreviousMenuItem_Click" InputGestureText="Shift+F3"/>
+                <MenuItem Header="_Replace" Click="ReplaceMenuItem_Click" InputGestureText="Ctrl+H"/>
+                <MenuItem Header="_Go To" Click="GoToMenuItem_Click" InputGestureText="Ctrl+G"/>
+                <Separator/>
+                <MenuItem Header="Select _All" Command="ApplicationCommands.SelectAll" InputGestureText="Ctrl+A"/>
+                <MenuItem Header="Time/_Date" Click="InsertDateTimeMenuItem_Click" InputGestureText="F5"/>
+            </MenuItem>
+
+            <MenuItem Header="_Format">
+                <MenuItem Header="_Font" Click="FontMenuItem_Click"/>
+            </MenuItem>
+
+            <MenuItem Header="_View">
+                <MenuItem Header="_Zoom">
+                    <MenuItem Header="Zoom _In" Click="ZoomInMenuItem_Click" InputGestureText="Ctrl+Plus"/>
+                    <MenuItem Header="Zoom _Out" Click="ZoomOutMenuItem_Click" InputGestureText="Ctrl+Minus"/>
+                    <MenuItem Header="_Restore Zoom" Click="RestoreZoomMenuItem_Click" InputGestureText="Ctrl+0"/>
+                </MenuItem>
+                <MenuItem Header="_Status bar" IsCheckable="True" IsChecked="True" Click="StatusBarMenuItem_Click"/>
+            </MenuItem>
+
+            <MenuItem Header="_Info">
+                <MenuItem Header="_About" Click="AboutMenuItem_Click"/>
             </MenuItem>
         </Menu>
 
         <!-- Main content -->
-        <Grid Margin="15">
+        <Grid Margin="3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <!-- Title -->
@@ -34,7 +71,7 @@
 
             <!-- Title -->
             <TextBox x:Name="TitleBox" Grid.Row="0" FontSize="16" FontWeight="Bold"
-                     Padding="5" Margin="0,0,0,10" Text="Untitled"/>
+                     Padding="1" Margin="0,0,0,3" Text="Untitled"/>
 
             <!-- Content -->
             <TextBox x:Name="ContentBox" Grid.Row="1" AcceptsReturn="True"
@@ -42,7 +79,7 @@
                      FontSize="13"/>
 
             <!-- Tags + Buttons -->
-            <Grid Grid.Row="2" Margin="0,15,0,0">
+            <Grid Grid.Row="2" Margin="0,3,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
@@ -52,7 +89,7 @@
                 <!-- Tags -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="Tags:" Margin="0,0,5,0"/>
-                    <TextBox x:Name="TagsBox" Width="200" Padding="3"/>
+                    <TextBox x:Name="TagsBox" Width="500" Padding="3"/>
                 </StackPanel>
 
                 <!-- Buttons -->

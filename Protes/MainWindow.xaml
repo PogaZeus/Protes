@@ -31,6 +31,11 @@
                 <Separator/>
                 <MenuItem Header="_Settings" Click="OpenSettings_Click"/>
             </MenuItem>
+
+            <!-- 👇 NEW: Info > About -->
+            <MenuItem Header="_Info">
+                <MenuItem Header="_About" Click="AboutMenuItem_Click"/>
+            </MenuItem>
         </Menu>
 
         <!-- === ICON TRAY + NOTE ACTIONS + SEARCH === -->
