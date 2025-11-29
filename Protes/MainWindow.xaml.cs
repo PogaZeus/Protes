@@ -23,6 +23,19 @@ namespace Protes
 
         public MainWindow()
         {
+            string lastPath = Properties.Settings.Default.LastLocalDatabasePath;
+            if (!string.IsNullOrWhiteSpace(lastPath) && File.Exists(lastPath))
+            {
+                _databasePath = lastPath;
+            }
+            else
+            {
+                // Fallback to default location
+                _databasePath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "Protes", "notes.db"
+                );
+            }
             InitializeComponent();
             LoadPersistedSettings();
             EnsureAppDataFolder();
@@ -183,14 +196,33 @@ namespace Protes
 
         private void UpdateStatusBar()
         {
-            ConnectionStatusText.Text = _isConnected ? "Connected" : "Disconnected";
+            if (!_isConnected)
+            {
+                ConnectionStatusText.Text = "Disconnected";
+                DatabaseModeText.Text = "—";
+                return;
+            }
+
+            ConnectionStatusText.Text = "Connected";
 
             if (_currentMode == DatabaseMode.Local)
-                DatabaseModeText.Text = "Local";
+            {
+                // Show full path for local DB
+                DatabaseModeText.Text = $"Local ({_databasePath})";
+            }
             else if (_currentMode == DatabaseMode.External)
-                DatabaseModeText.Text = "External";
+            {
+                // Build host:port/database string from settings
+                var host = Properties.Settings.Default.External_Host ?? "localhost";
+                var port = Properties.Settings.Default.External_Port?.ToString() ?? "3306";
+                var database = Properties.Settings.Default.External_Database ?? "unknown";
+
+                DatabaseModeText.Text = $"External ({host}:{port}/{database}/Notes)";
+            }
             else
+            {
                 DatabaseModeText.Text = "—";
+            }
         }
 
         // ===== CONNECTION =====

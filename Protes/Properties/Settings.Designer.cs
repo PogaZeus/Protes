@@ -109,13 +109,13 @@ namespace Protes.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool DisplayTags {
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LastLocalDatabasePath {
             get {
-                return ((bool)(this["DisplayTags"]));
+                return ((string)(this["LastLocalDatabasePath"]));
             }
             set {
-                this["DisplayTags"] = value;
+                this["LastLocalDatabasePath"] = value;
             }
         }
         
@@ -128,6 +128,30 @@ namespace Protes.Properties {
             }
             set {
                 this["DisplayTitle"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool DisplayTags {
+            get {
+                return ((bool)(this["DisplayTags"]));
+            }
+            set {
+                this["DisplayTags"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ImportedDatabasePaths {
+            get {
+                return ((string)(this["ImportedDatabasePaths"]));
+            }
+            set {
+                this["ImportedDatabasePaths"] = value;
             }
         }
     }

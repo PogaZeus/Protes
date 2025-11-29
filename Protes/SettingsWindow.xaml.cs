@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using Protes.Properties;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using Microsoft.Win32;
-using Protes.Properties;
 
 namespace Protes.Views
 {
@@ -13,6 +14,7 @@ namespace Protes.Views
         private string _appDataFolder;
         private string _currentDatabasePath;
         private MainWindow _mainWindow;
+        private List<string> _importedDbPaths = new List<string>();
 
         public SettingsWindow(string currentDatabasePath, MainWindow mainWindow)
         {
@@ -25,6 +27,14 @@ namespace Protes.Views
             if (!Directory.Exists(_appDataFolder))
                 Directory.CreateDirectory(_appDataFolder);
 
+            var importedRaw = Properties.Settings.Default.ImportedDatabasePaths;
+            if (!string.IsNullOrWhiteSpace(importedRaw))
+            {
+                _importedDbPaths = new List<string>(importedRaw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+                // Remove any paths that no longer exist
+                _importedDbPaths.RemoveAll(p => !File.Exists(p));
+            }
+
             CurrentDbPathText.Text = _currentDatabasePath;
             LoadLocalDatabases();
             LoadExternalSettings();
@@ -33,19 +43,40 @@ namespace Protes.Views
         private void LoadLocalDatabases()
         {
             var dbFiles = new List<DbFileInfo>();
+
+            // 1. Default app folder
             if (Directory.Exists(_appDataFolder))
             {
-                var files = Directory.GetFiles(_appDataFolder, "*.db");
-                foreach (var file in files)
+                var defaultFiles = Directory.GetFiles(_appDataFolder, "*.db");
+                foreach (var file in defaultFiles)
                 {
                     dbFiles.Add(new DbFileInfo
                     {
                         FileName = Path.GetFileName(file),
-                        FullPath = file
+                        FullPath = file,
+                        IsImported = false
                     });
                 }
             }
-            LocalDbList.ItemsSource = dbFiles;
+
+            // 2. Imported databases (from any location)
+            foreach (var path in _importedDbPaths)
+            {
+                if (File.Exists(path))
+                {
+                    dbFiles.Add(new DbFileInfo
+                    {
+                        FileName = Path.GetFileName(path) + " (imported)",
+                        FullPath = path,
+                        IsImported = true
+                    });
+                }
+            }
+
+            // Optional: remove duplicates (same file in both places)
+            var uniqueFiles = dbFiles.GroupBy(f => f.FullPath).Select(g => g.First()).ToList();
+
+            LocalDbList.ItemsSource = uniqueFiles;
         }
 
         private void LoadExternalSettings()
@@ -133,13 +164,24 @@ namespace Protes.Views
         {
             var openDialog = new OpenFileDialog
             {
-                Filter = "SQLite Database|*.db",
-                InitialDirectory = _appDataFolder
+                Filter = "SQLite Database|*.db"
             };
 
             if (openDialog.ShowDialog() == true)
             {
-                SwitchToDatabase(openDialog.FileName);
+                string sourcePath = openDialog.FileName;
+
+                // Add to imported list (if not already present)
+                if (!_importedDbPaths.Contains(sourcePath))
+                {
+                    _importedDbPaths.Add(sourcePath);
+
+                    // Save setting
+                    Properties.Settings.Default.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
+                    Properties.Settings.Default.Save();
+                }
+
+                SwitchToDatabase(sourcePath);
             }
         }
 
@@ -153,6 +195,11 @@ namespace Protes.Views
 
             _currentDatabasePath = newDbPath;
             CurrentDbPathText.Text = newDbPath;
+
+            // Save the path for next startup
+            Properties.Settings.Default.LastLocalDatabasePath = newDbPath;
+            Properties.Settings.Default.Save();
+
             _mainWindow.SwitchDatabase(newDbPath);
             LoadLocalDatabases();
         }
@@ -223,6 +270,7 @@ namespace Protes.Views
         {
             public string FileName { get; set; }
             public string FullPath { get; set; }
+            public bool IsImported { get; set; } 
         }
     }
 }

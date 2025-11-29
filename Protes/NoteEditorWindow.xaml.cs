@@ -12,9 +12,9 @@ namespace Protes.Views
     {
         private readonly Action<string, string, string, long?> _onSaveRequested;
         private readonly long? _noteId; // null = new note, non-null = existing
-        private readonly string _originalTitle; 
-        private readonly string _originalContent; 
-        private readonly string _originalTags;         
+        private string _originalTitle; 
+        private string _originalContent; 
+        private string _originalTags;         
         private double _originalFontSize = 13.0;
         private double _currentZoomLevel = 1.0;
 
@@ -30,6 +30,8 @@ namespace Protes.Views
             Action<string, string, string, long?> onSaveRequested = null)
         {
             InitializeComponent();
+
+            PreviewKeyDown += NoteEditorWindow_PreviewKeyDown;
 
             // Display tag bar or not
             bool displayTags = Properties.Settings.Default.DisplayTags;
@@ -69,6 +71,21 @@ namespace Protes.Views
             CommandManager.AddPreviewExecutedHandler(this, OnPreviewExecuted);
         }
 
+        // ===== File Menu Shortcut Keydown Detection =====
+        private void NoteEditorWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.N && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                NewNoteMenuItem_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            else if (e.Key == Key.S && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                SaveButton_Click(this, new RoutedEventArgs());
+                e.Handled = true; // ← prevents "s" from appearing in text
+            }
+        }
+
         // ===== NEW NOTE (from menu) =====
         private void NewNoteMenuItem_Click(object sender, RoutedEventArgs e)
         {
@@ -86,12 +103,15 @@ namespace Protes.Views
 
             if (_onSaveRequested != null)
             {
-                // Pass note ID (null = new, non-null = update)
                 _onSaveRequested(title, content, tags, _noteId);
+
+                // Reset change tracking after save (for close window prompt)
+                _originalTitle = title;
+                _originalContent = content;
+                _originalTags = tags;
             }
             else
             {
-                // Fallback for non-callback usage (e.g., standalone export)
                 NoteTitle = title;
                 NoteContent = content;
                 NoteTags = tags;
@@ -155,7 +175,6 @@ namespace Protes.Views
                     e.Cancel = true;
                     return;
                 }
-                // If No → close without saving
             }
 
             base.OnClosing(e);
