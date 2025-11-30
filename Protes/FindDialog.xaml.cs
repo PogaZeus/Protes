@@ -1,21 +1,42 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
+using System.Windows.Input;
 
 namespace Protes
 {
     public partial class FindDialog : Window
     {
-        public string SearchText => FindTextBox.Text;
+        public event Action<string, bool, bool> FindRequested;
 
         public FindDialog()
         {
             InitializeComponent();
-            FindTextBox.Focus();
         }
 
         private void FindNext_Click(object sender, RoutedEventArgs e)
-            => DialogResult = true;
+        {
+            if (string.IsNullOrWhiteSpace(FindTextBox.Text))
+            {
+                MessageBox.Show("Please enter text to find.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Notify owner — don't close
+            FindRequested?.Invoke(FindTextBox.Text, MatchCaseCheckBox.IsChecked == true, DirectionUpRadio.IsChecked == true);
+        }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
-            => DialogResult = false;
+        {
+            Close(); // Only close when Cancel is clicked
+        }
+
+        private void FindTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                FindNext_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+        }
     }
 }

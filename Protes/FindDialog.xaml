@@ -1,21 +1,57 @@
 ﻿<Window x:Class="Protes.FindDialog"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        Title="Find" Width="300" Height="150" WindowStartupLocation="CenterOwner">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Find" 
+        Width="500" 
+        Height="180"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        MinWidth="400"
+        MinHeight="180">
+
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal">
-            <Label Content="Find what:" Width="70"/>
-            <TextBox x:Name="FindTextBox" Width="200"/>
+        <!-- Find Text -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Label Content="Find:" Margin="0,0,10,0" VerticalAlignment="Center"/>
+            <TextBox x:Name="FindTextBox" 
+                     KeyDown="FindTextBox_KeyDown"
+                     Grid.Column="1" 
+                     VerticalAlignment="Center"
+                     Height="26"/>
+        </Grid>
+
+        <!-- Options -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,0">
+            <CheckBox x:Name="MatchCaseCheckBox" Content="Match case" Margin="0,0,20,0"/>
+
+            <TextBlock Text="Direction:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <RadioButton x:Name="DirectionDownRadio" Content="Down" IsChecked="True"/>
+            <RadioButton x:Name="DirectionUpRadio" Content="Up" Margin="10,0,0,0"/>
         </StackPanel>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button Width="70" Margin="5" Content="Find Next" Click="FindNext_Click"/>
-            <Button Width="70" Margin="5" Content="Cancel" Click="Cancel_Click"/>
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button x:Name="FindButton" 
+                    Width="80" 
+                    Margin="5" 
+                    Content="Find Next" 
+                    IsDefault="True"
+                    Click="FindNext_Click"/>
+            <Button Width="80" 
+                    Margin="5" 
+                    Content="Cancel" 
+                    IsCancel="True"
+                    Click="Cancel_Click"/>
         </StackPanel>
     </Grid>
 </Window>

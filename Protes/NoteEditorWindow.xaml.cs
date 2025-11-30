@@ -17,8 +17,9 @@ namespace Protes.Views
         private string _originalTags;         
         private double _originalFontSize = 13.0;
         private double _currentZoomLevel = 1.0;
-        private int _lastSearchIndex = -1;
         private string _lastSearchTerm = "";
+        private bool _lastMatchCase = false;
+        private bool _lastSearchUp = false; // false = Down, true = Up
 
         public string NoteTitle { get; private set; }
         public string NoteContent { get; private set; }
@@ -226,18 +227,34 @@ namespace Protes.Views
             ContentBox.CaretIndex = caretIndex + timestamp.Length;
         }
 
+        private FindDialog _findDialog; 
+
         private void FindMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new FindDialog { Owner = this };
-
-            if (dialog.ShowDialog() == true)
+            if (_findDialog == null)
             {
-                _lastSearchTerm = dialog.SearchText;
-                _lastSearchIndex = -1;
-                FindNext();
+                _findDialog = new FindDialog();
+                _findDialog.Owner = this;
+                _findDialog.FindRequested += OnFindRequested;
+                _findDialog.Closed += (s, args) => _findDialog = null;
             }
+
+            _findDialog.Show(); // ← Non-modal
+            _findDialog.FindTextBox.SelectAll();
+            _findDialog.FindTextBox.Focus();
         }
 
+        private void OnFindRequested(string searchText, bool matchCase, bool searchUp)
+        {
+            _lastSearchTerm = searchText;
+            _lastMatchCase = matchCase;
+            _lastSearchUp = searchUp;
+
+            if (searchUp)
+                FindPrevious();
+            else
+                FindNext();
+        }
         private void FindNextMenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(_lastSearchTerm))
@@ -246,20 +263,33 @@ namespace Protes.Views
                 return;
             }
 
+            _lastSearchUp = false; // Force "Next" = Down
             FindNext();
         }
 
         private void FindNext()
         {
-            if (string.IsNullOrEmpty(_lastSearchTerm)) return;
+            if (string.IsNullOrEmpty(_lastSearchTerm) || ContentBox.Text.Length == 0) return;
 
             int startIndex = ContentBox.SelectionStart + ContentBox.SelectionLength;
+            if (startIndex >= ContentBox.Text.Length)
+                startIndex = 0; // wrap to start
 
-            int index = ContentBox.Text.IndexOf(_lastSearchTerm, startIndex, StringComparison.CurrentCultureIgnoreCase);
+            StringComparison comparison = _lastMatchCase
+                ? StringComparison.CurrentCulture
+                : StringComparison.CurrentCultureIgnoreCase;
+
+            int index = ContentBox.Text.IndexOf(_lastSearchTerm, startIndex, comparison);
+
+            // If not found from current pos, search from beginning (wrap)
+            if (index == -1 && startIndex > 0)
+            {
+                index = ContentBox.Text.IndexOf(_lastSearchTerm, 0, comparison);
+            }
 
             if (index == -1)
             {
-                MessageBox.Show("No more matches found.");
+                MessageBox.Show("No more matches found.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -274,19 +304,33 @@ namespace Protes.Views
                 return;
             }
 
+            _lastSearchUp = true; // Force "Previous" = Up
             FindPrevious();
         }
 
         private void FindPrevious()
         {
-            int start = ContentBox.SelectionStart - 1;
-            if (start < 0) start = ContentBox.Text.Length - 1;
+            if (string.IsNullOrEmpty(_lastSearchTerm) || ContentBox.Text.Length == 0) return;
 
-            int index = ContentBox.Text.LastIndexOf(_lastSearchTerm, start, StringComparison.CurrentCultureIgnoreCase);
+            int start = ContentBox.SelectionStart - 1;
+            if (start < 0)
+                start = ContentBox.Text.Length - 1; // wrap to end
+
+            StringComparison comparison = _lastMatchCase
+                ? StringComparison.CurrentCulture
+                : StringComparison.CurrentCultureIgnoreCase;
+
+            int index = ContentBox.Text.LastIndexOf(_lastSearchTerm, start, comparison);
+
+            // If not found before current pos, search from end (wrap)
+            if (index == -1 && start < ContentBox.Text.Length - 1)
+            {
+                index = ContentBox.Text.LastIndexOf(_lastSearchTerm, ContentBox.Text.Length - 1, comparison);
+            }
 
             if (index == -1)
             {
-                MessageBox.Show("No previous matches found.");
+                MessageBox.Show("No previous matches found.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -298,7 +342,6 @@ namespace Protes.Views
             ContentBox.Focus();
             ContentBox.Select(index, _lastSearchTerm.Length);
             ContentBox.ScrollToLine(ContentBox.GetLineIndexFromCharacterIndex(index));
-            _lastSearchIndex = index;
         }
 
         private void ReplaceMenuItem_Click(object sender, RoutedEventArgs e)
