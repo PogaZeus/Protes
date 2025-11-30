@@ -200,6 +200,7 @@ namespace Protes
             {
                 ConnectionStatusText.Text = "Disconnected";
                 DatabaseModeText.Text = "—";
+                NoteCountText.Text = "0 Notes";
                 return;
             }
 
@@ -233,7 +234,6 @@ namespace Protes
             Properties.Settings.Default.DatabaseMode = "Local";
             Properties.Settings.Default.Save();
             UpdateDatabaseModeCheckmarks();
-            UpdateStatusBar();
 
             try
             {
@@ -254,19 +254,19 @@ namespace Protes
                     }
                 }
 
-                // Reconnect
                 if (_isConnected)
                 {
                     Disconnect_Click(this, new RoutedEventArgs());
                 }
 
                 LoadNotesFromDatabase();
-                _isConnected = true;
+                _isConnected = true; 
+
                 NotesDataGrid.Visibility = Visibility.Visible;
                 DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
                 UpdateButtonStates();
+                UpdateStatusBar(); 
 
-                // Show notification only if enabled
                 if (Properties.Settings.Default.ShowNotifications)
                 {
                     MessageBox.Show("Local database (SQLite) selected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -275,6 +275,8 @@ namespace Protes
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to connect to local database:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                _isConnected = false;
+                UpdateStatusBar();
             }
         }
 
@@ -772,6 +774,7 @@ namespace Protes
                 }
 
                 NotesDataGrid.ItemsSource = notes;
+                NoteCountText.Text = $"{notes.Count} Note{(notes.Count == 1 ? "" : "s")}";
             }
             catch (Exception ex)
             {

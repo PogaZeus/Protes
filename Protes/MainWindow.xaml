@@ -108,11 +108,31 @@
 
         <!-- === STATUS BAR === -->
         <StatusBar Grid.Row="3">
-            <StatusBar.Items>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <!-- Spacer -->
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: Connection Status -->
                 <TextBlock x:Name="ConnectionStatusText" Text="Disconnected"/>
-                <Separator Style="{StaticResource {x:Static StatusBar.SeparatorStyleKey}}" Margin="8,0"/>
-                <TextBlock x:Name="DatabaseModeText" Text="—"/>
-            </StatusBar.Items>
+
+                <!-- Left Separator -->
+                <Separator Grid.Column="1" Style="{StaticResource {x:Static StatusBar.SeparatorStyleKey}}" Margin="8,0"/>
+
+                <!-- Database Mode -->
+                <TextBlock x:Name="DatabaseModeText" Grid.Column="2" Text="—"/>
+
+                <!-- Right Separator -->
+                <Separator Grid.Column="3" Style="{StaticResource {x:Static StatusBar.SeparatorStyleKey}}" Margin="8,0"/>
+
+                <!-- Note Count (Right-aligned) -->
+                <TextBlock x:Name="NoteCountText" Grid.Column="4" Text="0 Notes"/>
+            </Grid>
         </StatusBar>
     </Grid>
 </Window>
