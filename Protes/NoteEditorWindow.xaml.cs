@@ -17,6 +17,8 @@ namespace Protes.Views
         private string _originalTags;         
         private double _originalFontSize = 13.0;
         private double _currentZoomLevel = 1.0;
+        private int _lastSearchIndex = -1;
+        private string _lastSearchTerm = "";
 
         public string NoteTitle { get; private set; }
         public string NoteContent { get; private set; }
@@ -224,20 +226,136 @@ namespace Protes.Views
             ContentBox.CaretIndex = caretIndex + timestamp.Length;
         }
 
-        private void FindMenuItem_Click(object sender, RoutedEventArgs e) =>
-            MessageBox.Show("Find feature not yet implemented.", "Not Implemented", MessageBoxButton.OK, MessageBoxImage.Information);
+        private void FindMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new FindDialog { Owner = this };
 
-        private void FindNextMenuItem_Click(object sender, RoutedEventArgs e) =>
-            MessageBox.Show("Find Next not yet implemented.", "Not Implemented", MessageBoxButton.OK, MessageBoxImage.Information);
+            if (dialog.ShowDialog() == true)
+            {
+                _lastSearchTerm = dialog.SearchText;
+                _lastSearchIndex = -1;
+                FindNext();
+            }
+        }
 
-        private void FindPreviousMenuItem_Click(object sender, RoutedEventArgs e) =>
-            MessageBox.Show("Find Previous not yet implemented.", "Not Implemented", MessageBoxButton.OK, MessageBoxImage.Information);
+        private void FindNextMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_lastSearchTerm))
+            {
+                FindMenuItem_Click(sender, e);
+                return;
+            }
 
-        private void ReplaceMenuItem_Click(object sender, RoutedEventArgs e) =>
-            MessageBox.Show("Replace not yet implemented.", "Not Implemented", MessageBoxButton.OK, MessageBoxImage.Information);
+            FindNext();
+        }
 
-        private void GoToMenuItem_Click(object sender, RoutedEventArgs e) =>
-            MessageBox.Show("Go To not yet implemented.", "Not Implemented", MessageBoxButton.OK, MessageBoxImage.Information);
+        private void FindNext()
+        {
+            if (string.IsNullOrEmpty(_lastSearchTerm)) return;
+
+            int startIndex = ContentBox.SelectionStart + ContentBox.SelectionLength;
+
+            int index = ContentBox.Text.IndexOf(_lastSearchTerm, startIndex, StringComparison.CurrentCultureIgnoreCase);
+
+            if (index == -1)
+            {
+                MessageBox.Show("No more matches found.");
+                return;
+            }
+
+            SelectFoundIndex(index);
+        }
+
+        private void FindPreviousMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_lastSearchTerm))
+            {
+                FindMenuItem_Click(sender, e);
+                return;
+            }
+
+            FindPrevious();
+        }
+
+        private void FindPrevious()
+        {
+            int start = ContentBox.SelectionStart - 1;
+            if (start < 0) start = ContentBox.Text.Length - 1;
+
+            int index = ContentBox.Text.LastIndexOf(_lastSearchTerm, start, StringComparison.CurrentCultureIgnoreCase);
+
+            if (index == -1)
+            {
+                MessageBox.Show("No previous matches found.");
+                return;
+            }
+
+            SelectFoundIndex(index);
+        }
+
+        private void SelectFoundIndex(int index)
+        {
+            ContentBox.Focus();
+            ContentBox.Select(index, _lastSearchTerm.Length);
+            ContentBox.ScrollToLine(ContentBox.GetLineIndexFromCharacterIndex(index));
+            _lastSearchIndex = index;
+        }
+
+        private void ReplaceMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new ReplaceDialog { Owner = this };
+
+            if (dialog.ShowDialog() != true)
+                return;
+
+            string search = dialog.SearchText;
+            string replace = dialog.ReplaceText;
+
+            if (dialog.ReplaceAllRequested)
+            {
+                // FIXED — works on .NET Framework & Core
+                ContentBox.Text = ReplaceIgnoreCase(ContentBox.Text, search, replace);
+                return;
+            }
+
+            // Replace single
+            if (ContentBox.SelectedText.Equals(search, StringComparison.CurrentCultureIgnoreCase))
+            {
+                ContentBox.SelectedText = replace;
+            }
+            else
+            {
+                _lastSearchTerm = search;
+                FindNext();
+                if (ContentBox.SelectedText.Equals(search, StringComparison.CurrentCultureIgnoreCase))
+                    ContentBox.SelectedText = replace;
+            }
+        }
+
+        private string ReplaceIgnoreCase(string text, string search, string replace)
+        {
+            return System.Text.RegularExpressions.Regex.Replace(
+                text,
+                System.Text.RegularExpressions.Regex.Escape(search),
+                replace,
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase
+            );
+        }
+
+
+
+        private void GoToMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            string input = Microsoft.VisualBasic.Interaction.InputBox("Enter line number:", "Go To");
+
+            if (int.TryParse(input, out int line))
+            {
+                line = Math.Max(1, Math.Min(line, ContentBox.LineCount));
+                int index = ContentBox.GetCharacterIndexFromLineIndex(line - 1);
+                ContentBox.Select(index, 0);
+                ContentBox.ScrollToLine(line - 1);
+            }
+        }
 
         // ===== FORMAT =====
         private void FontMenuItem_Click(object sender, RoutedEventArgs e)
