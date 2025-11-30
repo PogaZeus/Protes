@@ -157,7 +157,7 @@ namespace Protes.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool ShowNotifications {
             get {
                 return ((bool)(this["ShowNotifications"]));
@@ -176,6 +176,18 @@ namespace Protes.Properties {
             }
             set {
                 this["DefaultDatabaseFolder"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AutoConnectOnSwitch {
+            get {
+                return ((bool)(this["AutoConnectOnSwitch"]));
+            }
+            set {
+                this["AutoConnectOnSwitch"] = value;
             }
         }
     }

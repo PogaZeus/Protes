@@ -41,6 +41,7 @@ namespace Protes.Views
 
             // Load UI state
             AutoConnectCheckBox.IsChecked = Properties.Settings.Default.AutoConnect;
+            AutoConnectOnSwitchCheckBox.IsChecked = Properties.Settings.Default.AutoConnectOnSwitch;
             ShowNotificationsCheckBox.IsChecked = Properties.Settings.Default.ShowNotifications;
             DefaultDbFolderText.Text = _appDataFolder; // 👈 Show current default folder
 
@@ -111,7 +112,11 @@ namespace Protes.Views
             Properties.Settings.Default.Save();
             _mainWindow.AutoConnectCheckBox.IsChecked = isChecked;
         }
-
+        private void AutoConnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            Properties.Settings.Default.AutoConnectOnSwitch = AutoConnectOnSwitchCheckBox.IsChecked == true;
+            Properties.Settings.Default.Save();
+        }
         private void ShowNotificationsCheckBox_Changed(object sender, RoutedEventArgs e)
         {
             bool isChecked = ShowNotificationsCheckBox.IsChecked == true;

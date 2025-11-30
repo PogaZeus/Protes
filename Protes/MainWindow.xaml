@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Protes.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Mr E Tools - Pro Notes (Protes) Database" 
+        Title="Mr E Tools - [Protes] Pro Notes Database" 
         WindowState="Maximized"
         FontFamily="Segoe UI" WindowStartupLocation="CenterScreen">
 
@@ -131,7 +131,7 @@
                 <Separator Grid.Column="3" Style="{StaticResource {x:Static StatusBar.SeparatorStyleKey}}" Margin="8,0"/>
 
                 <!-- Note Count (Right-aligned) -->
-                <TextBlock x:Name="NoteCountText" Grid.Column="4" Text="0 Notes"/>
+                <TextBlock x:Name="NoteCountText" Grid.Column="4" Text=""/>
             </Grid>
         </StatusBar>
     </Grid>

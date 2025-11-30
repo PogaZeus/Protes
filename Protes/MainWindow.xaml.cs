@@ -200,7 +200,7 @@ namespace Protes
             {
                 ConnectionStatusText.Text = "Disconnected";
                 DatabaseModeText.Text = "—";
-                NoteCountText.Text = "0 Notes";
+                NoteCountText.Text = "";
                 return;
             }
 
@@ -235,47 +235,59 @@ namespace Protes
             Properties.Settings.Default.Save();
             UpdateDatabaseModeCheckmarks();
 
-            try
+            if (Properties.Settings.Default.AutoConnectOnSwitch)
             {
-                // Ensure table exists
-                using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                try
                 {
-                    conn.Open();
-                    using (var cmd = new SQLiteCommand(@"
-                CREATE TABLE IF NOT EXISTS Notes (
-                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    Title TEXT NOT NULL,
-                    Content TEXT,
-                    Tags TEXT,
-                    LastModified TEXT
-                )", conn))
+                    // Ensure table exists
+                    using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                     {
-                        cmd.ExecuteNonQuery();
+                        conn.Open();
+                        using (var cmd = new SQLiteCommand(@"
+                    CREATE TABLE IF NOT EXISTS Notes (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        Title TEXT NOT NULL,
+                        Content TEXT,
+                        Tags TEXT,
+                        LastModified TEXT
+                    )", conn))
+                        {
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    if (_isConnected)
+                    {
+                        Disconnect_Click(this, new RoutedEventArgs());
+                    }
+
+                    LoadNotesFromDatabase();
+                    _isConnected = true;
+                    NotesDataGrid.Visibility = Visibility.Visible;
+                    DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
+                    UpdateButtonStates();
+                    UpdateStatusBar();
+
+                    if (Properties.Settings.Default.ShowNotifications)
+                    {
+                        MessageBox.Show("Local database (SQLite) selected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                 }
-
-                if (_isConnected)
+                catch (Exception ex)
                 {
-                    Disconnect_Click(this, new RoutedEventArgs());
-                }
-
-                LoadNotesFromDatabase();
-                _isConnected = true; 
-
-                NotesDataGrid.Visibility = Visibility.Visible;
-                DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
-                UpdateButtonStates();
-                UpdateStatusBar(); 
-
-                if (Properties.Settings.Default.ShowNotifications)
-                {
-                    MessageBox.Show("Local database (SQLite) selected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show($"Failed to connect to local database:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _isConnected = false;
+                    UpdateStatusBar();
                 }
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show($"Failed to connect to local database:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                // Just switch mode, don't connect
                 _isConnected = false;
+                NotesDataGrid.ItemsSource = null;
+                NotesDataGrid.Visibility = Visibility.Collapsed;
+                DisconnectedPlaceholder.Visibility = Visibility.Visible;
+                UpdateButtonStates();
                 UpdateStatusBar();
             }
         }
@@ -330,23 +342,35 @@ namespace Protes
 
         private void UseExternalDb_Click(object sender, RoutedEventArgs e)
         {
-            var connString = BuildExternalConnectionString();
-            if (connString == null)
-            {
-                MessageBox.Show(
-                    "External database configuration is incomplete.\n\n" +
-                    "Please go to Settings → External Database to configure your connection.",
-                    "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
             _currentMode = DatabaseMode.External;
             Properties.Settings.Default.DatabaseMode = "External";
             Properties.Settings.Default.Save();
             UpdateDatabaseModeCheckmarks();
-            UpdateStatusBar();
 
-            ConnectToExternalDatabase(connString);
+            if (Properties.Settings.Default.AutoConnectOnSwitch)
+            {
+                var connString = BuildExternalConnectionString();
+                if (connString == null)
+                {
+                    MessageBox.Show(
+                        "External database configuration is incomplete.\n\n" +
+                        "Please go to Settings → External Database to configure your connection.",
+                        "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                ConnectToExternalDatabase(connString);
+            }
+            else
+            {
+                // Just switch mode, don't connect
+                _isConnected = false;
+                NotesDataGrid.ItemsSource = null;
+                NotesDataGrid.Visibility = Visibility.Collapsed;
+                DisconnectedPlaceholder.Visibility = Visibility.Visible;
+                UpdateButtonStates();
+                UpdateStatusBar();
+            }
         }
 
         private void ConnectToExternalDatabase(string connectionString)

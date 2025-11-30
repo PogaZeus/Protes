@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Protes.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Protes - Settings" 
+        Title="Mr E Tools - [Protes] Pro Notes Database - Settings" 
         Height="680" Width="750"
         FontFamily="Segoe UI" 
         WindowStartupLocation="CenterOwner"
@@ -218,10 +218,16 @@
                         
                         <!-- Auto Connect -->
                         <GroupBox Grid.Row="2" Header="Auto Connect" Margin="0,0,0,15">
-                            <CheckBox x:Name="AutoConnectCheckBox"
-                                      Content="Connect on startup"
-                                      Checked="AutoConnectCheckBox_Checked"
-                                      Unchecked="AutoConnectCheckBox_Checked"/>
+                            <StackPanel>
+                                <CheckBox x:Name="AutoConnectCheckBox"
+                  Content="Connect on startup"
+                  Checked="AutoConnectCheckBox_Checked"
+                  Unchecked="AutoConnectCheckBox_Checked"/>
+                                <CheckBox x:Name="AutoConnectOnSwitchCheckBox"
+                  Content="Connect when switching database mode (options menu)"
+                  Checked="AutoConnectOnSwitchCheckBox_Checked"
+                  Unchecked="AutoConnectOnSwitchCheckBox_Checked"/>
+                            </StackPanel>
                         </GroupBox>
 
                         <!-- Notifications -->

@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Protes.Views.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="About Mr E Tools - Protes" 
+        Title="Mr E Tools - [Protes] Pro Notes Database - About" 
         Height="420" Width="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
@@ -52,7 +52,7 @@
                 <LineBreak/>
                 <Run Text="• UI Framework: Windows Presentation Foundation (WPF)"/>
                 <LineBreak/>
-                <Run Text="• Supplementary UI Components: Windows Forms (for Font Dialog)"/>
+                <Run Text="• Supplementary UI Components: Windows Forms (Rarely!)"/>
                 <LineBreak/>
                 <Run Text="• Data Access: Entity Framework Core + ADO.NET (for flexibility)"/>
                 <LineBreak/>
