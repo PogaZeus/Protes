@@ -7,6 +7,21 @@
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResizeWithGrip">
 
+    <Window.Resources>
+        <!-- Reusable style for action buttons (hide when no selection) -->
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ElementName=LocalDbList, Path=SelectedItems.Count}" Value="0">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ElementName=LocalDbList, Path=SelectedItems.Count}" Value="1">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -15,6 +30,8 @@
 
         <!-- Tabs -->
         <TabControl x:Name="SettingsTabControl" Grid.Row="0" Margin="0,0,0,10">
+
+            <!-- LOCAL DATABASE TAB -->
             <TabItem Header="Local Database">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <Grid Margin="10">
@@ -54,26 +71,25 @@
                             </ListBox>
                         </GroupBox>
 
-                        <!-- Load Selected Button -->
+                        <!-- Action Buttons (Load, Remove, Delete) -->
                         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,15">
                             <Button x:Name="LoadSelectedButton"
                                     Content="Load Selected"
                                     Padding="10,5"
-                                    Click="LoadSelectedButton_Click">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding ElementName=LocalDbList, Path=SelectedItems.Count}" Value="0">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding ElementName=LocalDbList, Path=SelectedItems.Count}" Value="1">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
+                                    Click="LoadSelectedButton_Click"
+                                    Style="{StaticResource ActionButtonStyle}"/>
+                            <Button x:Name="RemoveFromListButton"
+                                    Content="Remove from List"
+                                    Padding="10,5"
+                                    Click="RemoveFromListButton_Click"
+                                    Style="{StaticResource ActionButtonStyle}"
+                                    Margin="10,0,0,0"/>
+                            <Button x:Name="DeleteDatabaseButton"
+                                    Content="Delete Database"
+                                    Padding="10,5"
+                                    Click="DeleteDatabaseButton_Click"
+                                    Style="{StaticResource ActionButtonStyle}"
+                                    Margin="10,0,0,0"/>
                         </StackPanel>
 
                         <TextBlock Grid.Row="4" Text="Note: Databases are stored in the Protes app data folder." 
@@ -82,21 +98,17 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- EXTERNAL DATABASE TAB -->
             <TabItem Header="External Database">
-                <!-- No ScrollViewer — let content fit naturally -->
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <!-- Schema -->
                         <RowDefinition Height="Auto"/>
-                        <!-- Connection Details -->
                         <RowDefinition Height="Auto"/>
-                        <!-- Buttons -->
                         <RowDefinition Height="*"/>
-                        <!-- Spacer (optional) -->
                     </Grid.RowDefinitions>
 
-                    <!-- Schema Requirements with Inner Tabs -->
+                    <!-- Schema Requirements -->
                     <GroupBox Grid.Row="0" Header="Required Table Schema" Margin="0,0,0,20">
                         <TabControl>
                             <TabItem Header="Requirements">
@@ -118,7 +130,6 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <TextBox x:Name="CreateTableSqlBox"
-                                             Grid.Row="0"
                                              Text="CREATE TABLE Notes (&#x0a;    Id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,&#x0a;    Title VARCHAR(255) NOT NULL,&#x0a;    Content TEXT,&#x0a;    Tags VARCHAR(255),&#x0a;    LastModified DATETIME&#x0a;);"
                                              TextWrapping="NoWrap"
                                              AcceptsReturn="True"
@@ -127,7 +138,7 @@
                                              FontFamily="Consolas"
                                              FontSize="12"
                                              MinHeight="100"/>
-                                    <Button Grid.Row="1" Content="Copy SQL" Margin="0,10,0,0" Click="CopySqlButton_Click"/>
+                                    <Button Grid.Row="1" Content="Copy SQL" Width="80" Height="26" HorizontalAlignment="Left" Margin="0,10,0,0" Click="CopySqlButton_Click"/>
                                 </Grid>
                             </TabItem>
                         </TabControl>
@@ -165,16 +176,41 @@
                         </Grid>
                     </GroupBox>
 
-                    <!-- Action Buttons for External DB -->
+                    <!-- Action Buttons -->
                     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="Save Settings" Padding="12,5" Margin="0,0,10,0" Click="SaveExternalSettings_Click"/>
                         <Button Content="Connect Now" Padding="12,5" Click="ConnectNowButton_Click"/>
                     </StackPanel>
                 </Grid>
             </TabItem>
+
+            <!-- MORE OPTIONS TAB (formerly "Options", now 3rd) -->
+            <TabItem Header="More Options">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Auto Connect -->
+                    <GroupBox Grid.Row="0" Header="Auto Connect" Margin="0,0,0,15">
+                        <CheckBox x:Name="AutoConnectCheckBox"
+                                  Content="Connect on startup"
+                                  Checked="AutoConnectCheckBox_Checked"
+                                  Unchecked="AutoConnectCheckBox_Checked"/>
+                    </GroupBox>
+
+                    <!-- Notifications -->
+                    <GroupBox Grid.Row="1" Header="Notifications" Margin="0,0,0,15">
+                        <CheckBox x:Name="ShowNotificationsCheckBox"
+                                  Content="Show connect/disconnect notifications" Checked="ShowNotificationsCheckBox_Changed" Unchecked="ShowNotificationsCheckBox_Changed"/>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
         </TabControl>
 
-        <!-- Bottom: Only Close button -->
+        <!-- Bottom: Close button -->
         <Button Grid.Row="1" Content="Close" HorizontalAlignment="Right" Padding="12,5" Click="CloseButton_Click"/>
     </Grid>
 </Window>

@@ -41,7 +41,7 @@ namespace Protes
             EnsureAppDataFolder();
             UpdateStatusBar();
             UpdateButtonStates();
-
+            var showNotifications = Properties.Settings.Default.ShowNotifications;
             if (Properties.Settings.Default.AutoConnect)
             {
                 Dispatcher.BeginInvoke(new Action(() =>
@@ -234,7 +234,48 @@ namespace Protes
             Properties.Settings.Default.Save();
             UpdateDatabaseModeCheckmarks();
             UpdateStatusBar();
-            MessageBox.Show("Local database (SQLite) selected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            try
+            {
+                // Ensure table exists
+                using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                {
+                    conn.Open();
+                    using (var cmd = new SQLiteCommand(@"
+                CREATE TABLE IF NOT EXISTS Notes (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Title TEXT NOT NULL,
+                    Content TEXT,
+                    Tags TEXT,
+                    LastModified TEXT
+                )", conn))
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                // Reconnect
+                if (_isConnected)
+                {
+                    Disconnect_Click(this, new RoutedEventArgs());
+                }
+
+                LoadNotesFromDatabase();
+                _isConnected = true;
+                NotesDataGrid.Visibility = Visibility.Visible;
+                DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
+                UpdateButtonStates();
+
+                // Show notification only if enabled
+                if (Properties.Settings.Default.ShowNotifications)
+                {
+                    MessageBox.Show("Local database (SQLite) selected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to connect to local database:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void UseExternalDb_Click(object sender, RoutedEventArgs e)
@@ -355,7 +396,12 @@ namespace Protes
             DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
             UpdateStatusBar();
             UpdateButtonStates();
-            MessageBox.Show("Connected successfully!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            // Show notification only if enabled
+            if (Properties.Settings.Default.ShowNotifications)
+            {
+                MessageBox.Show("Connected successfully!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         public void SwitchDatabase(string newDatabasePath)
@@ -376,7 +422,12 @@ namespace Protes
             DisconnectedPlaceholder.Visibility = Visibility.Visible;
             UpdateStatusBar();
             UpdateButtonStates();
-            MessageBox.Show("Disconnected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            // Show notification only if enabled
+            if (Properties.Settings.Default.ShowNotifications)
+            {
+                MessageBox.Show("Disconnected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private void Quit_Click(object sender, RoutedEventArgs e)
