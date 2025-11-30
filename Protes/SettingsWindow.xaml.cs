@@ -289,7 +289,8 @@ namespace Protes.Views
             Properties.Settings.Default.LastLocalDatabasePath = newDbPath;
             Properties.Settings.Default.Save();
 
-            _mainWindow.SwitchDatabase(newDbPath);
+            _mainWindow.SwitchToLocalDatabase(newDbPath);
+
             LoadLocalDatabases();
         }
 

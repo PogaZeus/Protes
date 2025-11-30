@@ -183,7 +183,7 @@ namespace Protes
             UpdateDatabaseModeCheckmarks();
         }
 
-        private void UpdateDatabaseModeCheckmarks()
+        public void UpdateDatabaseModeCheckmarks()
         {
             var localItem = (MenuItem)OptionsMenu.Items[0];
             var externalItem = (MenuItem)OptionsMenu.Items[1];
@@ -194,7 +194,7 @@ namespace Protes
                                     !string.IsNullOrWhiteSpace(Properties.Settings.Default.External_Database);
         }
 
-        private void UpdateStatusBar()
+        public void UpdateStatusBar()
         {
             if (!_isConnected)
             {
@@ -275,6 +275,54 @@ namespace Protes
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to connect to local database:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // Same as above BUT Public method to switch to AND connect a local database (from another Window such as Settings)
+        public void SwitchToLocalDatabase(string databasePath)
+        {
+            _currentMode = DatabaseMode.Local;
+            _databasePath = databasePath;
+            Properties.Settings.Default.DatabaseMode = "Local";
+            Properties.Settings.Default.LastLocalDatabasePath = databasePath;
+            Properties.Settings.Default.Save();
+
+            try
+            {
+                using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                {
+                    conn.Open();
+                    using (var cmd = new SQLiteCommand(@"
+                CREATE TABLE IF NOT EXISTS Notes (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Title TEXT NOT NULL,
+                    Content TEXT,
+                    Tags TEXT,
+                    LastModified TEXT
+                )", conn))
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                if (_isConnected)
+                {
+                    _isConnected = false;
+                }
+
+                LoadNotesFromDatabase();
+                _isConnected = true;
+                NotesDataGrid.Visibility = Visibility.Visible;
+                DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
+                UpdateStatusBar();
+                UpdateButtonStates();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to connect to local database:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                _isConnected = false;
+                UpdateStatusBar();
+                UpdateButtonStates();
             }
         }
 
