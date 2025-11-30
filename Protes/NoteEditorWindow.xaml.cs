@@ -24,6 +24,18 @@ namespace Protes.Views
         public string NoteTitle { get; private set; }
         public string NoteContent { get; private set; }
         public string NoteTags { get; private set; }
+        private void UpdateWindowTitle()
+        {
+            string baseTitle = string.IsNullOrWhiteSpace(TitleBox.Text)
+                ? "Untitled"
+                : TitleBox.Text;
+
+            string displayTitle = HasUnsavedChanges()
+                ? $"Note: {baseTitle}**"
+                : $"Note: {baseTitle}";
+
+            Title = displayTitle;
+        }
 
         public NoteEditorWindow(
             string title = "",
@@ -49,6 +61,14 @@ namespace Protes.Views
             _originalTitle = title ?? "";
             _originalContent = content ?? "";
             _originalTags = tags ?? "";
+
+            // Update title after content is set
+            UpdateWindowTitle();
+
+            // Track changes
+            TitleBox.TextChanged += (s, e) => UpdateWindowTitle();
+            ContentBox.TextChanged += (s, e) => UpdateWindowTitle();
+            TagsBox.TextChanged += (s, e) => UpdateWindowTitle();
 
             // Set up real-time updates (Ln, Col)
             ContentBox.SelectionChanged += (s, e) => UpdateCursorPosition();
@@ -170,6 +190,7 @@ namespace Protes.Views
                 _originalTitle = title;
                 _originalContent = content;
                 _originalTags = tags;
+                UpdateWindowTitle();
             }
             else
             {
