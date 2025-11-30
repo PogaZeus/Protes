@@ -3,11 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Replace"
         Width="500"
-        Height="240"
+        Height="200"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
-        MinWidth="400"
-        MinHeight="240">
+        MinWidth="420"
+        MinHeight="200">
 
     <Grid Margin="10">
         <Grid.RowDefinitions>

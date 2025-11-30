@@ -3,11 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Find" 
         Width="500" 
-        Height="180"
+        Height="155"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
         MinWidth="400"
-        MinHeight="180">
+        MinHeight="155">
 
     <Grid Margin="10">
         <Grid.RowDefinitions>
