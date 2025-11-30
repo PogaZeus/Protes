@@ -20,7 +20,7 @@ namespace Protes.Views
         private string _lastSearchTerm = "";
         private bool _lastMatchCase = false;
         private bool _lastSearchUp = false; // false = Down, true = Up
-
+        private ReplaceDialog _replaceDialog;
         public string NoteTitle { get; private set; }
         public string NoteContent { get; private set; }
         public string NoteTags { get; private set; }
@@ -343,38 +343,58 @@ namespace Protes.Views
             ContentBox.Select(index, _lastSearchTerm.Length);
             ContentBox.ScrollToLine(ContentBox.GetLineIndexFromCharacterIndex(index));
         }
-
         private void ReplaceMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new ReplaceDialog { Owner = this };
-
-            if (dialog.ShowDialog() != true)
-                return;
-
-            string search = dialog.SearchText;
-            string replace = dialog.ReplaceText;
-
-            if (dialog.ReplaceAllRequested)
+            if (_replaceDialog == null)
             {
-                // FIXED — works on .NET Framework & Core
-                ContentBox.Text = ReplaceIgnoreCase(ContentBox.Text, search, replace);
-                return;
+                _replaceDialog = new ReplaceDialog { Owner = this };
+                _replaceDialog.FindNextRequested += () =>
+                {
+                    _lastSearchTerm = _replaceDialog.SearchText;
+                    _lastMatchCase = _replaceDialog.MatchCase;
+                    _lastSearchUp = false;
+                    FindNext();
+                };
+                _replaceDialog.ReplaceRequested += () =>
+                {
+                    _lastSearchTerm = _replaceDialog.SearchText;
+                    _lastMatchCase = _replaceDialog.MatchCase;
+
+                    if (ContentBox.SelectionLength > 0 &&
+                        string.Equals(ContentBox.SelectedText, _lastSearchTerm,
+                            _lastMatchCase ? StringComparison.CurrentCulture : StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        ContentBox.SelectedText = _replaceDialog.ReplaceText;
+                        // Move cursor to end of replacement
+                        ContentBox.SelectionStart = ContentBox.SelectionStart + _replaceDialog.ReplaceText.Length;
+                    }
+                    else
+                    {
+                        // Find next, then replace
+                        _lastSearchUp = false;
+                        FindNext();
+                        if (ContentBox.SelectionLength > 0 &&
+                            string.Equals(ContentBox.SelectedText, _lastSearchTerm,
+                                _lastMatchCase ? StringComparison.CurrentCulture : StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            ContentBox.SelectedText = _replaceDialog.ReplaceText;
+                            ContentBox.SelectionStart = ContentBox.SelectionStart + _replaceDialog.ReplaceText.Length;
+                        }
+                    }
+                };
+                _replaceDialog.ReplaceAllRequested += () =>
+                {
+                    _lastSearchTerm = _replaceDialog.SearchText;
+                    _lastMatchCase = _replaceDialog.MatchCase;
+                    ReplaceAll();
+                };
+                _replaceDialog.Closed += (s, args) => _replaceDialog = null;
             }
 
-            // Replace single
-            if (ContentBox.SelectedText.Equals(search, StringComparison.CurrentCultureIgnoreCase))
-            {
-                ContentBox.SelectedText = replace;
-            }
-            else
-            {
-                _lastSearchTerm = search;
-                FindNext();
-                if (ContentBox.SelectedText.Equals(search, StringComparison.CurrentCultureIgnoreCase))
-                    ContentBox.SelectedText = replace;
-            }
+            _replaceDialog.Show();
+            _replaceDialog.FindTextBox.SelectAll();
+            _replaceDialog.FindTextBox.Focus();
         }
-
         private string ReplaceIgnoreCase(string text, string search, string replace)
         {
             return System.Text.RegularExpressions.Regex.Replace(
@@ -385,7 +405,33 @@ namespace Protes.Views
             );
         }
 
+        private void ReplaceAll()
+        {
+            if (string.IsNullOrEmpty(_lastSearchTerm)) return;
 
+            string text = ContentBox.Text;
+            string result;
+
+            if (_lastMatchCase)
+            {
+                result = text.Replace(_lastSearchTerm, _replaceDialog.ReplaceText);
+            }
+            else
+            {
+                result = System.Text.RegularExpressions.Regex.Replace(
+                    text,
+                    System.Text.RegularExpressions.Regex.Escape(_lastSearchTerm),
+                    _replaceDialog.ReplaceText,
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                );
+            }
+
+            // Preserve caret position (approximate)
+            int oldStart = ContentBox.SelectionStart;
+            ContentBox.Text = result;
+            ContentBox.SelectionStart = Math.Min(oldStart, ContentBox.Text.Length);
+            ContentBox.Focus();
+        }
 
         private void GoToMenuItem_Click(object sender, RoutedEventArgs e)
         {

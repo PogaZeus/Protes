@@ -1,28 +1,68 @@
 ﻿<Window x:Class="Protes.ReplaceDialog"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        Title="Replace" Width="320" Height="200" WindowStartupLocation="CenterOwner">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Replace"
+        Width="500"
+        Height="240"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        MinWidth="400"
+        MinHeight="240">
+
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal">
-            <Label Content="Find what:" Width="90"/>
-            <TextBox x:Name="FindTextBox" Width="200"/>
+        <!-- Find what -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Label Content="Find what:" Margin="0,0,10,0" VerticalAlignment="Center"/>
+            <TextBox x:Name="FindTextBox" Grid.Column="1" Height="26"/>
+        </Grid>
+
+        <!-- Replace with -->
+        <Grid Grid.Row="1" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Label Content="Replace with:" Margin="0,0,10,0" VerticalAlignment="Center"/>
+            <TextBox x:Name="ReplaceTextBox" Grid.Column="1" Height="26"/>
+        </Grid>
+
+        <!-- Options -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
+            <CheckBox x:Name="MatchCaseCheckBox" Content="Match case"/>
         </StackPanel>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="0,10,0,0">
-            <Label Content="Replace with:" Width="90"/>
-            <TextBox x:Name="ReplaceTextBox" Width="200"/>
-        </StackPanel>
-
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button Width="80" Margin="5" Content="Replace" Click="Replace_Click"/>
-            <Button Width="100" Margin="5" Content="Replace All" Click="ReplaceAll_Click"/>
-            <Button Width="70" Margin="5" Content="Cancel" Click="Cancel_Click"/>
+        <!-- Buttons -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button x:Name="FindNextButton"
+                    Content="Find Next"
+                    Width="80"
+                    Margin="5"
+                    Click="FindNext_Click"/>
+            <Button x:Name="ReplaceButton"
+                    Content="Replace"
+                    Width="80"
+                    Margin="5"
+                    Click="Replace_Click"/>
+            <Button Content="Replace All"
+                    Width="90"
+                    Margin="5"
+                    Click="ReplaceAll_Click"/>
+            <Button Content="Cancel"
+                    Width="80"
+                    Margin="5"
+                    IsCancel="True"
+                    Click="Cancel_Click"/>
         </StackPanel>
     </Grid>
 </Window>
