@@ -77,15 +77,73 @@ namespace Protes.Views
         // ===== File Menu Shortcut Keydown Detection =====
         private void NoteEditorWindow_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.N && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            var modifiers = Keyboard.Modifiers;
+
+            // Ctrl+N → New Note
+            if (e.Key == Key.N && modifiers == ModifierKeys.Control)
             {
                 NewNoteMenuItem_Click(this, new RoutedEventArgs());
                 e.Handled = true;
             }
-            else if (e.Key == Key.S && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            // Ctrl+S → Save
+            else if (e.Key == Key.S && modifiers == ModifierKeys.Control)
             {
                 SaveButton_Click(this, new RoutedEventArgs());
-                e.Handled = true; // ← prevents "s" from appearing in text
+                e.Handled = true;
+            }
+            // Ctrl+F → Find
+            else if (e.Key == Key.F && modifiers == ModifierKeys.Control)
+            {
+                FindMenuItem_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            // Shift+F3 → Find Previous
+            else if (e.Key == Key.F3 && modifiers == ModifierKeys.Shift)
+            {
+                FindPreviousMenuItem_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            // F3 → Find Next
+            else if (e.Key == Key.F3)
+            {
+                FindNextMenuItem_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            // Ctrl+H → Replace
+            else if (e.Key == Key.H && modifiers == ModifierKeys.Control)
+            {
+                ReplaceMenuItem_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            // Ctrl+G → Go To
+            else if (e.Key == Key.G && modifiers == ModifierKeys.Control)
+            {
+                GoToMenuItem_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            // F5 → Insert Date/Time
+            else if (e.Key == Key.F5)
+            {
+                InsertDateTimeMenuItem_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            // Ctrl+Plus → Zoom In (Note: Plus is on main keyboard or numpad)
+            else if ((e.Key == Key.OemPlus || e.Key == Key.Add) && modifiers == ModifierKeys.Control)
+            {
+                ZoomInMenuItem_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            // Ctrl+Minus → Zoom Out
+            else if ((e.Key == Key.OemMinus || e.Key == Key.Subtract) && modifiers == ModifierKeys.Control)
+            {
+                ZoomOutMenuItem_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            // Ctrl+0 → Restore Zoom
+            else if (e.Key == Key.D0 && modifiers == ModifierKeys.Control)
+            {
+                RestoreZoomMenuItem_Click(this, new RoutedEventArgs());
+                e.Handled = true;
             }
         }
 
