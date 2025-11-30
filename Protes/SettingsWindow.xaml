@@ -184,29 +184,55 @@
                 </Grid>
             </TabItem>
 
-            <!-- MORE OPTIONS TAB (formerly "Options", now 3rd) -->
+            <!-- MORE OPTIONS TAB -->
             <TabItem Header="More Options">
-                <Grid Margin="10">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
-                    <!-- Auto Connect -->
-                    <GroupBox Grid.Row="0" Header="Auto Connect" Margin="0,0,0,15">
-                        <CheckBox x:Name="AutoConnectCheckBox"
-                                  Content="Connect on startup"
-                                  Checked="AutoConnectCheckBox_Checked"
-                                  Unchecked="AutoConnectCheckBox_Checked"/>
-                    </GroupBox>
+                        <!-- Default Database Folder -->
+                        <GroupBox Grid.Row="1" Header="Default Database Folder" Margin="0,0,0,15">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock x:Name="DefaultDbFolderText"
+                                           Text="C:\Users\...\AppData\Roaming\Protes"
+                                           TextWrapping="Wrap"
+                                           FontStyle="Italic"
+                                           Margin="0,0,0,5"/>
+                                <Button Grid.Row="1"
+                                        Content="Change Folder…"
+                                        Padding="8,3"
+                                        HorizontalAlignment="Left"
+                                        Click="ChangeDefaultFolderButton_Click"/>
+                            </Grid>
+                        </GroupBox>
+                        
+                        <!-- Auto Connect -->
+                        <GroupBox Grid.Row="2" Header="Auto Connect" Margin="0,0,0,15">
+                            <CheckBox x:Name="AutoConnectCheckBox"
+                                      Content="Connect on startup"
+                                      Checked="AutoConnectCheckBox_Checked"
+                                      Unchecked="AutoConnectCheckBox_Checked"/>
+                        </GroupBox>
 
-                    <!-- Notifications -->
-                    <GroupBox Grid.Row="1" Header="Notifications" Margin="0,0,0,15">
-                        <CheckBox x:Name="ShowNotificationsCheckBox"
-                                  Content="Show connect/disconnect notifications" Checked="ShowNotificationsCheckBox_Changed" Unchecked="ShowNotificationsCheckBox_Changed"/>
-                    </GroupBox>
-                </Grid>
+                        <!-- Notifications -->
+                        <GroupBox Grid.Row="3" Header="Notifications" Margin="0,0,0,15">
+                            <CheckBox x:Name="ShowNotificationsCheckBox"
+                                      Content="Show connect/disconnect notifications"
+                                      Checked="ShowNotificationsCheckBox_Changed"
+                                      Unchecked="ShowNotificationsCheckBox_Changed"/>
+                        </GroupBox>
+                    </Grid>
+                </ScrollViewer>
             </TabItem>
         </TabControl>
 

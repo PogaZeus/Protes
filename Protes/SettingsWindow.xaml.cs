@@ -11,7 +11,7 @@ namespace Protes.Views
 {
     public partial class SettingsWindow : Window
     {
-        private string _appDataFolder;
+        private string _appDataFolder; // ← This is now the *default* folder (may be changed by user)
         private string _currentDatabasePath;
         private MainWindow _mainWindow;
         private List<string> _importedDbPaths = new List<string>();
@@ -21,35 +21,39 @@ namespace Protes.Views
             InitializeComponent();
             _currentDatabasePath = currentDatabasePath;
             _mainWindow = mainWindow;
-            _appDataFolder = Path.GetDirectoryName(_currentDatabasePath) ?? Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Protes");
+
+            // ✅ Load user-defined default folder, or fallback to %AppData%\Protes
+            string savedDefaultFolder = Properties.Settings.Default.DefaultDatabaseFolder;
+            if (!string.IsNullOrWhiteSpace(savedDefaultFolder) && Directory.Exists(savedDefaultFolder))
+            {
+                _appDataFolder = savedDefaultFolder;
+            }
+            else
+            {
+                _appDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Protes");
+                // Save default if not set
+                Properties.Settings.Default.DefaultDatabaseFolder = _appDataFolder;
+                Properties.Settings.Default.Save();
+            }
 
             if (!Directory.Exists(_appDataFolder))
                 Directory.CreateDirectory(_appDataFolder);
 
-            // Load settings
-            LoadPersistedSettings();
+            // Load UI state
+            AutoConnectCheckBox.IsChecked = Properties.Settings.Default.AutoConnect;
+            ShowNotificationsCheckBox.IsChecked = Properties.Settings.Default.ShowNotifications;
+            DefaultDbFolderText.Text = _appDataFolder; // 👈 Show current default folder
+
             CurrentDbPathText.Text = _currentDatabasePath;
             LoadLocalDatabases();
             LoadExternalSettings();
-        }
-
-        private void LoadPersistedSettings()
-        {
-            // Auto Connect
-            bool autoConnect = Properties.Settings.Default.AutoConnect;
-            AutoConnectCheckBox.IsChecked = autoConnect;
-
-            // Notifications
-            bool showNotifications = Properties.Settings.Default.ShowNotifications;
-            ShowNotificationsCheckBox.IsChecked = showNotifications;
         }
 
         private void LoadLocalDatabases()
         {
             var dbFiles = new List<DbFileInfo>();
 
-            // 1. Default app folder
+            // 1. Default app folder (now user-configurable)
             if (Directory.Exists(_appDataFolder))
             {
                 var defaultFiles = Directory.GetFiles(_appDataFolder, "*.db");
@@ -64,12 +68,12 @@ namespace Protes.Views
                 }
             }
 
-            // 2. Imported databases (from any location)
+            // 2. Imported databases
             var importedRaw = Properties.Settings.Default.ImportedDatabasePaths;
             if (!string.IsNullOrWhiteSpace(importedRaw))
             {
                 _importedDbPaths = new List<string>(importedRaw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
-                _importedDbPaths.RemoveAll(p => !File.Exists(p)); // clean stale paths
+                _importedDbPaths.RemoveAll(p => !File.Exists(p));
             }
 
             foreach (var path in _importedDbPaths)
@@ -95,25 +99,63 @@ namespace Protes.Views
             PortTextBox.Text = Properties.Settings.Default.External_Port?.ToString() ?? "3306";
             DatabaseTextBox.Text = Properties.Settings.Default.External_Database ?? "";
             UsernameTextBox.Text = Properties.Settings.Default.External_Username ?? "";
-            // Password not loaded for security
+            // Password not loaded
         }
 
-        // ===== OPTIONS TAB =====
+        // ===== MORE OPTIONS =====
 
         private void AutoConnectCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             bool isChecked = AutoConnectCheckBox.IsChecked == true;
             Properties.Settings.Default.AutoConnect = isChecked;
             Properties.Settings.Default.Save();
-
-            // Sync with MainWindow checkbox
             _mainWindow.AutoConnectCheckBox.IsChecked = isChecked;
         }
 
         private void ShowNotificationsCheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            Properties.Settings.Default.ShowNotifications = ShowNotificationsCheckBox.IsChecked == true;
+            bool isChecked = ShowNotificationsCheckBox.IsChecked == true;
+            Properties.Settings.Default.ShowNotifications = isChecked;
             Properties.Settings.Default.Save();
+        }
+
+        // ✅ NEW: Change Default Database Folder
+        private void ChangeDefaultFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            var folderDialog = new System.Windows.Forms.FolderBrowserDialog
+            {
+                Description = "Select the default folder for Protes databases:",
+                SelectedPath = _appDataFolder,
+                ShowNewFolderButton = true
+            };
+
+            // Must reference System.Windows.Forms for FolderBrowserDialog
+            if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                string newFolder = folderDialog.SelectedPath;
+
+                // Optional: confirm it's writable
+                try
+                {
+                    var testFile = Path.Combine(newFolder, ".protes_test");
+                    File.WriteAllText(testFile, "ok");
+                    File.Delete(testFile);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Cannot write to selected folder:\n{ex.Message}", "Access Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Update and save
+                _appDataFolder = newFolder;
+                Properties.Settings.Default.DefaultDatabaseFolder = newFolder;
+                Properties.Settings.Default.Save();
+                DefaultDbFolderText.Text = newFolder;
+
+                // Refresh list
+                LoadLocalDatabases();
+            }
         }
 
         // ===== LOCAL DATABASE ACTIONS =====
@@ -143,14 +185,11 @@ namespace Protes.Views
                     if (switchResult == MessageBoxResult.Yes)
                     {
                         string exportedPath = saveDialog.FileName;
-
-                        // Only add to imported list if NOT in the default app folder
                         bool isInDefaultFolder = Path.GetDirectoryName(exportedPath)
                             .Equals(_appDataFolder, StringComparison.OrdinalIgnoreCase);
 
                         if (!isInDefaultFolder)
                         {
-                            // Add to imported list if not already present
                             if (!_importedDbPaths.Contains(exportedPath))
                             {
                                 _importedDbPaths.Add(exportedPath);
@@ -159,7 +198,6 @@ namespace Protes.Views
                             }
                         }
 
-                        // Now switch
                         SwitchToDatabase(exportedPath);
                     }
                 }
@@ -264,25 +302,22 @@ namespace Protes.Views
             }
         }
 
-        // ===== NEW: Remove from List =====
         private void RemoveFromListButton_Click(object sender, RoutedEventArgs e)
         {
             var selectedItem = LocalDbList.SelectedItem as DbFileInfo;
             if (selectedItem == null) return;
 
-            // If it's NOT imported (i.e. in default folder), show explanatory message
             if (!selectedItem.IsImported)
             {
                 MessageBox.Show(
-            "This cannot be removed from the list as it is stored in the default database folder which is scanned for databases. " +
-            "Your options are: keep it, move it to another folder, or delete it from the disk.",
-            "Cannot Remove From List!",
+                    "This cannot be removed from the list as it is stored in the default database folder. " +
+                    "Your options are: keep it, move it to another folder, or delete it from the disk.",
+                    "Cannot Remove",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
                 return;
             }
 
-            // Only imported databases can be removed from the list
             if (MessageBox.Show(
                 $"Remove '{selectedItem.FileName.Replace(" (imported)", "")}' from the list?\n\nThe file will NOT be deleted.",
                 "Remove from List",
@@ -296,29 +331,20 @@ namespace Protes.Views
             }
         }
 
-        // ===== NEW: Delete Database =====
         private void DeleteDatabaseButton_Click(object sender, RoutedEventArgs e)
         {
             var selectedItem = LocalDbList.SelectedItem as DbFileInfo;
             if (selectedItem == null) return;
 
             string fileName = Path.GetFileName(selectedItem.FullPath);
-            string message;
-
-            if (selectedItem.IsImported)
-            {
-                message = $"Delete the database file '{fileName}' from your computer?\n\nThis will permanently remove the file.";
-            }
-            else
-            {
-                message = $"Delete the database file '{fileName}'?\n\nThis will permanently remove it from the Protes app data folder.";
-            }
+            string message = selectedItem.IsImported
+                ? $"Delete the database file '{fileName}' from your computer?\n\nThis will permanently remove the file."
+                : $"Delete the database file '{fileName}'?\n\nThis will permanently remove it from the Protes app data folder.";
 
             if (MessageBox.Show(message, "Delete Database", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
             {
                 try
                 {
-                    // Prevent deleting currently loaded DB
                     if (selectedItem.FullPath == _currentDatabasePath)
                     {
                         MessageBox.Show("Cannot delete the currently loaded database.", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -327,7 +353,6 @@ namespace Protes.Views
 
                     File.Delete(selectedItem.FullPath);
 
-                    // If it was imported, remove from list too
                     if (selectedItem.IsImported)
                     {
                         _importedDbPaths.Remove(selectedItem.FullPath);
@@ -345,7 +370,7 @@ namespace Protes.Views
             }
         }
 
-        // ===== EXTERNAL DATABASE BUTTONS (unchanged) =====
+        // ===== EXTERNAL DATABASE =====
 
         private void SaveExternalSettings_Click(object sender, RoutedEventArgs e)
         {
@@ -401,6 +426,5 @@ namespace Protes.Views
             public string FullPath { get; set; }
             public bool IsImported { get; set; }
         }
-
     }
 }

@@ -166,5 +166,17 @@ namespace Protes.Properties {
                 this["ShowNotifications"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string DefaultDatabaseFolder {
+            get {
+                return ((string)(this["DefaultDatabaseFolder"]));
+            }
+            set {
+                this["DefaultDatabaseFolder"] = value;
+            }
+        }
     }
 }
