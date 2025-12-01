@@ -20,11 +20,17 @@
         <!-- === MENU BAR === -->
         <Menu Grid.Row="0" x:Name="MainMenu">
             <MenuItem Header="_File">
+                <!-- NEW: Note actions -->
+                <MenuItem x:Name="NewNoteMenuItem" Header="_New" Click="NewNoteButton_Click"/>
+                <MenuItem x:Name="EditNoteMenuItem" Header="_Edit" Click="EditNoteButton_Click"/>
+                <MenuItem x:Name="DeleteNoteMenuItem" Header="_Delete" Click="DeleteNoteButton_Click"/>
+                <Separator/>
                 <MenuItem Header="_Connect" Click="Connect_Click"/>
                 <MenuItem Header="_Disconnect" Click="Disconnect_Click"/>
                 <Separator/>
                 <MenuItem Header="_Quit" Click="Quit_Click"/>
             </MenuItem>
+
             <MenuItem Header="_Options" Name="OptionsMenu">
                 <MenuItem Header="Local Database" Click="UseLocalDb_Click" IsCheckable="True"/>
                 <MenuItem Header="External Database" Click="UseExternalDb_Click" IsCheckable="True"/>
@@ -32,14 +38,29 @@
                 <MenuItem Header="_Settings" Click="OpenSettings_Click"/>
             </MenuItem>
 
-            <!-- 👇 NEW: Info > About -->
+            <!-- NEW: View Menu -->
+            <MenuItem Header="_View">
+                <MenuItem x:Name="ViewTitleMenuItem" Header="Title" IsCheckable="True" Checked="ViewTitleMenuItem_Checked" Unchecked="ViewTitleMenuItem_Checked"/>
+                <MenuItem x:Name="ViewTagsMenuItem" Header="Tags" IsCheckable="True" Checked="ViewTagsMenuItem_Checked" Unchecked="ViewTagsMenuItem_Checked"/>
+                <MenuItem x:Name="ViewModifiedMenuItem" Header="Modified" IsCheckable="True" Checked="ViewModifiedMenuItem_Checked" Unchecked="ViewModifiedMenuItem_Checked"/>
+                <Separator/>
+                <MenuItem Header="_Zoom">
+                    <MenuItem Header="Zoom _In" Click="ZoomInMenuItem_Click" InputGestureText="Ctrl+Plus"/>
+                    <MenuItem Header="Zoom _Out" Click="ZoomOutMenuItem_Click" InputGestureText="Ctrl+Minus"/>
+                    <MenuItem Header="_Restore Zoom" Click="RestoreZoomMenuItem_Click" InputGestureText="Ctrl+0"/>
+                </MenuItem>
+                <Separator/>
+                <MenuItem x:Name="ViewToolbarMenuItem" Header="Toolbar" IsCheckable="True" Checked="ViewToolbarMenuItem_Checked" Unchecked="ViewToolbarMenuItem_Checked"/>
+            </MenuItem>
+
+            <!-- Info Menu -->
             <MenuItem Header="_Info">
                 <MenuItem Header="_About" Click="AboutMenuItem_Click"/>
             </MenuItem>
         </Menu>
 
         <!-- === ICON TRAY + NOTE ACTIONS + SEARCH === -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="10,5"
+        <StackPanel x:Name="ToolbarStackPanel" Grid.Row="1" Orientation="Horizontal" Margin="10,5"
             HorizontalAlignment="Left" VerticalAlignment="Top">
             <!-- Connection & Settings Icons -->
             <Button x:Name="ConnectIconBtn" Content="🔌" FontSize="16" Width="32" Height="32"
@@ -83,7 +104,7 @@
         </StackPanel>
 
         <!-- === NOTES TABLE (DATA GRID) === -->
-        <DataGrid Grid.Row="2" x:Name="NotesDataGrid" Margin="5"
+        <DataGrid Grid.Row="2" x:Name="NotesDataGrid" PreviewMouseDown="NotesDataGrid_PreviewMouseDown" Margin="5"
                   AutoGenerateColumns="False"
                   IsReadOnly="False"
                   CanUserAddRows="False" 

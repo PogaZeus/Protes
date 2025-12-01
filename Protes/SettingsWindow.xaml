@@ -220,7 +220,7 @@
                         <GroupBox Grid.Row="2" Header="Connection Automation" Margin="0,0,0,15">
                             <StackPanel>
                                 <CheckBox x:Name="AutoConnectCheckBox"
-                  Content="Connect on startup"
+                  Content="Connect when program launches"
                   Checked="AutoConnectCheckBox_Checked"
                   Unchecked="AutoConnectCheckBox_Checked" Margin="0,5,0,0"/>
                                 <CheckBox x:Name="AutoConnectOnSwitchCheckBox"
@@ -228,7 +228,7 @@
                   Checked="AutoConnectOnSwitchCheckBox_Checked"
                   Unchecked="AutoConnectOnSwitchCheckBox_Checked" Margin="0,5,0,0"/>
                                 <CheckBox x:Name="AutoDisconnectOnSwitchCheckBox"
-                  Content="Auto disconnect when switching database mode (options menu)"
+                  Content="Disconnect when switching database mode (options menu)"
                   Checked="AutoDisconnectOnSwitchCheckBox_Checked"
                   Unchecked="AutoDisconnectOnSwitchCheckBox_Checked" Margin="0,5,0,0"/>
                             </StackPanel>

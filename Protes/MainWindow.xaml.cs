@@ -1,13 +1,14 @@
-﻿using Protes.Views;
+﻿using MySqlConnector;
+using Protes.Properties;
+using Protes.Views;
 using System;
 using System.Collections.Generic;
+using System.Data.SQLite;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Protes.Properties;
-using MySqlConnector;
-using System.Data.SQLite;
+using System.Windows.Media;
 
 namespace Protes
 {
@@ -22,6 +23,7 @@ namespace Protes
         private NoteItem _editingItem;
         private string _originalTitle;
         private string _externalConnectionString = "";
+        private bool _isToolbarVisible = true;
         public MainWindow()
         {
             string lastPath = Properties.Settings.Default.LastLocalDatabasePath;
@@ -42,7 +44,20 @@ namespace Protes
             EnsureAppDataFolder();
             UpdateStatusBar();
             UpdateButtonStates();
+
+            // Load View settings
+            ViewTitleMenuItem.IsChecked = Properties.Settings.Default.ViewMainWindowTitle;
+            ViewTagsMenuItem.IsChecked = Properties.Settings.Default.ViewMainWindowTags;
+            ViewModifiedMenuItem.IsChecked = Properties.Settings.Default.ViewMainWindowMod;
+            ViewToolbarMenuItem.IsChecked = Properties.Settings.Default.ViewMainToolbar;
+            _isToolbarVisible = Properties.Settings.Default.ViewMainToolbar;
+
+            // Apply initial state
+            UpdateDataGridColumns();
+            UpdateToolbarVisibility();
+
             Loaded += MainWindow_Loaded;
+            NotesDataGrid.SelectionChanged += (s, e) => UpdateButtonStates();
             var showNotifications = Properties.Settings.Default.ShowNotifications;
         }
 
@@ -76,31 +91,124 @@ namespace Protes
             }
         }
 
+        // ===== VIEW MENU =====
+        private void ViewTitleMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = ViewTitleMenuItem.IsChecked == true;
+            Properties.Settings.Default.ViewMainWindowTitle = isChecked;
+            Properties.Settings.Default.Save();
+            UpdateDataGridColumns();
+        }
+
+        private void ViewTagsMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = ViewTagsMenuItem.IsChecked == true;
+            Properties.Settings.Default.ViewMainWindowTags = isChecked;
+            Properties.Settings.Default.Save();
+            UpdateDataGridColumns();
+        }
+
+        private void ViewModifiedMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = ViewModifiedMenuItem.IsChecked == true;
+            Properties.Settings.Default.ViewMainWindowMod = isChecked;
+            Properties.Settings.Default.Save();
+            UpdateDataGridColumns();
+        }
+
+        private void ViewToolbarMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = ViewToolbarMenuItem.IsChecked == true;
+            Properties.Settings.Default.ViewMainToolbar = isChecked;
+            Properties.Settings.Default.Save();
+            _isToolbarVisible = isChecked;
+            UpdateToolbarVisibility();
+        }
+        private void ZoomInMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            // TODO: Implement zoom for MainWindow (e.g., DataGrid font size)
+            MessageBox.Show("Zoom In (MainWindow) - Not implemented yet", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void ZoomOutMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Zoom Out (MainWindow) - Not implemented yet", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void RestoreZoomMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Restore Zoom (MainWindow) - Not implemented yet", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // Toolbar options
         private void AutoConnectCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             Properties.Settings.Default.AutoConnect = AutoConnectCheckBox.IsChecked == true;
             Properties.Settings.Default.Save();
         }
 
+        // helper methods
         private void UpdateButtonStates()
         {
+            bool hasSelection = NotesDataGrid?.SelectedItem != null;
+
+            // Toolbar buttons
             NewNoteButton.IsEnabled = _isConnected;
-            EditNoteButton.IsEnabled = _isConnected;
-            DeleteNoteButton.IsEnabled = _isConnected;
+            EditNoteButton.IsEnabled = _isConnected && hasSelection;
+            DeleteNoteButton.IsEnabled = _isConnected && hasSelection;
             SearchBox.IsEnabled = _isConnected;
             ConnectIconBtn.IsEnabled = !_isConnected;
             DisconnectIconBtn.IsEnabled = _isConnected;
 
+            // File menu items
+            NewNoteMenuItem.IsEnabled = _isConnected;
+            EditNoteMenuItem.IsEnabled = _isConnected && hasSelection;
+            DeleteNoteMenuItem.IsEnabled = _isConnected && hasSelection;
+
+            // File menu Connect/Disconnect
             if (MainMenu?.Items.Count > 0)
             {
-                var fileMenuItem = MainMenu.Items[0] as MenuItem;
-                if (fileMenuItem?.Items.Count >= 2)
+                var fileMenuItem = MainMenu.Items[0] as MenuItem; // "_File"
+                if (fileMenuItem?.Items.Count >= 6) // New, Edit, Delete, Sep, Connect, Disconnect
                 {
-                    var connectMenuItem = fileMenuItem.Items[0] as MenuItem;
-                    var disconnectMenuItem = fileMenuItem.Items[1] as MenuItem;
+                    // Connect = index 4, Disconnect = index 5
+                    var connectMenuItem = fileMenuItem.Items[4] as MenuItem;
+                    var disconnectMenuItem = fileMenuItem.Items[5] as MenuItem;
                     connectMenuItem?.SetValue(MenuItem.IsEnabledProperty, !_isConnected);
                     disconnectMenuItem?.SetValue(MenuItem.IsEnabledProperty, _isConnected);
                 }
+            }
+        }
+
+
+        //Data Grid (Database Content)
+        private void UpdateDataGridColumns()
+        {
+            if (NotesDataGrid.Columns.Count >= 4)
+            {
+                NotesDataGrid.Columns[0].Visibility = ViewTitleMenuItem.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+                NotesDataGrid.Columns[2].Visibility = ViewTagsMenuItem.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+                NotesDataGrid.Columns[3].Visibility = ViewModifiedMenuItem.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+        private void NotesDataGrid_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            // Get the element that was clicked
+            var originalSource = e.OriginalSource as DependencyObject;
+
+            // Walk up the visual tree to see if click was on a DataGridRow or Cell
+            while (originalSource != null && !(originalSource is DataGridRow))
+            {
+                originalSource = VisualTreeHelper.GetParent(originalSource);
+            }
+
+            // If we didn't find a row, click was on empty space → deselect
+            if (originalSource == null)
+            {
+                NotesDataGrid.SelectedItem = null;
+                NotesDataGrid.CurrentCell = new DataGridCellInfo(); // Optional: clear current cell
+                UpdateButtonStates(); // Update Edit/Delete menu/button states
+                e.Handled = true; // Prevent further processing
             }
         }
 
@@ -169,6 +277,16 @@ namespace Protes
             _originalTitle = null;
         }
 
+        // Toolbar Visibility
+        private void UpdateToolbarVisibility()
+        {
+            var toolbar = (StackPanel)FindName("ToolbarStackPanel");
+            if (toolbar != null)
+            {
+                toolbar.Visibility = _isToolbarVisible ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
         // ===== LIFECYCLE & SETTINGS =====
 
         private void EnsureAppDataFolder()
@@ -206,7 +324,7 @@ namespace Protes
             {
                 ConnectionStatusText.Text = "Disconnected";
                 DatabaseModeText.Text = "—";
-                DatabaseSwitchText.Text = "";
+                DatabaseSwitchText.Text = "—";
                 NoteCountText.Text = "";
                 return;
             }
@@ -234,7 +352,7 @@ namespace Protes
             if (_pendingModeSwitch != DatabaseMode.None && _pendingModeSwitch != _connectedMode)
             {
                 string pendingName = _pendingModeSwitch == DatabaseMode.Local ? "Local" : "External";
-                DatabaseSwitchText.Text = $"Switched to {pendingName} (disconnect from the current database then connect to complete the switch)";
+                DatabaseSwitchText.Text = $"Switched to '{pendingName}' Database. Disconnect from the current database then connect to complete the switch";
             }
             else
             {

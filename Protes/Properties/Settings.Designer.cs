@@ -202,5 +202,53 @@ namespace Protes.Properties {
                 this["AutoDisconnectOnSwitch"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ViewMainWindowTitle {
+            get {
+                return ((bool)(this["ViewMainWindowTitle"]));
+            }
+            set {
+                this["ViewMainWindowTitle"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ViewMainWindowTags {
+            get {
+                return ((bool)(this["ViewMainWindowTags"]));
+            }
+            set {
+                this["ViewMainWindowTags"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ViewMainWindowMod {
+            get {
+                return ((bool)(this["ViewMainWindowMod"]));
+            }
+            set {
+                this["ViewMainWindowMod"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ViewMainToolbar {
+            get {
+                return ((bool)(this["ViewMainToolbar"]));
+            }
+            set {
+                this["ViewMainToolbar"] = value;
+            }
+        }
     }
 }
