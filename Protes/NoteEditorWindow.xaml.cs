@@ -31,7 +31,7 @@ namespace Protes.Views
                 : TitleBox.Text;
 
             string displayTitle = HasUnsavedChanges()
-                ? $"Note: {baseTitle}**"
+                ? $"Note: {baseTitle}*"
                 : $"Note: {baseTitle}";
 
             Title = displayTitle;
@@ -45,7 +45,6 @@ namespace Protes.Views
             Action<string, string, string, long?> onSaveRequested = null)
         {
             InitializeComponent();
-
             PreviewKeyDown += NoteEditorWindow_PreviewKeyDown;
 
             // Display tag bar or not

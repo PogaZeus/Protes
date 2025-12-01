@@ -41,32 +41,37 @@ namespace Protes
             EnsureAppDataFolder();
             UpdateStatusBar();
             UpdateButtonStates();
+            Loaded += MainWindow_Loaded;
             var showNotifications = Properties.Settings.Default.ShowNotifications;
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            Loaded -= MainWindow_Loaded; // prevent multiple calls
+
             if (Properties.Settings.Default.AutoConnect)
             {
-                Dispatcher.BeginInvoke(new Action(() =>
+                if (_currentMode == DatabaseMode.Local)
                 {
-                    if (_currentMode == DatabaseMode.Local)
+                    Connect_Click(this, new RoutedEventArgs());
+                }
+                else if (_currentMode == DatabaseMode.External)
+                {
+                    var host = Properties.Settings.Default.External_Host;
+                    var database = Properties.Settings.Default.External_Database;
+                    if (!string.IsNullOrWhiteSpace(host) && !string.IsNullOrWhiteSpace(database))
                     {
                         Connect_Click(this, new RoutedEventArgs());
                     }
-                    else if (_currentMode == DatabaseMode.External)
+                    else
                     {
-                        var host = Properties.Settings.Default.External_Host;
-                        var database = Properties.Settings.Default.External_Database;
-                        if (!string.IsNullOrWhiteSpace(host) && !string.IsNullOrWhiteSpace(database))
-                        {
-                            Connect_Click(this, new RoutedEventArgs());
-                        }
-                        else
-                        {
-                            MessageBox.Show(
-                                "Auto-connect failed: External database configuration is incomplete.\n\n" +
-                                "Please go to Settings → External Database to configure your connection.",
-                                "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        }
+                        // This one is an error, so it's OK to show as top-level
+                        MessageBox.Show(
+                            "Auto-connect failed: External database configuration is incomplete.\n\n" +
+                            "Please go to Settings → External Database to configure your connection.",
+                            "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
-                }));
+                }
             }
         }
 
