@@ -190,5 +190,17 @@ namespace Protes.Properties {
                 this["AutoConnectOnSwitch"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AutoDisconnectOnSwitch {
+            get {
+                return ((bool)(this["AutoDisconnectOnSwitch"]));
+            }
+            set {
+                this["AutoDisconnectOnSwitch"] = value;
+            }
+        }
     }
 }

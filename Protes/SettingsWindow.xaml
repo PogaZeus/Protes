@@ -92,7 +92,7 @@
                                     Margin="10,0,0,0"/>
                         </StackPanel>
 
-                        <TextBlock Grid.Row="4" Text="Note: Databases are stored in the Protes app data folder." 
+                        <TextBlock Grid.Row="4" Text="Note: Databases are stored in the default Protes app data folder. (See: More Options)" 
                                    FontStyle="Italic" Foreground="Gray"/>
                     </Grid>
                 </ScrollViewer>
@@ -217,16 +217,20 @@
                         </GroupBox>
                         
                         <!-- Auto Connect -->
-                        <GroupBox Grid.Row="2" Header="Auto Connect" Margin="0,0,0,15">
+                        <GroupBox Grid.Row="2" Header="Connection Automation" Margin="0,0,0,15">
                             <StackPanel>
                                 <CheckBox x:Name="AutoConnectCheckBox"
                   Content="Connect on startup"
                   Checked="AutoConnectCheckBox_Checked"
-                  Unchecked="AutoConnectCheckBox_Checked"/>
+                  Unchecked="AutoConnectCheckBox_Checked" Margin="0,5,0,0"/>
                                 <CheckBox x:Name="AutoConnectOnSwitchCheckBox"
                   Content="Connect when switching database mode (options menu)"
                   Checked="AutoConnectOnSwitchCheckBox_Checked"
-                  Unchecked="AutoConnectOnSwitchCheckBox_Checked"/>
+                  Unchecked="AutoConnectOnSwitchCheckBox_Checked" Margin="0,5,0,0"/>
+                                <CheckBox x:Name="AutoDisconnectOnSwitchCheckBox"
+                  Content="Auto disconnect when switching database mode (options menu)"
+                  Checked="AutoDisconnectOnSwitchCheckBox_Checked"
+                  Unchecked="AutoDisconnectOnSwitchCheckBox_Checked" Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
 
@@ -235,7 +239,7 @@
                             <CheckBox x:Name="ShowNotificationsCheckBox"
                                       Content="Show connect/disconnect notifications"
                                       Checked="ShowNotificationsCheckBox_Changed"
-                                      Unchecked="ShowNotificationsCheckBox_Changed"/>
+                                      Unchecked="ShowNotificationsCheckBox_Changed" Margin="0,5,0,0"/>
                         </GroupBox>
                     </Grid>
                 </ScrollViewer>

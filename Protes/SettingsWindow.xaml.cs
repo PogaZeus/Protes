@@ -42,12 +42,22 @@ namespace Protes.Views
             // Load UI state
             AutoConnectCheckBox.IsChecked = Properties.Settings.Default.AutoConnect;
             AutoConnectOnSwitchCheckBox.IsChecked = Properties.Settings.Default.AutoConnectOnSwitch;
+            AutoDisconnectOnSwitchCheckBox.IsChecked = Properties.Settings.Default.AutoDisconnectOnSwitch;
             ShowNotificationsCheckBox.IsChecked = Properties.Settings.Default.ShowNotifications;
             DefaultDbFolderText.Text = _appDataFolder; // 👈 Show current default folder
 
             CurrentDbPathText.Text = _currentDatabasePath;
             LoadLocalDatabases();
             LoadExternalSettings();
+
+            if (Properties.Settings.Default.AutoConnectOnSwitch)
+            {
+                AutoDisconnectOnSwitchCheckBox.IsEnabled = false;
+            }
+            else
+            {
+                AutoDisconnectOnSwitchCheckBox.IsEnabled = true;
+            }
         }
 
         private void LoadLocalDatabases()
@@ -114,8 +124,33 @@ namespace Protes.Views
         }
         private void AutoConnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            Properties.Settings.Default.AutoConnectOnSwitch = AutoConnectOnSwitchCheckBox.IsChecked == true;
+            bool isChecked = AutoConnectOnSwitchCheckBox.IsChecked == true;
+            Properties.Settings.Default.AutoConnectOnSwitch = isChecked;
+
+            if (isChecked)
+            {
+                // Force AutoDisconnect = ON and disable its checkbox
+                Properties.Settings.Default.AutoDisconnectOnSwitch = true;
+                AutoDisconnectOnSwitchCheckBox.IsChecked = true;
+                AutoDisconnectOnSwitchCheckBox.IsEnabled = false;
+            }
+            else
+            {
+                // Allow user to control AutoDisconnect freely
+                AutoDisconnectOnSwitchCheckBox.IsEnabled = true;
+            }
+
             Properties.Settings.Default.Save();
+        }
+
+        private void AutoDisconnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            // Only save if AutoConnectOnSwitch is OFF (otherwise it's forced ON)
+            if (!Properties.Settings.Default.AutoConnectOnSwitch)
+            {
+                Properties.Settings.Default.AutoDisconnectOnSwitch = AutoDisconnectOnSwitchCheckBox.IsChecked == true;
+                Properties.Settings.Default.Save();
+            }
         }
         private void ShowNotificationsCheckBox_Changed(object sender, RoutedEventArgs e)
         {

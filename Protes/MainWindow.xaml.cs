@@ -15,12 +15,13 @@ namespace Protes
     {
         private string _databasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Protes", "notes.db");
         private DatabaseMode _currentMode = DatabaseMode.None;
+        private DatabaseMode _pendingModeSwitch = DatabaseMode.None;
+        private DatabaseMode _connectedMode = DatabaseMode.None;
         private bool _isConnected = false;
         private List<FullNote> _fullNotesCache = new List<FullNote>();
         private NoteItem _editingItem;
         private string _originalTitle;
         private string _externalConnectionString = "";
-
         public MainWindow()
         {
             string lastPath = Properties.Settings.Default.LastLocalDatabasePath;
@@ -205,29 +206,39 @@ namespace Protes
             {
                 ConnectionStatusText.Text = "Disconnected";
                 DatabaseModeText.Text = "—";
+                DatabaseSwitchText.Text = "";
                 NoteCountText.Text = "";
                 return;
             }
 
             ConnectionStatusText.Text = "Connected";
 
-            if (_currentMode == DatabaseMode.Local)
+            // ALWAYS show ACTUAL connected mode in DatabaseModeText
+            if (_connectedMode == DatabaseMode.Local)
             {
-                // Show full path for local DB
                 DatabaseModeText.Text = $"Local ({_databasePath})";
             }
-            else if (_currentMode == DatabaseMode.External)
+            else if (_connectedMode == DatabaseMode.External)
             {
-                // Build host:port/database string from settings
                 var host = Properties.Settings.Default.External_Host ?? "localhost";
                 var port = Properties.Settings.Default.External_Port?.ToString() ?? "3306";
                 var database = Properties.Settings.Default.External_Database ?? "unknown";
-
                 DatabaseModeText.Text = $"External ({host}:{port}/{database}/Notes)";
             }
             else
             {
                 DatabaseModeText.Text = "—";
+            }
+
+            // Show pending message in DatabaseSwitchText (if different from connected mode)
+            if (_pendingModeSwitch != DatabaseMode.None && _pendingModeSwitch != _connectedMode)
+            {
+                string pendingName = _pendingModeSwitch == DatabaseMode.Local ? "Local" : "External";
+                DatabaseSwitchText.Text = $"Switched to {pendingName} (disconnect from the current database then connect to complete the switch)";
+            }
+            else
+            {
+                DatabaseSwitchText.Text = "—"; // Hide if no pending or same as connected
             }
         }
 
@@ -235,6 +246,34 @@ namespace Protes
 
         private void UseLocalDb_Click(object sender, RoutedEventArgs e)
         {
+            if (_isConnected)
+            {
+                // If already connected to Local, just clear pending
+                if (_connectedMode == DatabaseMode.Local)
+                {
+                    _pendingModeSwitch = DatabaseMode.None;
+                    _currentMode = DatabaseMode.Local;
+                    Properties.Settings.Default.DatabaseMode = "Local";
+                    Properties.Settings.Default.Save();
+                    UpdateDatabaseModeCheckmarks();
+                    UpdateStatusBar();
+                    return;
+                }
+
+                // If connected to External and AutoDisconnect is OFF → set pending
+                if (!Properties.Settings.Default.AutoDisconnectOnSwitch)
+                {
+                    _pendingModeSwitch = DatabaseMode.Local;
+                    _currentMode = DatabaseMode.Local;
+                    Properties.Settings.Default.DatabaseMode = "Local";
+                    Properties.Settings.Default.Save();
+                    UpdateDatabaseModeCheckmarks();
+                    UpdateStatusBar();
+                    return;
+                }
+            }
+
+            // Full switch logic
             _currentMode = DatabaseMode.Local;
             Properties.Settings.Default.DatabaseMode = "Local";
             Properties.Settings.Default.Save();
@@ -244,7 +283,6 @@ namespace Protes
             {
                 try
                 {
-                    // Ensure table exists
                     using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                     {
                         conn.Open();
@@ -261,13 +299,14 @@ namespace Protes
                         }
                     }
 
-                    if (_isConnected)
+                    if (_isConnected && Properties.Settings.Default.AutoDisconnectOnSwitch)
                     {
                         Disconnect_Click(this, new RoutedEventArgs());
                     }
 
                     LoadNotesFromDatabase();
                     _isConnected = true;
+                    _connectedMode = DatabaseMode.Local; // 👈 Set connected mode
                     NotesDataGrid.Visibility = Visibility.Visible;
                     DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
                     UpdateButtonStates();
@@ -282,13 +321,14 @@ namespace Protes
                 {
                     MessageBox.Show($"Failed to connect to local database:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
                     _isConnected = false;
+                    _connectedMode = DatabaseMode.None;
                     UpdateStatusBar();
                 }
             }
             else
             {
-                // Just switch mode, don't connect
                 _isConnected = false;
+                _connectedMode = DatabaseMode.None;
                 NotesDataGrid.ItemsSource = null;
                 NotesDataGrid.Visibility = Visibility.Collapsed;
                 DisconnectedPlaceholder.Visibility = Visibility.Visible;
@@ -324,7 +364,7 @@ namespace Protes
                     }
                 }
 
-                if (_isConnected)
+                if (_isConnected && Properties.Settings.Default.AutoDisconnectOnSwitch)
                 {
                     _isConnected = false;
                 }
@@ -347,6 +387,34 @@ namespace Protes
 
         private void UseExternalDb_Click(object sender, RoutedEventArgs e)
         {
+            if (_isConnected)
+            {
+                // If already connected to External, just clear pending
+                if (_connectedMode == DatabaseMode.External)
+                {
+                    _pendingModeSwitch = DatabaseMode.None;
+                    _currentMode = DatabaseMode.External;
+                    Properties.Settings.Default.DatabaseMode = "External";
+                    Properties.Settings.Default.Save();
+                    UpdateDatabaseModeCheckmarks();
+                    UpdateStatusBar();
+                    return;
+                }
+
+                // If connected to Local and AutoDisconnect is OFF → set pending
+                if (!Properties.Settings.Default.AutoDisconnectOnSwitch)
+                {
+                    _pendingModeSwitch = DatabaseMode.External;
+                    _currentMode = DatabaseMode.External;
+                    Properties.Settings.Default.DatabaseMode = "External";
+                    Properties.Settings.Default.Save();
+                    UpdateDatabaseModeCheckmarks();
+                    UpdateStatusBar();
+                    return;
+                }
+            }
+
+            // Full switch logic
             _currentMode = DatabaseMode.External;
             Properties.Settings.Default.DatabaseMode = "External";
             Properties.Settings.Default.Save();
@@ -364,12 +432,17 @@ namespace Protes
                     return;
                 }
 
+                if (_isConnected && Properties.Settings.Default.AutoDisconnectOnSwitch)
+                {
+                    Disconnect_Click(this, new RoutedEventArgs());
+                }
+
                 ConnectToExternalDatabase(connString);
             }
             else
             {
-                // Just switch mode, don't connect
                 _isConnected = false;
+                _connectedMode = DatabaseMode.None;
                 NotesDataGrid.ItemsSource = null;
                 NotesDataGrid.Visibility = Visibility.Collapsed;
                 DisconnectedPlaceholder.Visibility = Visibility.Visible;
@@ -471,12 +544,13 @@ namespace Protes
         {
             LoadNotesFromDatabase();
             _isConnected = true;
+            _connectedMode = _currentMode;
+            _pendingModeSwitch = DatabaseMode.None;
             NotesDataGrid.Visibility = Visibility.Visible;
             DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
             UpdateStatusBar();
             UpdateButtonStates();
 
-            // Show notification only if enabled
             if (Properties.Settings.Default.ShowNotifications)
             {
                 MessageBox.Show("Connected successfully!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -496,6 +570,8 @@ namespace Protes
         private void Disconnect_Click(object sender, RoutedEventArgs e)
         {
             _isConnected = false;
+            _connectedMode = DatabaseMode.None;
+            _pendingModeSwitch = DatabaseMode.None;
             NotesDataGrid.ItemsSource = null;
             NotesDataGrid.Visibility = Visibility.Collapsed;
             DisconnectedPlaceholder.Visibility = Visibility.Visible;

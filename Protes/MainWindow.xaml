@@ -83,7 +83,7 @@
         </StackPanel>
 
         <!-- === NOTES TABLE (DATA GRID) === -->
-        <DataGrid Grid.Row="2" x:Name="NotesDataGrid" Margin="10"
+        <DataGrid Grid.Row="2" x:Name="NotesDataGrid" Margin="5"
                   AutoGenerateColumns="False"
                   IsReadOnly="False"
                   CanUserAddRows="False" 
@@ -93,7 +93,7 @@
                   CellEditEnding="NotesDataGrid_CellEditEnding"
                   MouseDoubleClick="NotesDataGrid_MouseDoubleClick">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Title" Binding="{Binding Title, UpdateSourceTrigger=PropertyChanged}" Width="2*"/>
+                <DataGridTextColumn Header="Title" Binding="{Binding Title, UpdateSourceTrigger=PropertyChanged}" Width="1*"/>
                 <DataGridTextColumn Header="Preview" Binding="{Binding Preview}" IsReadOnly="True" Width="3*"/>
                 <DataGridTextColumn Header="Tags" Binding="{Binding Tags, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
                 <DataGridTextColumn Header="Modified" Binding="{Binding LastModified}" IsReadOnly="True" Width="120"/>
@@ -110,28 +110,52 @@
         <StatusBar Grid.Row="3">
             <Grid>
                 <Grid.ColumnDefinitions>
+                    <!-- Left: fixed content -->
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- Spacer between mode and switch text -->
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- Switch text (optional message) -->
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- Spacer before note count -->
                     <ColumnDefinition Width="*"/>
-                    <!-- Spacer -->
+                    <!-- Note count -->
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Left: Connection Status -->
+                <!-- Connection Status -->
                 <TextBlock x:Name="ConnectionStatusText" Text="Disconnected"/>
 
-                <!-- Left Separator -->
+                <!-- Separator -->
                 <Separator Grid.Column="1" Style="{StaticResource {x:Static StatusBar.SeparatorStyleKey}}" Margin="8,0"/>
 
-                <!-- Database Mode -->
+                <!-- Database Mode (connected mode) -->
                 <TextBlock x:Name="DatabaseModeText" Grid.Column="2" Text="—"/>
 
-                <!-- Right Separator -->
+                <!-- Separator -->
                 <Separator Grid.Column="3" Style="{StaticResource {x:Static StatusBar.SeparatorStyleKey}}" Margin="8,0"/>
 
-                <!-- Note Count (Right-aligned) -->
-                <TextBlock x:Name="NoteCountText" Grid.Column="4" Text=""/>
+                <!-- Pending Switch Message -->
+                <TextBlock x:Name="DatabaseSwitchText" Grid.Column="4" Text="—"/>
+
+                <!-- Separator -->
+                <Separator Grid.Column="5" Style="{StaticResource {x:Static StatusBar.SeparatorStyleKey}}" Margin="8,0,8,0"/>
+
+                <!-- Flexible spacer (pushes count to right) -->
+                <Grid Grid.Column="6"/>
+
+                <!-- Note Count -->
+                <TextBlock x:Name="NoteCountText" Grid.Column="7" Text="0 Notes"/>
+
+                <!-- Separator -->
+                <Separator Grid.Column="8" Style="{StaticResource {x:Static StatusBar.SeparatorStyleKey}}" Margin="8,0"/>
+
+                <!-- Empty placeholder (to match visual balance) -->
+                <TextBlock Grid.Column="9" Text="" Visibility="Hidden"/>
             </Grid>
         </StatusBar>
     </Grid>
