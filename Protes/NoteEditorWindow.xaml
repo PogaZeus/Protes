@@ -89,12 +89,12 @@
             <!-- Title -->
             <Grid x:Name="TitleBar" Grid.Row="0" Margin="0,3,0,0">
                 <TextBox x:Name="TitleBox" FontSize="16" FontWeight="Bold"
-                     Padding="1" Margin="0,0,0,3" Text="Untitled" IsUndoEnabled="True"/>
+                     Padding="1" Margin="0,3,0,3" Text="Untitled" IsUndoEnabled="True" IsReadOnly="False" Focusable="True"/>
             </Grid>
             <!-- Content -->
             <TextBox x:Name="ContentBox" Grid.Row="1" AcceptsReturn="True"
                      AcceptsTab="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                     FontSize="13" IsUndoEnabled="True"/>
+                     FontSize="13" IsUndoEnabled="True" IsReadOnly="False" Focusable="True"/>
 
             <!-- Tags (full width) -->
             <Grid x:Name="TagsRow" Grid.Row="2" Margin="0,3,0,0">
@@ -103,7 +103,7 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="Tags:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                <TextBox x:Name="TagsBox" Grid.Column="1" IsUndoEnabled="True"/>
+                <TextBox x:Name="TagsBox" Grid.Column="1" IsUndoEnabled="True" IsReadOnly="False" Focusable="True"/>
             </Grid>
         </Grid>
     </DockPanel>

@@ -81,6 +81,8 @@
             FontSize="14" Click="NewNoteButton_Click" Margin="0,0,12,0"/>
             <Button x:Name="EditNoteButton" Content="Edit" Padding="12,5"
             FontSize="14" Click="EditNoteButton_Click" Margin="0,0,12,0"/>
+            <Button x:Name="SelectNotesButton" Content="Select" Padding="12,5"
+            FontSize="14" Click="SelectNotesButton_Click" Margin="0,0,12,0"/>
             <Button x:Name="DeleteNoteButton" Content="Delete" Padding="12,5"
             FontSize="14" Click="DeleteNoteButton_Click" Margin="0,0,12,0"/>
 
@@ -104,16 +106,53 @@
         </StackPanel>
 
         <!-- === NOTES TABLE (DATA GRID) === -->
-        <DataGrid Grid.Row="2" x:Name="NotesDataGrid" PreviewMouseDown="NotesDataGrid_PreviewMouseDown" Margin="5"
-                  AutoGenerateColumns="False"
-                  IsReadOnly="False"
-                  CanUserAddRows="False" 
-                  SelectionMode="Single"
-                  Visibility="Collapsed"
-                  BeginningEdit="NotesDataGrid_BeginningEdit"
-                  CellEditEnding="NotesDataGrid_CellEditEnding"
-                  MouseDoubleClick="NotesDataGrid_MouseDoubleClick">
+        
+        <DataGrid Grid.Row="2" x:Name="NotesDataGrid" 
+          PreviewMouseDown="NotesDataGrid_PreviewMouseDown" 
+          Margin="5"
+          AutoGenerateColumns="False"
+          IsReadOnly="False"    
+          CanUserAddRows="False" 
+          SelectionMode="Extended"
+          SelectionUnit="FullRow"
+          Visibility="Collapsed"
+          BeginningEdit="NotesDataGrid_BeginningEdit"
+          CellEditEnding="NotesDataGrid_CellEditEnding"
+          MouseDoubleClick="NotesDataGrid_MouseDoubleClick">
+            <DataGrid.Resources>
+                <Style x:Key="UnclickableHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
+                    <Setter Property="Focusable" Value="False"/>
+                    <EventSetter Event="PreviewMouseDown" Handler="UnclickableHeader_PreviewMouseDown"/>
+                </Style>
+            </DataGrid.Resources>
             <DataGrid.Columns>
+                
+                <!-- Checkbox Column -->
+                <DataGridTemplateColumn 
+    x:Name="SelectCheckBoxColumn"
+    Width="40"
+    Visibility="Collapsed"
+    HeaderStyle="{StaticResource UnclickableHeaderStyle}">
+                    <DataGridTemplateColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <CheckBox 
+                IsChecked="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}, Path=DataContext.AllItemsAreChecked}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Margin="6,0"
+                Focusable="False" 
+                Click="HeaderCheckBox_Click"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.HeaderTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
                 <DataGridTextColumn Header="Title" Binding="{Binding Title, UpdateSourceTrigger=PropertyChanged}" Width="1*"/>
                 <DataGridTextColumn Header="Preview" Binding="{Binding Preview}" IsReadOnly="True" Width="3*"/>
                 <DataGridTextColumn Header="Tags" Binding="{Binding Tags, UpdateSourceTrigger=PropertyChanged}" Width="*"/>

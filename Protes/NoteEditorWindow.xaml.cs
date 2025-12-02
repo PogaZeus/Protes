@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Microsoft.VisualBasic;
+using Microsoft.Win32;
+using System;
 using System.IO;
 using System.Windows;
-using System.Windows.Input;
 using System.Windows.Controls;
-using Microsoft.Win32;
-using Microsoft.VisualBasic;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace Protes.Views
 {
@@ -96,6 +97,9 @@ namespace Protes.Views
         // ===== File Menu Shortcut Keydown Detection =====
         private void NoteEditorWindow_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (FocusManager.GetFocusedElement(this) is TextBox)
+                return;
+
             var modifiers = Keyboard.Modifiers;
 
             // Ctrl+N → New Note
@@ -281,7 +285,19 @@ namespace Protes.Views
                 e.Command == ApplicationCommands.Delete ||
                 e.Command == ApplicationCommands.SelectAll)
             {
-                e.CanExecute = ContentBox.IsKeyboardFocused || ContentBox.IsFocused;
+                // Enable for ANY TextBox in the window
+                var focused = FocusManager.GetFocusedElement(this) as DependencyObject;
+                while (focused != null)
+                {
+                    if (focused is TextBox)
+                    {
+                        e.CanExecute = true;
+                        e.Handled = true;
+                        return;
+                    }
+                    focused = VisualTreeHelper.GetParent(focused);
+                }
+                e.CanExecute = false;
                 e.Handled = true;
             }
         }

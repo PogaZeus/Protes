@@ -3,16 +3,21 @@ using Protes.Properties;
 using Protes.Views;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Data.SQLite;
 using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
 namespace Protes
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private string _databasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Protes", "notes.db");
         private DatabaseMode _currentMode = DatabaseMode.None;
@@ -24,6 +29,7 @@ namespace Protes
         private string _originalTitle;
         private string _externalConnectionString = "";
         private bool _isToolbarVisible = true;
+        private bool _isSelectMode = false;
         public MainWindow()
         {
             string lastPath = Properties.Settings.Default.LastLocalDatabasePath;
@@ -51,14 +57,61 @@ namespace Protes
             ViewModifiedMenuItem.IsChecked = Properties.Settings.Default.ViewMainWindowMod;
             ViewToolbarMenuItem.IsChecked = Properties.Settings.Default.ViewMainToolbar;
             _isToolbarVisible = Properties.Settings.Default.ViewMainToolbar;
+            NotesDataGrid.DataContext = this;
 
             // Apply initial state
             UpdateDataGridColumns();
             UpdateToolbarVisibility();
 
             Loaded += MainWindow_Loaded;
+    
+            // Attach to row checkboxes via event handlers
+            NotesDataGrid.AddHandler(CheckBox.CheckedEvent, new RoutedEventHandler(OnCheckboxChanged));
+            NotesDataGrid.AddHandler(CheckBox.UncheckedEvent, new RoutedEventHandler(OnCheckboxChanged));
             NotesDataGrid.SelectionChanged += (s, e) => UpdateButtonStates();
             var showNotifications = Properties.Settings.Default.ShowNotifications;
+            SelectCheckBoxColumn.Visibility = Visibility.Collapsed;
+
+        }
+
+        public static T FindVisualParent<T>(DependencyObject child) where T : DependencyObject
+        {
+            while (child != null && !(child is T))
+            {
+                child = VisualTreeHelper.GetParent(child);
+            }
+            return child as T;
+        }
+        public static T FindVisualChild<T>(DependencyObject parent, string name = null) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child != null)
+                {
+                    if (child is T t && (string.IsNullOrEmpty(name) || (child is FrameworkElement fe && fe.Name == name)))
+                        return t;
+
+                    var childOfChild = FindVisualChild<T>(child, name);
+                    if (childOfChild != null)
+                        return childOfChild;
+                }
+            }
+            return null;
+        }
+
+        private void OnCheckboxChanged(object sender, RoutedEventArgs e)
+        {
+            var items = NotesDataGrid.ItemsSource as List<NoteItem>;
+            if (items != null)
+            {
+                bool allChecked = items.All(item => item.IsSelected);
+                if (AllItemsAreChecked != allChecked)
+                {
+                    AllItemsAreChecked = allChecked;
+                }
+            }
+            UpdateButtonStates();
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -146,32 +199,66 @@ namespace Protes
             Properties.Settings.Default.AutoConnect = AutoConnectCheckBox.IsChecked == true;
             Properties.Settings.Default.Save();
         }
+        private void SelectNotesButton_Click(object sender, RoutedEventArgs e)
+        {
+            _isSelectMode = !_isSelectMode;
+            SelectNotesButton.Content = _isSelectMode ? "Done" : "Select";
+
+            // Toggle checkbox column
+            SelectCheckBoxColumn.Visibility = _isSelectMode ? Visibility.Visible : Visibility.Collapsed;
+
+            if (!_isSelectMode)
+            {
+                // Clear selections
+                var items = NotesDataGrid.ItemsSource as List<NoteItem>;
+                if (items != null)
+                {
+                    foreach (var note in items)
+                    {
+                        note.IsSelected = false;
+                    }
+                }
+                UpdateButtonStates();
+            }
+        }
 
         // helper methods
         private void UpdateButtonStates()
         {
             bool hasSelection = NotesDataGrid?.SelectedItem != null;
+            int selectedCount = 0;
+
+            if (_isSelectMode)
+            {
+                // Count selected NoteItem objects (UI layer), not FullNote
+                var items = NotesDataGrid.ItemsSource as List<NoteItem>;
+                selectedCount = items?.Count(n => n.IsSelected) ?? 0;
+            }
+            else
+            {
+                selectedCount = hasSelection ? 1 : 0;
+            }
 
             // Toolbar buttons
             NewNoteButton.IsEnabled = _isConnected;
-            EditNoteButton.IsEnabled = _isConnected && hasSelection;
-            DeleteNoteButton.IsEnabled = _isConnected && hasSelection;
-            SearchBox.IsEnabled = _isConnected;
+            EditNoteButton.IsEnabled = _isConnected && selectedCount == 1;
+            DeleteNoteButton.IsEnabled = _isConnected && selectedCount >= 1;
+            SearchBox.IsEnabled = _isConnected && !_isSelectMode; // Disable search during select
             ConnectIconBtn.IsEnabled = !_isConnected;
             DisconnectIconBtn.IsEnabled = _isConnected;
+            SelectNotesButton.IsEnabled = _isConnected;
 
-            // File menu items
+            // File menu
             NewNoteMenuItem.IsEnabled = _isConnected;
-            EditNoteMenuItem.IsEnabled = _isConnected && hasSelection;
-            DeleteNoteMenuItem.IsEnabled = _isConnected && hasSelection;
+            EditNoteMenuItem.IsEnabled = _isConnected && selectedCount == 1;
+            DeleteNoteMenuItem.IsEnabled = _isConnected && selectedCount >= 1;
 
-            // File menu Connect/Disconnect
+            // Connect/Disconnect menu items (indices 4 and 5 in new menu)
             if (MainMenu?.Items.Count > 0)
             {
-                var fileMenuItem = MainMenu.Items[0] as MenuItem; // "_File"
-                if (fileMenuItem?.Items.Count >= 6) // New, Edit, Delete, Sep, Connect, Disconnect
+                var fileMenuItem = MainMenu.Items[0] as MenuItem;
+                if (fileMenuItem?.Items.Count >= 6)
                 {
-                    // Connect = index 4, Disconnect = index 5
                     var connectMenuItem = fileMenuItem.Items[4] as MenuItem;
                     var disconnectMenuItem = fileMenuItem.Items[5] as MenuItem;
                     connectMenuItem?.SetValue(MenuItem.IsEnabledProperty, !_isConnected);
@@ -179,16 +266,100 @@ namespace Protes
                 }
             }
         }
+        private bool _allItemsAreChecked;
+        public bool AllItemsAreChecked
+        {
+            get => _allItemsAreChecked;
+            set
+            {
+                if (_allItemsAreChecked != value)
+                {
+                    _allItemsAreChecked = value;
+                    OnPropertyChanged();
 
+                    // Handle the "Select All" logic HERE
+                    var items = NotesDataGrid.ItemsSource as List<NoteItem>;
+                    if (items != null)
+                    {
+                        foreach (var item in items)
+                        {
+                            item.IsSelected = value;
+                        }
+                    }
+                    UpdateButtonStates();
+                }
+            }
+        }
+
+        private void HeaderCheckBox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+
+            e.Handled = true;
+
+            if (sender is CheckBox cb)
+            {
+
+                bool currentState = cb.IsChecked == true;
+                bool newState = !currentState;
+                cb.IsChecked = newState;
+
+                var items = NotesDataGrid.ItemsSource as List<NoteItem>;
+
+                if (items != null)
+                {
+                    foreach (var item in items)
+                    {
+                        item.IsSelected = newState;
+                    }
+
+                    UpdateButtonStates();
+                }
+            }
+        }
+
+        private void HeaderCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            // The PreviewMouseDown on the header allowed the click through to here.
+            if (sender is CheckBox cb)
+            {
+                // Get the state from the CheckBox
+                bool isChecked = cb.IsChecked == true;
+
+                // Ensure you are dealing with the correct type (ObservableCollection is often better)
+                var items = NotesDataGrid.ItemsSource as IEnumerable<NoteItem>;
+
+                if (items != null)
+                {
+                    foreach (var item in items)
+                    {
+                        // This is where the row-level selection property is updated
+                        item.IsSelected = isChecked;
+                    }
+                    UpdateButtonStates();
+                }
+            }
+        }
+
+        private void UnclickableHeader_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            // This stops the DataGridColumnHeader from consuming the click for sorting or resizing.
+            e.Handled = true;
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
 
         //Data Grid (Database Content)
         private void UpdateDataGridColumns()
         {
             if (NotesDataGrid.Columns.Count >= 4)
             {
-                NotesDataGrid.Columns[0].Visibility = ViewTitleMenuItem.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
-                NotesDataGrid.Columns[2].Visibility = ViewTagsMenuItem.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
-                NotesDataGrid.Columns[3].Visibility = ViewModifiedMenuItem.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+                NotesDataGrid.Columns[1].Visibility = ViewTitleMenuItem.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+                NotesDataGrid.Columns[3].Visibility = ViewTagsMenuItem.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+                NotesDataGrid.Columns[4].Visibility = ViewModifiedMenuItem.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
             }
         }
         private void NotesDataGrid_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -216,65 +387,101 @@ namespace Protes
 
         private void NotesDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
         {
-            if (e.Column.DisplayIndex == 0) // Title column
+            var columnHeader = e.Column.Header?.ToString();
+            if (columnHeader == "Title" || columnHeader == "Tags")
             {
                 _editingItem = e.Row.Item as NoteItem;
                 _originalTitle = _editingItem?.Title;
             }
             else
             {
-                e.Cancel = true; // Only Title is editable
+                e.Cancel = true;
             }
         }
 
         private void NotesDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
-            if (e.EditAction == DataGridEditAction.Cancel || e.Column.DisplayIndex != 0)
+            var columnHeader = e.Column.Header?.ToString();
+            if (e.EditAction == DataGridEditAction.Cancel || (columnHeader != "Title" && columnHeader != "Tags"))
                 return;
 
-            if (_editingItem == null || string.IsNullOrEmpty(_originalTitle))
-                return;
+            if (_editingItem == null) return;
 
             var textBox = e.EditingElement as TextBox;
-            var newTitle = textBox?.Text ?? _originalTitle;
+            if (textBox == null) return;
 
-            if (newTitle == _originalTitle)
-                return;
-
-            var result = MessageBox.Show(
-                $"Update note title from:\n\n\"{_originalTitle}\"\n\nto:\n\n\"{newTitle}\"?",
-                "Confirm Title Change",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
+            if (columnHeader == "Title")
             {
-                var fullNote = _fullNotesCache.Find(n => n.Id == _editingItem.Id);
-                if (fullNote != null)
+                var newTitle = textBox.Text;
+                if (newTitle == _originalTitle) return;
+
+                // Show confirmation dialog for Title
+                var result = MessageBox.Show(
+                    $"Update note title from:\n\n\"{_originalTitle}\"\n\nto:\n\n\"{newTitle}\"?",
+                    "Confirm Title Change",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
                 {
-                    try
-                    {
-                        UpdateNoteInDatabase(fullNote.Id, newTitle, fullNote.Content, fullNote.Tags);
-                        var newModifiedStr = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
-                        fullNote.Title = newTitle;
-                        fullNote.LastModified = newModifiedStr;
-                        _editingItem.Title = newTitle;
-                        _editingItem.LastModified = newModifiedStr;
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Failed to update title:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        _editingItem.Title = _originalTitle;
-                    }
+                    UpdateNoteTitle(newTitle);
+                }
+                else
+                {
+                    _editingItem.Title = _originalTitle;
                 }
             }
-            else
+            else if (columnHeader == "Tags")
             {
-                _editingItem.Title = _originalTitle;
+                var newTags = textBox.Text;
+                UpdateNoteTags(newTags);
             }
 
             _editingItem = null;
             _originalTitle = null;
+        }
+
+        private void UpdateNoteTitle(string newTitle)
+        {
+            var fullNote = _fullNotesCache.Find(n => n.Id == _editingItem.Id);
+            if (fullNote != null)
+            {
+                try
+                {
+                    UpdateNoteInDatabase(fullNote.Id, newTitle, fullNote.Content, fullNote.Tags);
+                    var newModifiedStr = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+                    fullNote.Title = newTitle;
+                    fullNote.LastModified = newModifiedStr;
+                    _editingItem.Title = newTitle;
+                    _editingItem.LastModified = newModifiedStr;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to update title:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _editingItem.Title = _originalTitle;
+                }
+            }
+        }
+
+        private void UpdateNoteTags(string newTags)
+        {
+            var fullNote = _fullNotesCache.Find(n => n.Id == _editingItem.Id);
+            if (fullNote != null)
+            {
+                try
+                {
+                    UpdateNoteInDatabase(fullNote.Id, fullNote.Title, fullNote.Content, newTags);
+                    var newModifiedStr = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+                    fullNote.Tags = newTags;
+                    fullNote.LastModified = newModifiedStr;
+                    _editingItem.Tags = newTags;
+                    _editingItem.LastModified = newModifiedStr;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to update tags:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
         }
 
         // Toolbar Visibility
@@ -817,62 +1024,89 @@ namespace Protes
 
         private void DeleteNoteButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!_isConnected)
+            if (!_isConnected) return;
+
+            List<FullNote> notesToDelete = new List<FullNote>();
+
+            if (_isSelectMode)
             {
-                MessageBox.Show("Please connect to a database first.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                // Get IDs of selected NoteItems (UI layer)
+                var items = NotesDataGrid.ItemsSource as List<NoteItem>;
+                var selectedIds = items?.Where(n => n.IsSelected).Select(n => n.Id).ToList() ?? new List<long>();
+
+                if (!selectedIds.Any())
+                {
+                    MessageBox.Show("Please select at least one note to delete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // Map to FullNote objects (data layer) by ID
+                notesToDelete = _fullNotesCache.Where(n => selectedIds.Contains(n.Id)).ToList();
+            }
+            else
+            {
+                // Delete single selected note
+                if (!(NotesDataGrid.SelectedItem is NoteItem selectedNote))
+                {
+                    MessageBox.Show("Please select a note to delete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                var fullNote = _fullNotesCache.Find(n => n.Id == selectedNote.Id);
+                if (fullNote != null)
+                    notesToDelete = new List<FullNote> { fullNote };
             }
 
-            if (!(NotesDataGrid.SelectedItem is NoteItem selectedNote))
+            // Confirmation message
+            string message;
+            if (notesToDelete.Count == 1)
             {
-                MessageBox.Show("Please select a note to delete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
+                message = $"Are you sure you want to delete the note titled:\n\n\"{notesToDelete[0].Title}\"?";
+            }
+            else
+            {
+                message = $"Are you sure you want to delete {notesToDelete.Count} selected notes?";
             }
 
-            var result = MessageBox.Show(
-                $"Are you sure you want to delete the note titled:\n\n\"{selectedNote.Title}\"?",
-                "Confirm Delete",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
+            var result = MessageBox.Show(message, "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result != MessageBoxResult.Yes) return;
-
-            var fullNote = _fullNotesCache.Find(n => n.Id == selectedNote.Id);
-            if (fullNote == null) return;
 
             try
             {
-                if (_currentMode == DatabaseMode.Local)
+                foreach (var note in notesToDelete)
                 {
-                    using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                    if (_currentMode == DatabaseMode.Local)
                     {
-                        conn.Open();
-                        using (var cmd = new SQLiteCommand("DELETE FROM Notes WHERE Id = @id", conn))
+                        using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                         {
-                            cmd.Parameters.AddWithValue("@id", fullNote.Id);
-                            cmd.ExecuteNonQuery();
+                            conn.Open();
+                            using (var cmd = new SQLiteCommand("DELETE FROM Notes WHERE Id = @id", conn))
+                            {
+                                cmd.Parameters.AddWithValue("@id", note.Id);
+                                cmd.ExecuteNonQuery();
+                            }
                         }
                     }
-                }
-                else if (_currentMode == DatabaseMode.External)
-                {
-                    using (var conn = new MySqlConnection(_externalConnectionString))
+                    else if (_currentMode == DatabaseMode.External)
                     {
-                        conn.Open();
-                        using (var cmd = new MySqlCommand("DELETE FROM Notes WHERE Id = @id", conn))
+                        using (var conn = new MySqlConnection(_externalConnectionString))
                         {
-                            cmd.Parameters.AddWithValue("@id", fullNote.Id);
-                            cmd.ExecuteNonQuery();
+                            conn.Open();
+                            using (var cmd = new MySqlCommand("DELETE FROM Notes WHERE Id = @id", conn))
+                            {
+                                cmd.Parameters.AddWithValue("@id", note.Id);
+                                cmd.ExecuteNonQuery();
+                            }
                         }
                     }
                 }
 
                 LoadNotesFromDatabase();
-                MessageBox.Show("Note deleted successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"{notesToDelete.Count} note{(notesToDelete.Count == 1 ? "" : "s")} deleted successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to delete note:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Failed to delete note(s):\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -997,6 +1231,7 @@ namespace Protes
                 }
 
                 NotesDataGrid.ItemsSource = notes;
+                AllItemsAreChecked = false; // Reset select-all state
                 NoteCountText.Text = $"{notes.Count} Note{(notes.Count == 1 ? "" : "s")}";
             }
             catch (Exception ex)
@@ -1152,13 +1387,30 @@ namespace Protes
         }
     }
 
-    public class NoteItem
+    public class NoteItem : INotifyPropertyChanged
     {
         public long Id { get; set; }
         public string Title { get; set; }
         public string Preview { get; set; }
         public string LastModified { get; set; }
         public string Tags { get; set; }
+
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                _isSelected = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 
     public class FullNote
