@@ -75,34 +75,10 @@ namespace Protes
 
         }
 
-        public static T FindVisualParent<T>(DependencyObject child) where T : DependencyObject
-        {
-            while (child != null && !(child is T))
-            {
-                child = VisualTreeHelper.GetParent(child);
-            }
-            return child as T;
-        }
-        public static T FindVisualChild<T>(DependencyObject parent, string name = null) where T : DependencyObject
-        {
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-            {
-                var child = VisualTreeHelper.GetChild(parent, i);
-                if (child != null)
-                {
-                    if (child is T t && (string.IsNullOrEmpty(name) || (child is FrameworkElement fe && fe.Name == name)))
-                        return t;
-
-                    var childOfChild = FindVisualChild<T>(child, name);
-                    if (childOfChild != null)
-                        return childOfChild;
-                }
-            }
-            return null;
-        }
-
         private void OnCheckboxChanged(object sender, RoutedEventArgs e)
         {
+            if (_isBulkUpdating) return;
+
             var items = NotesDataGrid.ItemsSource as List<NoteItem>;
             if (items != null)
             {
@@ -273,13 +249,22 @@ namespace Protes
                     _allItemsAreChecked = value;
                     OnPropertyChanged();
 
-                    // Handle the "Select All" logic HERE
                     var items = NotesDataGrid.ItemsSource as List<NoteItem>;
                     if (items != null)
                     {
-                        foreach (var item in items)
+                        _isBulkUpdating = true; // 👈 START BULK UPDATE
+                        try
                         {
-                            item.IsSelected = value;
+                            System.Diagnostics.Debug.WriteLine($"Setting all {items.Count} items to {value}");
+                            for (int i = 0; i < items.Count; i++)
+                            {
+                                items[i].IsSelected = value;
+                                System.Diagnostics.Debug.WriteLine($"  Item {i}: ID={items[i].Id}, Title={items[i].Title}, IsSelected={items[i].IsSelected}");
+                            }
+                        }
+                        finally
+                        {
+                            _isBulkUpdating = false; // 👈 END BULK UPDATE
                         }
                     }
                     UpdateButtonStates();
@@ -287,59 +272,22 @@ namespace Protes
             }
         }
 
-        private void HeaderCheckBox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        private bool _isBulkUpdating = false;
+
+        private void HeaderCheckBox_Checked(object sender, RoutedEventArgs e)
         {
-
-            e.Handled = true;
-
             if (sender is CheckBox cb)
             {
-
-                bool currentState = cb.IsChecked == true;
-                bool newState = !currentState;
-                cb.IsChecked = newState;
-
-                var items = NotesDataGrid.ItemsSource as List<NoteItem>;
-
-                if (items != null)
-                {
-                    foreach (var item in items)
-                    {
-                        item.IsSelected = newState;
-                    }
-
-                    UpdateButtonStates();
-                }
-            }
-        }
-
-        private void HeaderCheckBox_Click(object sender, RoutedEventArgs e)
-        {
-            // The PreviewMouseDown on the header allowed the click through to here.
-            if (sender is CheckBox cb)
-            {
-                // Get the state from the CheckBox
                 bool isChecked = cb.IsChecked == true;
-
-                // Ensure you are dealing with the correct type (ObservableCollection is often better)
-                var items = NotesDataGrid.ItemsSource as IEnumerable<NoteItem>;
-
+                var items = NotesDataGrid.ItemsSource as List<NoteItem>;
                 if (items != null)
                 {
                     foreach (var item in items)
-                    {
-                        // This is where the row-level selection property is updated
                         item.IsSelected = isChecked;
-                    }
+                    AllItemsAreChecked = isChecked; // Optional: keeps binding in sync
                     UpdateButtonStates();
                 }
             }
-        }
-
-        private void UnclickableHeader_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            // This stops the DataGridColumnHeader from consuming the click for sorting or resizing.
-            e.Handled = true;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -360,23 +308,38 @@ namespace Protes
         }
         private void NotesDataGrid_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            // Get the element that was clicked
             var originalSource = e.OriginalSource as DependencyObject;
 
-            // Walk up the visual tree to see if click was on a DataGridRow or Cell
+            // 👇 NEW: Ignore clicks inside column headers
+            var parentHeader = FindVisualParent<DataGridColumnHeader>(originalSource);
+            if (parentHeader != null)
+            {
+                // Let the header handle the click (e.g., checkbox)
+                return;
+            }
+
+            // Walk up to find a DataGridRow (for row clicks)
             while (originalSource != null && !(originalSource is DataGridRow))
             {
                 originalSource = VisualTreeHelper.GetParent(originalSource);
             }
 
-            // If we didn't find a row, click was on empty space → deselect
             if (originalSource == null)
             {
+                // Click on empty space → deselect
                 NotesDataGrid.SelectedItem = null;
-                NotesDataGrid.CurrentCell = new DataGridCellInfo(); // Optional: clear current cell
-                UpdateButtonStates(); // Update Edit/Delete menu/button states
-                e.Handled = true; // Prevent further processing
+                NotesDataGrid.CurrentCell = new DataGridCellInfo();
+                UpdateButtonStates();
+                e.Handled = true;
             }
+        }
+        public static T FindVisualParent<T>(DependencyObject child) where T : DependencyObject
+        {
+            while (child != null && !(child is T))
+            {
+                child = VisualTreeHelper.GetParent(child);
+            }
+            return child as T;
         }
 
         // ===== INLINE GRID EDITING (Title only) =====
@@ -877,16 +840,6 @@ namespace Protes
             }
         }
 
-        public void SwitchDatabase(string newDatabasePath)
-        {
-            _databasePath = newDatabasePath;
-            if (_isConnected)
-            {
-                Disconnect_Click(this, new RoutedEventArgs());
-                Connect_Click(this, new RoutedEventArgs());
-            }
-        }
-
         private void Disconnect_Click(object sender, RoutedEventArgs e)
         {
             _isConnected = false;
@@ -1131,7 +1084,7 @@ namespace Protes
                     Preview = note.Content.Length > 60 ? note.Content.Substring(0, 57) + "..." : note.Content,
                     Tags = note.Tags,
                     LastModified = note.LastModified,
-                    IsSelected = false
+                    //IsSelected = false
                 }).ToList();
 
                 NotesDataGrid.ItemsSource = noteItems;
