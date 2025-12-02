@@ -48,6 +48,7 @@ namespace Protes
             }
             InitializeComponent();
             LoadPersistedSettings();
+            LoadAvailableDatabases();
             EnsureAppDataFolder();
             UpdateStatusBar();
             UpdateButtonStates();
@@ -199,10 +200,8 @@ namespace Protes
         {
             bool hasSelection = NotesDataGrid?.SelectedItem != null;
             int selectedCount = 0;
-
             if (_isSelectMode)
             {
-                // Count selected NoteItem objects (UI layer), not FullNote
                 var items = NotesDataGrid.ItemsSource as List<NoteItem>;
                 selectedCount = items?.Count(n => n.IsSelected) ?? 0;
             }
@@ -211,21 +210,22 @@ namespace Protes
                 selectedCount = hasSelection ? 1 : 0;
             }
 
-            // Toolbar buttons
-            NewNoteButton.IsEnabled = _isConnected;
-            EditNoteButton.IsEnabled = _isConnected && selectedCount == 1;
-            DeleteNoteButton.IsEnabled = _isConnected && selectedCount >= 1;
-            SearchBox.IsEnabled = _isConnected && !_isSelectMode; // Disable search during select
-            ConnectIconBtn.IsEnabled = !_isConnected;
-            DisconnectIconBtn.IsEnabled = _isConnected;
-            SelectNotesButton.IsEnabled = _isConnected;
+            // Connection-dependent buttons
+            bool isConnected = _isConnected;
+            NewNoteButton.IsEnabled = isConnected;
+            EditNoteButton.IsEnabled = isConnected && selectedCount == 1;
+            DeleteNoteButton.IsEnabled = isConnected && selectedCount >= 1;
+            SearchBox.IsEnabled = isConnected && !_isSelectMode;
+            ConnectIconBtn.IsEnabled = !isConnected;
+            DisconnectIconBtn.IsEnabled = isConnected;
+            SelectNotesButton.IsEnabled = isConnected;
 
             // File menu
-            NewNoteMenuItem.IsEnabled = _isConnected;
-            EditNoteMenuItem.IsEnabled = _isConnected && selectedCount == 1;
-            DeleteNoteMenuItem.IsEnabled = _isConnected && selectedCount >= 1;
+            NewNoteMenuItem.IsEnabled = isConnected;
+            EditNoteMenuItem.IsEnabled = isConnected && selectedCount == 1;
+            DeleteNoteMenuItem.IsEnabled = isConnected && selectedCount >= 1;
 
-            // Connect/Disconnect menu items (indices 4 and 5 in new menu)
+            // Connect/Disconnect menu items
             if (MainMenu?.Items.Count > 0)
             {
                 var fileMenuItem = MainMenu.Items[0] as MenuItem;
@@ -233,11 +233,17 @@ namespace Protes
                 {
                     var connectMenuItem = fileMenuItem.Items[4] as MenuItem;
                     var disconnectMenuItem = fileMenuItem.Items[5] as MenuItem;
-                    connectMenuItem?.SetValue(MenuItem.IsEnabledProperty, !_isConnected);
-                    disconnectMenuItem?.SetValue(MenuItem.IsEnabledProperty, _isConnected);
+                    connectMenuItem?.SetValue(MenuItem.IsEnabledProperty, !isConnected);
+                    disconnectMenuItem?.SetValue(MenuItem.IsEnabledProperty, isConnected);
                 }
             }
+
+            // 🔥 CRITICAL FIX: Disable local DB switcher unless in Local mode
+            bool isLocalMode = (_currentMode == DatabaseMode.Local);
+            AvailableDatabasesComboBox.IsEnabled = isLocalMode;
+            LoadSelectedDbButton.IsEnabled = isLocalMode;
         }
+
         private bool _allItemsAreChecked;
         public bool AllItemsAreChecked
         {
@@ -278,6 +284,21 @@ namespace Protes
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private void LoadSelectedDbButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedItem = AvailableDatabasesComboBox.SelectedItem as DbFileInfo;
+            if (selectedItem != null)
+            {
+                // Save as last used (optional but recommended)
+                var settings = new SettingsManager();
+                settings.LastLocalDatabasePath = selectedItem.FullPath;
+                settings.Save();
+
+                // Switch to it
+                SwitchToLocalDatabase(selectedItem.FullPath);
+            }
         }
 
         //Data Grid (Database Content)
@@ -525,9 +546,10 @@ namespace Protes
                 {
                     _pendingModeSwitch = DatabaseMode.None;
                     _currentMode = DatabaseMode.Local;
-                    _settings.SetDatabaseMode(DatabaseMode.Local); // or .External
+                    _settings.SetDatabaseMode(DatabaseMode.Local);
                     UpdateDatabaseModeCheckmarks();
                     UpdateStatusBar();
+                    LoadAvailableDatabases(); // ✅ Refresh dropdown when entering Local mode
                     return;
                 }
 
@@ -536,16 +558,17 @@ namespace Protes
                 {
                     _pendingModeSwitch = DatabaseMode.Local;
                     _currentMode = DatabaseMode.Local;
-                    _settings.SetDatabaseMode(DatabaseMode.Local); // or .External
+                    _settings.SetDatabaseMode(DatabaseMode.Local);
                     UpdateDatabaseModeCheckmarks();
                     UpdateStatusBar();
+                    LoadAvailableDatabases(); // ✅ Still in Local mode (pending), so show list
                     return;
                 }
             }
 
             // Full switch logic
             _currentMode = DatabaseMode.Local;
-            _settings.SetDatabaseMode(DatabaseMode.Local); // or .External
+            _settings.SetDatabaseMode(DatabaseMode.Local);
             UpdateDatabaseModeCheckmarks();
 
             if (_settings.AutoConnectOnSwitch)
@@ -572,12 +595,14 @@ namespace Protes
                     {
                         Disconnect_Click(this, new RoutedEventArgs());
                     }
+
                     _noteRepository = new SqliteNoteRepository(_databasePath);
                     LoadNotesFromDatabase();
                     _isConnected = true;
-                    _connectedMode = DatabaseMode.Local; // 👈 Set connected mode
+                    _connectedMode = DatabaseMode.Local;
                     NotesDataGrid.Visibility = Visibility.Visible;
                     DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
+                    LoadAvailableDatabases(); // ✅ Connected → refresh list
                     UpdateButtonStates();
                     UpdateStatusBar();
 
@@ -591,6 +616,8 @@ namespace Protes
                     MessageBox.Show($"Failed to connect to local database:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
                     _isConnected = false;
                     _connectedMode = DatabaseMode.None;
+                    LoadAvailableDatabases(); // ✅ Still Local mode, just disconnected
+                    UpdateButtonStates();
                     UpdateStatusBar();
                 }
             }
@@ -601,6 +628,7 @@ namespace Protes
                 NotesDataGrid.ItemsSource = null;
                 NotesDataGrid.Visibility = Visibility.Collapsed;
                 DisconnectedPlaceholder.Visibility = Visibility.Visible;
+                LoadAvailableDatabases(); // ✅ Local mode selected → show DB list
                 UpdateButtonStates();
                 UpdateStatusBar();
             }
@@ -611,7 +639,7 @@ namespace Protes
         {
             _currentMode = DatabaseMode.Local;
             _databasePath = databasePath;
-            _settings.SetDatabaseMode(DatabaseMode.Local); // or .External
+            _settings.SetDatabaseMode(DatabaseMode.Local);
             _settings.LastLocalDatabasePath = databasePath;
 
             try
@@ -636,11 +664,14 @@ namespace Protes
                 {
                     _isConnected = false;
                 }
+
                 _noteRepository = new SqliteNoteRepository(_databasePath);
                 LoadNotesFromDatabase();
                 _isConnected = true;
+                _connectedMode = DatabaseMode.Local;
                 NotesDataGrid.Visibility = Visibility.Visible;
                 DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
+                LoadAvailableDatabases(); // ✅ Always refresh after switching DB
                 UpdateStatusBar();
                 UpdateButtonStates();
             }
@@ -648,8 +679,10 @@ namespace Protes
             {
                 MessageBox.Show($"Failed to connect to local database:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
                 _isConnected = false;
-                UpdateStatusBar();
+                _connectedMode = DatabaseMode.None;
+                LoadAvailableDatabases(); // ✅ Still in Local mode context
                 UpdateButtonStates();
+                UpdateStatusBar();
             }
         }
 
@@ -681,6 +714,7 @@ namespace Protes
             }
 
             // Full switch logic
+            _currentMode = DatabaseMode.External;
             _settings.SetDatabaseMode(DatabaseMode.External);
             UpdateDatabaseModeCheckmarks();
 
@@ -1093,6 +1127,72 @@ namespace Protes
             }
         }
 
+        // Load Database for the Dropdown Menu
+        private void LoadAvailableDatabases()
+        {
+            var settings = new SettingsManager();
+            var dbFiles = new List<DbFileInfo>();
+
+            // Default folder (user-defined or fallback)
+            string defaultFolder = settings.DefaultDatabaseFolder;
+            if (string.IsNullOrWhiteSpace(defaultFolder) || !Directory.Exists(defaultFolder))
+            {
+                defaultFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Protes");
+            }
+
+            if (Directory.Exists(defaultFolder))
+            {
+                foreach (var file in Directory.GetFiles(defaultFolder, "*.db"))
+                {
+                    dbFiles.Add(new DbFileInfo
+                    {
+                        FileName = Path.GetFileName(file),
+                        FullPath = file,
+                        IsImported = false
+                    });
+                }
+            }
+
+            // Imported paths
+            var importedRaw = settings.ImportedDatabasePaths;
+            var importedPaths = new List<string>();
+            if (!string.IsNullOrWhiteSpace(importedRaw))
+            {
+                importedPaths = importedRaw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                           .Where(p => File.Exists(p)).ToList();
+            }
+
+            foreach (var path in importedPaths)
+            {
+                dbFiles.Add(new DbFileInfo
+                {
+                    FileName = Path.GetFileName(path) + " (imported)",
+                    FullPath = path,
+                    IsImported = true
+                });
+            }
+
+            // Remove duplicates by path
+            var uniqueFiles = dbFiles.GroupBy(f => f.FullPath).Select(g => g.First()).ToList();
+
+            // Set to ComboBox
+            AvailableDatabasesComboBox.ItemsSource = uniqueFiles;
+
+            // Select LastLocalDatabasePath if available
+            string lastPath = settings.LastLocalDatabasePath;
+            if (!string.IsNullOrEmpty(lastPath) && File.Exists(lastPath))
+            {
+                foreach (DbFileInfo item in uniqueFiles)
+                {
+                    if (item.FullPath.Equals(lastPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        AvailableDatabasesComboBox.SelectedItem = item;
+                        break;
+                    }
+                }
+            }
+        }
+
         // ===== HELPERS =====
 
         internal string BuildExternalConnectionString()
@@ -1161,6 +1261,15 @@ namespace Protes
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+    }
+
+
+
+    public class DbFileInfo
+    {
+        public string FileName { get; set; }
+        public string FullPath { get; set; }
+        public bool IsImported { get; set; }
     }
 
     public class FullNote
