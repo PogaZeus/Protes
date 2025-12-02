@@ -174,7 +174,7 @@ namespace Protes
         private void SelectNotesButton_Click(object sender, RoutedEventArgs e)
         {
             _isSelectMode = !_isSelectMode;
-            SelectNotesButton.Content = _isSelectMode ? "Done" : "Select";
+            SelectNotesButton.Content = _isSelectMode ? "✔️" : "✅";
 
             // Toggle checkbox column
             SelectCheckBoxColumn.Visibility = _isSelectMode ? Visibility.Visible : Visibility.Collapsed;
@@ -273,22 +273,6 @@ namespace Protes
         }
 
         private bool _isBulkUpdating = false;
-
-        private void HeaderCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            if (sender is CheckBox cb)
-            {
-                bool isChecked = cb.IsChecked == true;
-                var items = NotesDataGrid.ItemsSource as List<NoteItem>;
-                if (items != null)
-                {
-                    foreach (var item in items)
-                        item.IsSelected = isChecked;
-                    AllItemsAreChecked = isChecked; // Optional: keeps binding in sync
-                    UpdateButtonStates();
-                }
-            }
-        }
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
@@ -938,6 +922,15 @@ namespace Protes
 
         private void NotesDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+            var originalSource = e.OriginalSource as DependencyObject;
+
+            // 👇 NEW: Ignore double-click if it's on ANY column header
+            if (FindVisualParent<DataGridColumnHeader>(originalSource) != null)
+            {
+                return; // Do nothing when double-clicking headers
+            }
+
+            // Proceed with edit only if a note is selected
             EditNoteButton_Click(sender, e);
         }
 

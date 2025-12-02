@@ -77,14 +77,14 @@
 
             <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
 
-            <Button x:Name="NewNoteButton" Content="New" Padding="12,5"
-            FontSize="14" Click="NewNoteButton_Click" Margin="0,0,12,0"/>
-            <Button x:Name="EditNoteButton" Content="Edit" Padding="12,5"
-            FontSize="14" Click="EditNoteButton_Click" Margin="0,0,12,0"/>
-            <Button x:Name="SelectNotesButton" Content="Select" Padding="12,5"
-            FontSize="14" Click="SelectNotesButton_Click" Margin="0,0,12,0"/>
-            <Button x:Name="DeleteNoteButton" Content="Delete" Padding="12,5"
-            FontSize="14" Click="DeleteNoteButton_Click" Margin="0,0,12,0"/>
+            <Button x:Name="NewNoteButton" Content="➕" Padding="6,5"
+            FontSize="16" Click="NewNoteButton_Click" Margin="0,0,12,0"/>
+            <Button x:Name="EditNoteButton" Content="🖊️" Padding="6,5"
+            FontSize="16" Click="EditNoteButton_Click" Margin="0,0,12,0"/>
+            <Button x:Name="SelectNotesButton" Content="✅" Padding="6,5"
+            FontSize="16" Click="SelectNotesButton_Click" Margin="0,0,12,0"/>
+            <Button x:Name="DeleteNoteButton" Content="🗑️" Padding="6,5"
+            FontSize="16" Click="DeleteNoteButton_Click" Margin="0,0,12,0"/>
 
             <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
 
@@ -125,6 +125,7 @@
                 <DataGridTemplateColumn 
     x:Name="SelectCheckBoxColumn"
     Width="40"
+                    CanUserResize="False"
     Visibility="Collapsed">
                     <DataGridTemplateColumn.HeaderTemplate>
                         <DataTemplate>
