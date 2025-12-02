@@ -130,9 +130,11 @@
     <Compile Include="FontPickerWindow.xaml.cs">
       <DependentUpon>FontPickerWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="NoteRepository.cs" />
     <Compile Include="ReplaceDialog.xaml.cs">
       <DependentUpon>ReplaceDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="SettingsManager.cs" />
     <Compile Include="SettingsWindow.xaml.cs">
       <DependentUpon>SettingsWindow.xaml</DependentUpon>
     </Compile>

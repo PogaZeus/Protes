@@ -1,5 +1,4 @@
 ﻿using MySqlConnector;
-using Protes.Properties;
 using Protes.Views;
 using System;
 using System.Collections.Generic;
@@ -24,6 +23,8 @@ namespace Protes
         private DatabaseMode _pendingModeSwitch = DatabaseMode.None;
         private DatabaseMode _connectedMode = DatabaseMode.None;
         private bool _isConnected = false;
+        private INoteRepository _noteRepository;
+        private readonly SettingsManager _settings = new SettingsManager();
         private List<FullNote> _fullNotesCache = new List<FullNote>();
         private NoteItem _editingItem;
         private string _originalTitle;
@@ -32,7 +33,7 @@ namespace Protes
         private bool _isSelectMode = false;
         public MainWindow()
         {
-            string lastPath = Properties.Settings.Default.LastLocalDatabasePath;
+            string lastPath = _settings.LastLocalDatabasePath;
             if (!string.IsNullOrWhiteSpace(lastPath) && File.Exists(lastPath))
             {
                 _databasePath = lastPath;
@@ -52,11 +53,11 @@ namespace Protes
             UpdateButtonStates();
 
             // Load View settings
-            ViewTitleMenuItem.IsChecked = Properties.Settings.Default.ViewMainWindowTitle;
-            ViewTagsMenuItem.IsChecked = Properties.Settings.Default.ViewMainWindowTags;
-            ViewModifiedMenuItem.IsChecked = Properties.Settings.Default.ViewMainWindowMod;
-            ViewToolbarMenuItem.IsChecked = Properties.Settings.Default.ViewMainToolbar;
-            _isToolbarVisible = Properties.Settings.Default.ViewMainToolbar;
+            ViewTitleMenuItem.IsChecked = _settings.ViewMainWindowTitle;
+            ViewTagsMenuItem.IsChecked = _settings.ViewMainWindowTags;
+            ViewModifiedMenuItem.IsChecked = _settings.ViewMainWindowMod;
+            ViewToolbarMenuItem.IsChecked = _settings.ViewMainToolbar;
+            _isToolbarVisible = _settings.ViewMainToolbar;
             NotesDataGrid.DataContext = this;
 
             // Apply initial state
@@ -69,7 +70,7 @@ namespace Protes
             NotesDataGrid.AddHandler(CheckBox.CheckedEvent, new RoutedEventHandler(OnCheckboxChanged));
             NotesDataGrid.AddHandler(CheckBox.UncheckedEvent, new RoutedEventHandler(OnCheckboxChanged));
             NotesDataGrid.SelectionChanged += (s, e) => UpdateButtonStates();
-            var showNotifications = Properties.Settings.Default.ShowNotifications;
+            var showNotifications = _settings.ShowNotifications;
             SelectCheckBoxColumn.Visibility = Visibility.Collapsed;
 
         }
@@ -118,7 +119,7 @@ namespace Protes
         {
             Loaded -= MainWindow_Loaded; // prevent multiple calls
 
-            if (Properties.Settings.Default.AutoConnect)
+            if (_settings.AutoConnect)
             {
                 if (_currentMode == DatabaseMode.Local)
                 {
@@ -126,8 +127,8 @@ namespace Protes
                 }
                 else if (_currentMode == DatabaseMode.External)
                 {
-                    var host = Properties.Settings.Default.External_Host;
-                    var database = Properties.Settings.Default.External_Database;
+                    var host = _settings.External_Host;
+                    var database = _settings.External_Database;
                     if (!string.IsNullOrWhiteSpace(host) && !string.IsNullOrWhiteSpace(database))
                     {
                         Connect_Click(this, new RoutedEventArgs());
@@ -148,32 +149,28 @@ namespace Protes
         private void ViewTitleMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             bool isChecked = ViewTitleMenuItem.IsChecked == true;
-            Properties.Settings.Default.ViewMainWindowTitle = isChecked;
-            Properties.Settings.Default.Save();
+            _settings.ViewMainWindowTitle = isChecked;
             UpdateDataGridColumns();
         }
 
         private void ViewTagsMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             bool isChecked = ViewTagsMenuItem.IsChecked == true;
-            Properties.Settings.Default.ViewMainWindowTags = isChecked;
-            Properties.Settings.Default.Save();
+            _settings.ViewMainWindowTags = isChecked;
             UpdateDataGridColumns();
         }
 
         private void ViewModifiedMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             bool isChecked = ViewModifiedMenuItem.IsChecked == true;
-            Properties.Settings.Default.ViewMainWindowMod = isChecked;
-            Properties.Settings.Default.Save();
+            _settings.ViewMainWindowMod = isChecked;
             UpdateDataGridColumns();
         }
 
         private void ViewToolbarMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             bool isChecked = ViewToolbarMenuItem.IsChecked == true;
-            Properties.Settings.Default.ViewMainToolbar = isChecked;
-            Properties.Settings.Default.Save();
+            _settings.ViewMainToolbar = isChecked;
             _isToolbarVisible = isChecked;
             UpdateToolbarVisibility();
         }
@@ -196,8 +193,7 @@ namespace Protes
         // Toolbar options
         private void AutoConnectCheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            Properties.Settings.Default.AutoConnect = AutoConnectCheckBox.IsChecked == true;
-            Properties.Settings.Default.Save();
+            _settings.AutoConnect = AutoConnectCheckBox.IsChecked == true;
         }
         private void SelectNotesButton_Click(object sender, RoutedEventArgs e)
         {
@@ -448,7 +444,11 @@ namespace Protes
             {
                 try
                 {
-                    UpdateNoteInDatabase(fullNote.Id, newTitle, fullNote.Content, fullNote.Tags);
+                    if (_noteRepository == null)
+                    {
+                        throw new InvalidOperationException("Database repository not initialized.");
+                    }
+                    _noteRepository.UpdateNote(fullNote.Id, newTitle, fullNote.Content, fullNote.Tags);
                     var newModifiedStr = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
                     fullNote.Title = newTitle;
                     fullNote.LastModified = newModifiedStr;
@@ -470,7 +470,11 @@ namespace Protes
             {
                 try
                 {
-                    UpdateNoteInDatabase(fullNote.Id, fullNote.Title, fullNote.Content, newTags);
+                    if (_noteRepository == null)
+                    {
+                        throw new InvalidOperationException("Database repository not initialized.");
+                    }
+                    _noteRepository.UpdateNote(fullNote.Id, fullNote.Title, fullNote.Content, newTags);
                     var newModifiedStr = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
                     fullNote.Tags = newTags;
                     fullNote.LastModified = newModifiedStr;
@@ -505,12 +509,8 @@ namespace Protes
 
         private void LoadPersistedSettings()
         {
-            var savedMode = Properties.Settings.Default.DatabaseMode;
-            _currentMode = (savedMode == "Local") ? DatabaseMode.Local :
-                           (savedMode == "External") ? DatabaseMode.External :
-                           DatabaseMode.Local;
-
-            AutoConnectCheckBox.IsChecked = Properties.Settings.Default.AutoConnect;
+            _currentMode = _settings.GetDatabaseMode();
+            AutoConnectCheckBox.IsChecked = _settings.AutoConnect;
             UpdateDatabaseModeCheckmarks();
         }
 
@@ -521,8 +521,8 @@ namespace Protes
 
             localItem.IsChecked = (_currentMode == DatabaseMode.Local);
             externalItem.IsChecked = (_currentMode == DatabaseMode.External);
-            externalItem.IsEnabled = !string.IsNullOrWhiteSpace(Properties.Settings.Default.External_Host) &&
-                                    !string.IsNullOrWhiteSpace(Properties.Settings.Default.External_Database);
+            externalItem.IsEnabled = !string.IsNullOrWhiteSpace(_settings.External_Host) &&
+                                    !string.IsNullOrWhiteSpace(_settings.External_Database);
         }
 
         public void UpdateStatusBar()
@@ -545,9 +545,9 @@ namespace Protes
             }
             else if (_connectedMode == DatabaseMode.External)
             {
-                var host = Properties.Settings.Default.External_Host ?? "localhost";
-                var port = Properties.Settings.Default.External_Port?.ToString() ?? "3306";
-                var database = Properties.Settings.Default.External_Database ?? "unknown";
+                var host = _settings.External_Host ?? "localhost";
+                var port = _settings.External_Port?.ToString() ?? "3306";
+                var database = _settings.External_Database ?? "unknown";
                 DatabaseModeText.Text = $"External ({host}:{port}/{database}/Notes)";
             }
             else
@@ -578,20 +578,18 @@ namespace Protes
                 {
                     _pendingModeSwitch = DatabaseMode.None;
                     _currentMode = DatabaseMode.Local;
-                    Properties.Settings.Default.DatabaseMode = "Local";
-                    Properties.Settings.Default.Save();
+                    _settings.SetDatabaseMode(DatabaseMode.Local); // or .External
                     UpdateDatabaseModeCheckmarks();
                     UpdateStatusBar();
                     return;
                 }
 
                 // If connected to External and AutoDisconnect is OFF → set pending
-                if (!Properties.Settings.Default.AutoDisconnectOnSwitch)
+                if (!_settings.AutoDisconnectOnSwitch)
                 {
                     _pendingModeSwitch = DatabaseMode.Local;
                     _currentMode = DatabaseMode.Local;
-                    Properties.Settings.Default.DatabaseMode = "Local";
-                    Properties.Settings.Default.Save();
+                    _settings.SetDatabaseMode(DatabaseMode.Local); // or .External
                     UpdateDatabaseModeCheckmarks();
                     UpdateStatusBar();
                     return;
@@ -600,11 +598,10 @@ namespace Protes
 
             // Full switch logic
             _currentMode = DatabaseMode.Local;
-            Properties.Settings.Default.DatabaseMode = "Local";
-            Properties.Settings.Default.Save();
+            _settings.SetDatabaseMode(DatabaseMode.Local); // or .External
             UpdateDatabaseModeCheckmarks();
 
-            if (Properties.Settings.Default.AutoConnectOnSwitch)
+            if (_settings.AutoConnectOnSwitch)
             {
                 try
                 {
@@ -624,11 +621,11 @@ namespace Protes
                         }
                     }
 
-                    if (_isConnected && Properties.Settings.Default.AutoDisconnectOnSwitch)
+                    if (_isConnected && _settings.AutoDisconnectOnSwitch)
                     {
                         Disconnect_Click(this, new RoutedEventArgs());
                     }
-
+                    _noteRepository = new SqliteNoteRepository(_databasePath);
                     LoadNotesFromDatabase();
                     _isConnected = true;
                     _connectedMode = DatabaseMode.Local; // 👈 Set connected mode
@@ -637,7 +634,7 @@ namespace Protes
                     UpdateButtonStates();
                     UpdateStatusBar();
 
-                    if (Properties.Settings.Default.ShowNotifications)
+                    if (_settings.ShowNotifications)
                     {
                         MessageBox.Show("Local database (SQLite) selected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
@@ -667,9 +664,8 @@ namespace Protes
         {
             _currentMode = DatabaseMode.Local;
             _databasePath = databasePath;
-            Properties.Settings.Default.DatabaseMode = "Local";
-            Properties.Settings.Default.LastLocalDatabasePath = databasePath;
-            Properties.Settings.Default.Save();
+            _settings.SetDatabaseMode(DatabaseMode.Local); // or .External
+            _settings.LastLocalDatabasePath = databasePath;
 
             try
             {
@@ -689,11 +685,11 @@ namespace Protes
                     }
                 }
 
-                if (_isConnected && Properties.Settings.Default.AutoDisconnectOnSwitch)
+                if (_isConnected && _settings.AutoDisconnectOnSwitch)
                 {
                     _isConnected = false;
                 }
-
+                _noteRepository = new SqliteNoteRepository(_databasePath);
                 LoadNotesFromDatabase();
                 _isConnected = true;
                 NotesDataGrid.Visibility = Visibility.Visible;
@@ -719,20 +715,18 @@ namespace Protes
                 {
                     _pendingModeSwitch = DatabaseMode.None;
                     _currentMode = DatabaseMode.External;
-                    Properties.Settings.Default.DatabaseMode = "External";
-                    Properties.Settings.Default.Save();
+                    _settings.SetDatabaseMode(DatabaseMode.External);
                     UpdateDatabaseModeCheckmarks();
                     UpdateStatusBar();
                     return;
                 }
 
                 // If connected to Local and AutoDisconnect is OFF → set pending
-                if (!Properties.Settings.Default.AutoDisconnectOnSwitch)
+                if (!_settings.AutoDisconnectOnSwitch)
                 {
                     _pendingModeSwitch = DatabaseMode.External;
                     _currentMode = DatabaseMode.External;
-                    Properties.Settings.Default.DatabaseMode = "External";
-                    Properties.Settings.Default.Save();
+                    _settings.SetDatabaseMode(DatabaseMode.External);
                     UpdateDatabaseModeCheckmarks();
                     UpdateStatusBar();
                     return;
@@ -740,12 +734,10 @@ namespace Protes
             }
 
             // Full switch logic
-            _currentMode = DatabaseMode.External;
-            Properties.Settings.Default.DatabaseMode = "External";
-            Properties.Settings.Default.Save();
+            _settings.SetDatabaseMode(DatabaseMode.External);
             UpdateDatabaseModeCheckmarks();
 
-            if (Properties.Settings.Default.AutoConnectOnSwitch)
+            if (_settings.AutoConnectOnSwitch)
             {
                 var connString = BuildExternalConnectionString();
                 if (connString == null)
@@ -757,7 +749,7 @@ namespace Protes
                     return;
                 }
 
-                if (_isConnected && Properties.Settings.Default.AutoDisconnectOnSwitch)
+                if (_isConnected && _settings.AutoDisconnectOnSwitch)
                 {
                     Disconnect_Click(this, new RoutedEventArgs());
                 }
@@ -782,6 +774,7 @@ namespace Protes
             {
                 TestExternalConnection(connectionString);
                 _externalConnectionString = connectionString;
+                _noteRepository = new MySqlNoteRepository(connectionString);
                 FinishConnection();
             }
             catch (InvalidOperationException ex)
@@ -808,6 +801,7 @@ namespace Protes
                 if (_currentMode == DatabaseMode.Local)
                 {
                     EnsureNotesTableExistsLocal();
+                    _noteRepository = new SqliteNoteRepository(_databasePath);
                 }
                 else if (_currentMode == DatabaseMode.External)
                 {
@@ -819,6 +813,7 @@ namespace Protes
                     }
                     TestExternalConnection(connString);
                     _externalConnectionString = connString;
+                    _noteRepository = new MySqlNoteRepository(connString);
                 }
                 FinishConnection();
             }
@@ -876,7 +871,7 @@ namespace Protes
             UpdateStatusBar();
             UpdateButtonStates();
 
-            if (Properties.Settings.Default.ShowNotifications)
+            if (_settings.ShowNotifications)
             {
                 MessageBox.Show("Connected successfully!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -904,7 +899,7 @@ namespace Protes
             UpdateButtonStates();
 
             // Show notification only if enabled
-            if (Properties.Settings.Default.ShowNotifications)
+            if (_settings.ShowNotifications)
             {
                 MessageBox.Show("Disconnected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -1011,20 +1006,34 @@ namespace Protes
 
         private void OnSaveNoteRequested(string title, string content, string tags, long? noteId)
         {
-            if (noteId.HasValue)
+            if (_noteRepository == null)
             {
-                UpdateNoteInDatabase(noteId.Value, title, content, tags);
+                MessageBox.Show("Database not connected. Please connect first.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            else
+
+            try
             {
-                SaveNoteToDatabase(title, content, tags);
+                if (noteId.HasValue)
+                {
+                    _noteRepository.UpdateNote(noteId.Value, title, content, tags);
+                }
+                else
+                {
+                    _noteRepository.SaveNote(title, content, tags);
+                }
+
+                LoadNotesFromDatabase(); // Refresh list
             }
-            LoadNotesFromDatabase();
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save note:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void DeleteNoteButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!_isConnected) return;
+            if (!_isConnected || _noteRepository == null) return;
 
             List<FullNote> notesToDelete = new List<FullNote>();
 
@@ -1073,32 +1082,10 @@ namespace Protes
 
             try
             {
+                // Use the repository to delete — no more if/else for Local/External!
                 foreach (var note in notesToDelete)
                 {
-                    if (_currentMode == DatabaseMode.Local)
-                    {
-                        using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
-                        {
-                            conn.Open();
-                            using (var cmd = new SQLiteCommand("DELETE FROM Notes WHERE Id = @id", conn))
-                            {
-                                cmd.Parameters.AddWithValue("@id", note.Id);
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
-                    }
-                    else if (_currentMode == DatabaseMode.External)
-                    {
-                        using (var conn = new MySqlConnection(_externalConnectionString))
-                        {
-                            conn.Open();
-                            using (var cmd = new MySqlCommand("DELETE FROM Notes WHERE Id = @id", conn))
-                            {
-                                cmd.Parameters.AddWithValue("@id", note.Id);
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
-                    }
+                    _noteRepository.DeleteNote(note.Id);
                 }
 
                 LoadNotesFromDatabase();
@@ -1109,7 +1096,6 @@ namespace Protes
                 MessageBox.Show($"Failed to delete note(s):\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_isConnected)
@@ -1119,227 +1105,45 @@ namespace Protes
             }
         }
 
-        // ===== DATABASE CRUD =====
-
-        private void SaveNoteToDatabase(string title, string content, string tags)
-        {
-            try
-            {
-                if (_currentMode == DatabaseMode.Local)
-                {
-                    using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
-                    {
-                        conn.Open();
-                        using (var cmd = new SQLiteCommand(
-                            "INSERT INTO Notes (Title, Content, Tags, LastModified) VALUES (@title, @content, @tags, @now)", conn))
-                        {
-                            cmd.Parameters.AddWithValue("@title", title ?? "");
-                            cmd.Parameters.AddWithValue("@content", content ?? "");
-                            cmd.Parameters.AddWithValue("@tags", tags ?? "");
-                            cmd.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
-                }
-                else if (_currentMode == DatabaseMode.External)
-                {
-                    using (var conn = new MySqlConnection(_externalConnectionString))
-                    {
-                        conn.Open();
-                        using (var cmd = new MySqlCommand(
-                            "INSERT INTO Notes (Title, Content, Tags, LastModified) VALUES (@title, @content, @tags, @now)", conn))
-                        {
-                            cmd.Parameters.AddWithValue("@title", title ?? "");
-                            cmd.Parameters.AddWithValue("@content", content ?? "");
-                            cmd.Parameters.AddWithValue("@tags", tags ?? "");
-                            cmd.Parameters.AddWithValue("@now", DateTime.Now);
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to save note:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void UpdateNoteInDatabase(long id, string title, string content, string tags)
-        {
-            try
-            {
-                if (_currentMode == DatabaseMode.Local)
-                {
-                    using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
-                    {
-                        conn.Open();
-                        using (var cmd = new SQLiteCommand(
-                            @"UPDATE Notes 
-                              SET Title = @title, Content = @content, Tags = @tags, LastModified = @now 
-                              WHERE Id = @id", conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", id);
-                            cmd.Parameters.AddWithValue("@title", title ?? "");
-                            cmd.Parameters.AddWithValue("@content", content ?? "");
-                            cmd.Parameters.AddWithValue("@tags", tags ?? "");
-                            cmd.Parameters.AddWithValue("@now", DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
-                }
-                else if (_currentMode == DatabaseMode.External)
-                {
-                    using (var conn = new MySqlConnection(_externalConnectionString))
-                    {
-                        conn.Open();
-                        using (var cmd = new MySqlCommand(
-                            @"UPDATE Notes 
-                              SET Title = @title, Content = @content, Tags = @tags, LastModified = @now 
-                              WHERE Id = @id", conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", id);
-                            cmd.Parameters.AddWithValue("@title", title ?? "");
-                            cmd.Parameters.AddWithValue("@content", content ?? "");
-                            cmd.Parameters.AddWithValue("@tags", tags ?? "");
-                            cmd.Parameters.AddWithValue("@now", DateTime.Now);
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to update note: {ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
+        // ===== Load Notes
 
         private void LoadNotesFromDatabase(string searchTerm = "", string searchField = "All")
         {
-            var notes = new List<NoteItem>();
-            _fullNotesCache.Clear();
-            string likePattern = EscapeLikePattern(searchTerm);
+            // 🔒 SAFETY: If no repository, show disconnected state
+            if (_noteRepository == null)
+            {
+                // Clear UI
+                NotesDataGrid.ItemsSource = null;
+                _fullNotesCache.Clear();
+                NoteCountText.Text = "";
+                return;
+            }
 
             try
             {
-                if (_currentMode == DatabaseMode.Local)
-                {
-                    LoadNotesFromLocal(likePattern, searchField, notes);
-                }
-                else if (_currentMode == DatabaseMode.External)
-                {
-                    LoadNotesFromExternal(likePattern, searchField, notes);
-                }
+                var fullNotes = _noteRepository.LoadNotes(searchTerm, searchField);
+                _fullNotesCache = fullNotes;
 
-                NotesDataGrid.ItemsSource = notes;
-                AllItemsAreChecked = false; // Reset select-all state
-                NoteCountText.Text = $"{notes.Count} Note{(notes.Count == 1 ? "" : "s")}";
+                var noteItems = fullNotes.Select(note => new NoteItem
+                {
+                    Id = note.Id,
+                    Title = note.Title,
+                    Preview = note.Content.Length > 60 ? note.Content.Substring(0, 57) + "..." : note.Content,
+                    Tags = note.Tags,
+                    LastModified = note.LastModified,
+                    IsSelected = false
+                }).ToList();
+
+                NotesDataGrid.ItemsSource = noteItems;
+                AllItemsAreChecked = false;
+                NoteCountText.Text = $"{noteItems.Count} Note{(noteItems.Count == 1 ? "" : "s")}";
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to load notes:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void LoadNotesFromLocal(string likePattern, string searchField, List<NoteItem> notes)
-        {
-            using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
-            {
-                conn.Open();
-                string query = GetLoadQuery(searchField, isExternal: false);
-                using (var cmd = new SQLiteCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@search", likePattern);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            AppendNote(reader, notes, isExternal: false);
-                        }
-                    }
-                }
-            }
-        }
-
-        private void LoadNotesFromExternal(string likePattern, string searchField, List<NoteItem> notes)
-        {
-            using (var conn = new MySqlConnection(_externalConnectionString))
-            {
-                conn.Open();
-                string query = GetLoadQuery(searchField, isExternal: true);
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@search", likePattern);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            AppendNote(reader, notes, isExternal: true);
-                        }
-                    }
-                }
-            }
-        }
-
-        private string GetLoadQuery(string searchField, bool isExternal)
-        {
-            string escapeClause = isExternal ? "ESCAPE '\\\\'" : "ESCAPE '\\'";
-            string baseQuery = "SELECT Id, Title, Content, Tags, LastModified FROM Notes";
-
-            if (searchField == "All")
-            {
-                return $@"{baseQuery}
-                          WHERE Title LIKE @search {escapeClause}
-                             OR Content LIKE @search {escapeClause}
-                             OR Tags LIKE @search {escapeClause}
-                          ORDER BY LastModified DESC";
-            }
-            else
-            {
-                string col = GetColumnName(searchField);
-                return $@"{baseQuery}
-                          WHERE {col} LIKE @search {escapeClause}
-                          ORDER BY LastModified DESC";
-            }
-        }
-
-        private void AppendNote(System.Data.IDataReader reader, List<NoteItem> notes, bool isExternal)
-        {
-            var id = isExternal ? Convert.ToInt64(reader["Id"]) : (long)reader["Id"];
-            var title = reader["Title"].ToString();
-            var content = reader["Content"].ToString();
-            var tags = reader["Tags"].ToString();
-            string modified;
-
-            if (isExternal && reader["LastModified"] is DateTime dt)
-            {
-                modified = dt.ToString("yyyy-MM-dd HH:mm");
-            }
-            else
-            {
-                modified = reader["LastModified"].ToString();
-            }
-
-            var preview = content.Length > 60 ? content.Substring(0, 57) + "..." : content;
-
-            _fullNotesCache.Add(new FullNote { Id = id, Title = title, Content = content, Tags = tags, LastModified = modified });
-            notes.Add(new NoteItem { Id = id, Title = title, Preview = preview, LastModified = modified, Tags = tags });
-        }
-
-        private string EscapeLikePattern(string input)
-        {
-            if (string.IsNullOrEmpty(input)) return "%";
-            return "%" + input.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
-        }
-
-        private string GetColumnName(string searchField)
-        {
-            switch (searchField)
-            {
-                case "Title": return "Title";
-                case "Content": return "Content";
-                case "Tags": return "Tags";
-                case "Modified": return "LastModified";
-                default: return "Title";
+                NotesDataGrid.ItemsSource = null;
+                _fullNotesCache.Clear();
+                NoteCountText.Text = "";
             }
         }
 
@@ -1347,11 +1151,11 @@ namespace Protes
 
         internal string BuildExternalConnectionString()
         {
-            var host = Properties.Settings.Default.External_Host;
-            var port = Properties.Settings.Default.External_Port?.ToString() ?? "3306";
-            var database = Properties.Settings.Default.External_Database;
-            var username = Properties.Settings.Default.External_Username;
-            var password = Properties.Settings.Default.External_Password ?? "";
+            var host = _settings.External_Host;
+            var port = _settings.External_Port?.ToString() ?? "3306";
+            var database = _settings.External_Database;
+            var username = _settings.External_Username;
+            var password = _settings.External_Password ?? "";
 
             if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(database))
                 return null;

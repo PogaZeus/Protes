@@ -1,9 +1,9 @@
 ﻿using Microsoft.Win32;
-using Protes.Properties;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -15,7 +15,7 @@ namespace Protes.Views
         private string _currentDatabasePath;
         private MainWindow _mainWindow;
         private List<string> _importedDbPaths = new List<string>();
-
+        private readonly SettingsManager _settings = new SettingsManager();
         public SettingsWindow(string currentDatabasePath, MainWindow mainWindow)
         {
             InitializeComponent();
@@ -23,7 +23,7 @@ namespace Protes.Views
             _mainWindow = mainWindow;
 
             // ✅ Load user-defined default folder, or fallback to %AppData%\Protes
-            string savedDefaultFolder = Properties.Settings.Default.DefaultDatabaseFolder;
+            string savedDefaultFolder = _settings.DefaultDatabaseFolder;
             if (!string.IsNullOrWhiteSpace(savedDefaultFolder) && Directory.Exists(savedDefaultFolder))
             {
                 _appDataFolder = savedDefaultFolder;
@@ -31,26 +31,25 @@ namespace Protes.Views
             else
             {
                 _appDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Protes");
-                // Save default if not set
-                Properties.Settings.Default.DefaultDatabaseFolder = _appDataFolder;
-                Properties.Settings.Default.Save();
+                _settings.DefaultDatabaseFolder = _appDataFolder;
             }
 
             if (!Directory.Exists(_appDataFolder))
                 Directory.CreateDirectory(_appDataFolder);
 
             // Load UI state
-            AutoConnectCheckBox.IsChecked = Properties.Settings.Default.AutoConnect;
-            AutoConnectOnSwitchCheckBox.IsChecked = Properties.Settings.Default.AutoConnectOnSwitch;
-            AutoDisconnectOnSwitchCheckBox.IsChecked = Properties.Settings.Default.AutoDisconnectOnSwitch;
-            ShowNotificationsCheckBox.IsChecked = Properties.Settings.Default.ShowNotifications;
-            DefaultDbFolderText.Text = _appDataFolder; // 👈 Show current default folder
+            AutoConnectCheckBox.IsChecked = _settings.AutoConnect;
+            AutoConnectOnSwitchCheckBox.IsChecked = _settings.AutoConnectOnSwitch;
+            AutoDisconnectOnSwitchCheckBox.IsChecked = _settings.AutoDisconnectOnSwitch;
+            ShowNotificationsCheckBox.IsChecked = _settings.ShowNotifications;
+            DefaultDbFolderText.Text = _appDataFolder;
 
             CurrentDbPathText.Text = _currentDatabasePath;
             LoadLocalDatabases();
             LoadExternalSettings();
+            var importedRaw = _settings.ImportedDatabasePaths;
 
-            if (Properties.Settings.Default.AutoConnectOnSwitch)
+            if (_settings.AutoConnectOnSwitch)
             {
                 AutoDisconnectOnSwitchCheckBox.IsEnabled = false;
             }
@@ -80,7 +79,7 @@ namespace Protes.Views
             }
 
             // 2. Imported databases
-            var importedRaw = Properties.Settings.Default.ImportedDatabasePaths;
+            var importedRaw = _settings.ImportedDatabasePaths;
             if (!string.IsNullOrWhiteSpace(importedRaw))
             {
                 _importedDbPaths = new List<string>(importedRaw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
@@ -106,10 +105,10 @@ namespace Protes.Views
 
         private void LoadExternalSettings()
         {
-            HostTextBox.Text = Properties.Settings.Default.External_Host ?? "";
-            PortTextBox.Text = Properties.Settings.Default.External_Port?.ToString() ?? "3306";
-            DatabaseTextBox.Text = Properties.Settings.Default.External_Database ?? "";
-            UsernameTextBox.Text = Properties.Settings.Default.External_Username ?? "";
+            HostTextBox.Text = _settings.External_Host ?? "";
+            PortTextBox.Text = _settings.External_Port?.ToString() ?? "3306";
+            DatabaseTextBox.Text = _settings.External_Database ?? "";
+            UsernameTextBox.Text = _settings.External_Username ?? "";
             // Password not loaded
         }
 
@@ -118,45 +117,37 @@ namespace Protes.Views
         private void AutoConnectCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             bool isChecked = AutoConnectCheckBox.IsChecked == true;
-            Properties.Settings.Default.AutoConnect = isChecked;
-            Properties.Settings.Default.Save();
+            _settings.AutoConnect = isChecked;
             _mainWindow.AutoConnectCheckBox.IsChecked = isChecked;
         }
         private void AutoConnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             bool isChecked = AutoConnectOnSwitchCheckBox.IsChecked == true;
-            Properties.Settings.Default.AutoConnectOnSwitch = isChecked;
-
+            _settings.AutoConnectOnSwitch = isChecked;
             if (isChecked)
             {
-                // Force AutoDisconnect = ON and disable its checkbox
-                Properties.Settings.Default.AutoDisconnectOnSwitch = true;
+                _settings.AutoDisconnectOnSwitch = true;
                 AutoDisconnectOnSwitchCheckBox.IsChecked = true;
                 AutoDisconnectOnSwitchCheckBox.IsEnabled = false;
             }
             else
             {
-                // Allow user to control AutoDisconnect freely
                 AutoDisconnectOnSwitchCheckBox.IsEnabled = true;
             }
-
-            Properties.Settings.Default.Save();
         }
 
         private void AutoDisconnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             // Only save if AutoConnectOnSwitch is OFF (otherwise it's forced ON)
-            if (!Properties.Settings.Default.AutoConnectOnSwitch)
+            if (!_settings.AutoConnectOnSwitch)
             {
-                Properties.Settings.Default.AutoDisconnectOnSwitch = AutoDisconnectOnSwitchCheckBox.IsChecked == true;
-                Properties.Settings.Default.Save();
+                _settings.AutoDisconnectOnSwitch = AutoDisconnectOnSwitchCheckBox.IsChecked == true;
             }
         }
         private void ShowNotificationsCheckBox_Changed(object sender, RoutedEventArgs e)
         {
             bool isChecked = ShowNotificationsCheckBox.IsChecked == true;
-            Properties.Settings.Default.ShowNotifications = isChecked;
-            Properties.Settings.Default.Save();
+            _settings.ShowNotifications = isChecked;
         }
 
         // ✅ NEW: Change Default Database Folder
@@ -189,8 +180,7 @@ namespace Protes.Views
 
                 // Update and save
                 _appDataFolder = newFolder;
-                Properties.Settings.Default.DefaultDatabaseFolder = newFolder;
-                Properties.Settings.Default.Save();
+                _settings.DefaultDatabaseFolder = newFolder;
                 DefaultDbFolderText.Text = newFolder;
 
                 // Refresh list
@@ -233,8 +223,7 @@ namespace Protes.Views
                             if (!_importedDbPaths.Contains(exportedPath))
                             {
                                 _importedDbPaths.Add(exportedPath);
-                                Properties.Settings.Default.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
-                                Properties.Settings.Default.Save();
+                                _settings.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
                             }
                         }
 
@@ -308,8 +297,8 @@ namespace Protes.Views
                 if (!_importedDbPaths.Contains(sourcePath))
                 {
                     _importedDbPaths.Add(sourcePath);
-                    Properties.Settings.Default.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
-                    Properties.Settings.Default.Save();
+                    _settings.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
+                    _settings.Save();
                 }
 
                 SwitchToDatabase(sourcePath);
@@ -326,8 +315,7 @@ namespace Protes.Views
 
             _currentDatabasePath = newDbPath;
             CurrentDbPathText.Text = newDbPath;
-            Properties.Settings.Default.LastLocalDatabasePath = newDbPath;
-            Properties.Settings.Default.Save();
+            _settings.LastLocalDatabasePath = newDbPath;
 
             _mainWindow.SwitchToLocalDatabase(newDbPath);
 
@@ -366,8 +354,8 @@ namespace Protes.Views
                 MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 _importedDbPaths.Remove(selectedItem.FullPath);
-                Properties.Settings.Default.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
-                Properties.Settings.Default.Save();
+                _settings.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
+                _settings.Save();
                 LoadLocalDatabases();
             }
         }
@@ -397,8 +385,8 @@ namespace Protes.Views
                     if (selectedItem.IsImported)
                     {
                         _importedDbPaths.Remove(selectedItem.FullPath);
-                        Properties.Settings.Default.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
-                        Properties.Settings.Default.Save();
+                        _settings.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
+                        _settings.Save();
                     }
 
                     LoadLocalDatabases();
@@ -447,12 +435,11 @@ namespace Protes.Views
 
         private void SaveExternalSettings()
         {
-            Properties.Settings.Default.External_Host = HostTextBox.Text;
-            Properties.Settings.Default.External_Port = PortTextBox.Text;
-            Properties.Settings.Default.External_Database = DatabaseTextBox.Text;
-            Properties.Settings.Default.External_Username = UsernameTextBox.Text;
-            Properties.Settings.Default.External_Password = PasswordBox.Password;
-            Properties.Settings.Default.Save();
+            _settings.External_Host = HostTextBox.Text;
+            _settings.External_Port = PortTextBox.Text;
+            _settings.External_Database = DatabaseTextBox.Text;
+            _settings.External_Username = UsernameTextBox.Text;
+            _settings.External_Password = PasswordBox.Password;
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
