@@ -97,72 +97,80 @@ namespace Protes.Views
         // ===== File Menu Shortcut Keydown Detection =====
         private void NoteEditorWindow_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (FocusManager.GetFocusedElement(this) is TextBox)
-                return;
-
+            var focused = FocusManager.GetFocusedElement(this);
             var modifiers = Keyboard.Modifiers;
 
-            // Ctrl+N → New Note
-            if (e.Key == Key.N && modifiers == ModifierKeys.Control)
+            // ✅ GLOBAL SHORTCUTS: Work in ANY TextBox (Title, Content, Tags)
+            if ((e.Key == Key.N && modifiers == ModifierKeys.Control) ||   // Ctrl+N → New
+                (e.Key == Key.S && modifiers == ModifierKeys.Control) ||   // Ctrl+S → Save
+                (e.Key == Key.F && modifiers == ModifierKeys.Control) ||   // Ctrl+F → Find
+                (e.Key == Key.H && modifiers == ModifierKeys.Control) ||   // Ctrl+H → Replace
+                (e.Key == Key.G && modifiers == ModifierKeys.Control) ||   // Ctrl+G → Go To
+                (e.Key == Key.F5))                                         // F5 → Insert Date/Time
             {
-                NewNoteMenuItem_Click(this, new RoutedEventArgs());
+                // Handle global shortcuts
+                if (e.Key == Key.N && modifiers == ModifierKeys.Control)
+                {
+                    NewNoteMenuItem_Click(this, new RoutedEventArgs());
+                }
+                else if (e.Key == Key.S && modifiers == ModifierKeys.Control)
+                {
+                    SaveButton_Click(this, new RoutedEventArgs());
+                }
+                else if (e.Key == Key.F && modifiers == ModifierKeys.Control)
+                {
+                    FindMenuItem_Click(this, new RoutedEventArgs());
+                }
+                else if (e.Key == Key.H && modifiers == ModifierKeys.Control)
+                {
+                    ReplaceMenuItem_Click(this, new RoutedEventArgs());
+                }
+                else if (e.Key == Key.G && modifiers == ModifierKeys.Control)
+                {
+                    GoToMenuItem_Click(this, new RoutedEventArgs());
+                }
+                else if (e.Key == Key.F5)
+                {
+                    InsertDateTimeMenuItem_Click(this, new RoutedEventArgs());
+                }
                 e.Handled = true;
+                return;
             }
-            // Ctrl+S → Save
-            else if (e.Key == Key.S && modifiers == ModifierKeys.Control)
+
+            // ✅ F3 / Shift+F3: ONLY in ContentBox
+            if (focused == ContentBox)
             {
-                SaveButton_Click(this, new RoutedEventArgs());
-                e.Handled = true;
+                if (e.Key == Key.F3 && modifiers == ModifierKeys.Shift)
+                {
+                    FindPreviousMenuItem_Click(this, new RoutedEventArgs());
+                    e.Handled = true;
+                    return;
+                }
+                if (e.Key == Key.F3)
+                {
+                    FindNextMenuItem_Click(this, new RoutedEventArgs());
+                    e.Handled = true;
+                    return;
+                }
             }
-            // Ctrl+F → Find
-            else if (e.Key == Key.F && modifiers == ModifierKeys.Control)
+
+            // ❌ Block other shortcuts if in ANY TextBox (to avoid typing interference)
+            if (focused is TextBox)
             {
-                FindMenuItem_Click(this, new RoutedEventArgs());
-                e.Handled = true;
+                return;
             }
-            // Shift+F3 → Find Previous
-            else if (e.Key == Key.F3 && modifiers == ModifierKeys.Shift)
-            {
-                FindPreviousMenuItem_Click(this, new RoutedEventArgs());
-                e.Handled = true;
-            }
-            // F3 → Find Next
-            else if (e.Key == Key.F3)
-            {
-                FindNextMenuItem_Click(this, new RoutedEventArgs());
-                e.Handled = true;
-            }
-            // Ctrl+H → Replace
-            else if (e.Key == Key.H && modifiers == ModifierKeys.Control)
-            {
-                ReplaceMenuItem_Click(this, new RoutedEventArgs());
-                e.Handled = true;
-            }
-            // Ctrl+G → Go To
-            else if (e.Key == Key.G && modifiers == ModifierKeys.Control)
-            {
-                GoToMenuItem_Click(this, new RoutedEventArgs());
-                e.Handled = true;
-            }
-            // F5 → Insert Date/Time
-            else if (e.Key == Key.F5)
-            {
-                InsertDateTimeMenuItem_Click(this, new RoutedEventArgs());
-                e.Handled = true;
-            }
-            // Ctrl+Plus → Zoom In (Note: Plus is on main keyboard or numpad)
-            else if ((e.Key == Key.OemPlus || e.Key == Key.Add) && modifiers == ModifierKeys.Control)
+
+            // 👇 Handle remaining shortcuts (e.g., Zoom) only when NOT in a TextBox
+            if ((e.Key == Key.OemPlus || e.Key == Key.Add) && modifiers == ModifierKeys.Control)
             {
                 ZoomInMenuItem_Click(this, new RoutedEventArgs());
                 e.Handled = true;
             }
-            // Ctrl+Minus → Zoom Out
             else if ((e.Key == Key.OemMinus || e.Key == Key.Subtract) && modifiers == ModifierKeys.Control)
             {
                 ZoomOutMenuItem_Click(this, new RoutedEventArgs());
                 e.Handled = true;
             }
-            // Ctrl+0 → Restore Zoom
             else if (e.Key == Key.D0 && modifiers == ModifierKeys.Control)
             {
                 RestoreZoomMenuItem_Click(this, new RoutedEventArgs());
@@ -314,11 +322,23 @@ namespace Protes.Views
         // ===== EDIT =====
         private void InsertDateTimeMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            ContentBox.Focus();
-            int caretIndex = ContentBox.CaretIndex;
-            string timestamp = DateTime.Now.ToString();
-            ContentBox.Text = ContentBox.Text.Insert(caretIndex, timestamp);
-            ContentBox.CaretIndex = caretIndex + timestamp.Length;
+            // Determine which TextBox currently has focus
+            TextBox targetBox = null;
+            if (TitleBox.IsFocused)
+                targetBox = TitleBox;
+            else if (ContentBox.IsFocused)
+                targetBox = ContentBox;
+            else if (TagsBox.IsFocused)
+                targetBox = TagsBox;
+
+            if (targetBox == null)
+                return; // No relevant box has focus — do nothing
+
+            // Insert timestamp at caret
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+            int caret = targetBox.CaretIndex;
+            targetBox.Text = targetBox.Text.Insert(caret, timestamp);
+            targetBox.CaretIndex = caret + timestamp.Length;
         }
 
         private FindDialog _findDialog; 
