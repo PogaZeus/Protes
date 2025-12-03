@@ -148,6 +148,47 @@ namespace Protes
             }
         }
 
+        // ===== TOOLBAR SUBMENU VISIBILITY =====
+        public bool ViewToolbarConnect
+        {
+            get => global::Protes.Properties.Settings.Default.ViewToolbarConnect;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ViewToolbarConnect = value;
+                Save();
+            }
+        }
+
+        public bool ViewToolbarACOL
+        {
+            get => global::Protes.Properties.Settings.Default.ViewToolbarACOL;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ViewToolbarACOL = value;
+                Save();
+            }
+        }
+
+        public bool ViewToolbarACOS
+        {
+            get => global::Protes.Properties.Settings.Default.ViewToolbarACOS;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ViewToolbarACOS = value;
+                Save();
+            }
+        }
+
+        public bool ViewToolbarLocalDB
+        {
+            get => global::Protes.Properties.Settings.Default.ViewToolbarLocalDB;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ViewToolbarLocalDB = value;
+                Save();
+            }
+        }
+
         public bool ViewMainToolbar
         {
             get => global::Protes.Properties.Settings.Default.ViewMainToolbar;

@@ -51,6 +51,12 @@
                 </MenuItem>
                 <Separator/>
                 <MenuItem x:Name="ViewToolbarMenuItem" Header="Toolbar" IsCheckable="True" Checked="ViewToolbarMenuItem_Checked" Unchecked="ViewToolbarMenuItem_Checked"/>
+                <MenuItem Header="Toolbar Options">
+                    <MenuItem x:Name="ViewToolbarConnectMenuItem" Header="Connect and Disconnect" IsCheckable="True" Checked="ViewToolbarConnectMenuItem_Checked" Unchecked="ViewToolbarConnectMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarACOLMenuItem" Header="Connect On Launch" IsCheckable="True" Checked="ViewToolbarACOLMenuItem_Checked" Unchecked="ViewToolbarACOLMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarACOSMenuItem" Header="Connect On Switch" IsCheckable="True" Checked="ViewToolbarACOSMenuItem_Checked" Unchecked="ViewToolbarACOSMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarLocalDBMenuItem" Header="Local Databases" IsCheckable="True" Checked="ViewToolbarLocalDBMenuItem_Checked" Unchecked="ViewToolbarLocalDBMenuItem_Checked"/>
+                </MenuItem>
             </MenuItem>
 
             <!-- Info Menu -->
@@ -63,56 +69,69 @@
         <StackPanel x:Name="ToolbarStackPanel" Grid.Row="1" Orientation="Horizontal" Margin="10,5"
             HorizontalAlignment="Left" VerticalAlignment="Top">
             <!-- Connection & Settings Icons -->
+            <StackPanel x:Name="ViewToolbarConnectainer" Orientation="Horizontal" VerticalAlignment="Center">
             <Button x:Name="ConnectIconBtn" Content="🔌" FontSize="16" Width="32" Height="32"
-        ToolTip="Connect" Click="Connect_Click" Margin="0,0,12,0"/>
+        ToolTip="Connect" Click="Connect_Click" Margin="0,0,8,0"/>
             <Button x:Name="DisconnectIconBtn" Content="🚫" FontSize="16" Width="32" Height="32"
         ToolTip="Disconnect" Click="Disconnect_Click" Margin="0,0,12,0"/>
+            </StackPanel>
+
+            <Border x:Name="AutoConnectOSContainer">
+                <CheckBox x:Name="AutoConnectOnSwitchCheckBox" x:Uid="AutoConnectOnSwitchCheckBox"
+  Content="AC-OS" 
+  VerticalAlignment="Center"
+  Checked="AutoConnectOnSwitchCheckBox_Checked"
+  Unchecked="AutoConnectOnSwitchCheckBox_Checked" Margin="0,0,8,0"/>
+            </Border>
+            <Border x:Name="AutoConnectOLContainer">
+                <CheckBox x:Name="AutoConnectCheckBox" x:Uid="AutoConnectCheckBox"
+  Content="AC-OL" 
+  VerticalAlignment="Center"
+  Checked="AutoConnectCheckBox_Checked"
+  Unchecked="AutoConnectCheckBox_Checked" Margin="0,0,12,0"/>
+            </Border>
 
             <!-- Separator -->
             <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
 
-            <!-- Database Selection Dropdown -->
-            <ComboBox x:Name="AvailableDatabasesComboBox" MinWidth="150" Margin="0,0,8,0"
-          DisplayMemberPath="FileName" SelectedValuePath="FullPath"/>
-
-            <!-- Load Selected Button -->
-            <Button x:Name="LoadSelectedDbButton" Content="↻" FontSize="16" Width="32" Height="32"
-        ToolTip="Load Selected Database" Click="LoadSelectedDbButton_Click" Margin="0,0,12,0"/>
-                       
-            <CheckBox x:Name="AutoConnectCheckBox" 
-              Content="AC" 
-              VerticalAlignment="Center"
-              Checked="AutoConnectCheckBox_Checked"
-              Unchecked="AutoConnectCheckBox_Checked" Margin="0,0,12,0"/>
-            <!-- Separator -->
-            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
-            
             <Button x:Name="SettingsIconBtn" Content="⚙️" FontSize="16" Width="32" Height="32"
-            ToolTip="Settings" Click="OpenSettings_Click" Margin="0,0,12,0"/>
+            ToolTip="Settings" Click="OpenSettings_Click" Margin="0,0,8,0"/>
 
+            <!-- Local Databases Group -->
+            <StackPanel x:Name="LocalDbControls" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Local:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox x:Name="AvailableDatabasesComboBox" MinWidth="150" Margin="0,0,8,0" VerticalContentAlignment="Center" Height="28"
+              DisplayMemberPath="FileName" SelectedValuePath="FullPath"/>
+                <Button x:Name="LoadSelectedDbButton" Content="↻" FontSize="16" Width="32" Height="32"
+            ToolTip="Load Selected Database" Click="LoadSelectedDbButton_Click" Margin="0,0,12,0"/>
+            </StackPanel>
+            
+            <!-- Separator -->
             <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
 
             <Button x:Name="NewNoteButton" Content="➕" Padding="6,5"
-            FontSize="16" Click="NewNoteButton_Click" Margin="0,0,12,0"/>
+            FontSize="16" Click="NewNoteButton_Click" Margin="0,0,8,0" ToolTip="New"/>
             <Button x:Name="EditNoteButton" Content="🖊️" Padding="6,5"
-            FontSize="16" Click="EditNoteButton_Click" Margin="0,0,12,0"/>
+            FontSize="16" Click="EditNoteButton_Click" Margin="0,0,8,0" ToolTip="Edit"/>
             <Button x:Name="SelectNotesButton" Content="✅" Padding="6,5"
-            FontSize="16" Click="SelectNotesButton_Click" Margin="0,0,12,0"/>
+            FontSize="16" Click="SelectNotesButton_Click" Margin="0,0,8,0" ToolTip="Select"/>
             <Button x:Name="DeleteNoteButton" Content="🗑️" Padding="6,5"
-            FontSize="16" Click="DeleteNoteButton_Click" Margin="0,0,12,0"/>
-
+            FontSize="16" Click="DeleteNoteButton_Click" Margin="0,0,8,0" ToolTip="Delete"/>
+            <!-- Separator -->
             <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
 
             <!-- 👇 NEW: Search with dropdown -->
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="Search:" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,8,0"/>
-                <ComboBox x:Name="SearchFieldComboBox" SelectedIndex="0" Width="100" HorizontalAlignment="Center" Margin="0,0,8,0">
+                <ComboBox x:Name="SearchFieldComboBox" SelectedIndex="0" Height="28" Width="100" VerticalContentAlignment="Center" Margin="0,0,8,0">
                     <ComboBoxItem Content="All"/>
                     <ComboBoxItem Content="Title"/>
                     <ComboBoxItem Content="Content"/>
                     <ComboBoxItem Content="Tags"/>
                     <ComboBoxItem Content="Modified"/>
                 </ComboBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBox x:Name="SearchBox" Width="200" Height="28"
                  VerticalContentAlignment="Center"
                  TextChanged="SearchBox_TextChanged"

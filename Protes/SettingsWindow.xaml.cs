@@ -123,6 +123,7 @@ namespace Protes.Views
         private void AutoConnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             bool isChecked = AutoConnectOnSwitchCheckBox.IsChecked == true;
+            _mainWindow.AutoConnectOnSwitchCheckBox.IsChecked = isChecked;
             _settings.AutoConnectOnSwitch = isChecked;
             if (isChecked)
             {

@@ -61,6 +61,18 @@ namespace Protes
             _isToolbarVisible = _settings.ViewMainToolbar;
             NotesDataGrid.DataContext = this;
 
+            // Load Toolbar Submenu Settings
+            ViewToolbarConnectMenuItem.IsChecked = _settings.ViewToolbarConnect;
+            ViewToolbarACOLMenuItem.IsChecked = _settings.ViewToolbarACOL;
+            ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
+            ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
+
+            // Apply initial visibility
+            ViewToolbarConnectainer.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
+            AutoConnectOLContainer.Visibility = _settings.ViewToolbarACOL ? Visibility.Visible : Visibility.Collapsed;
+            AutoConnectOSContainer.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
+            LocalDbControls.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
+
             // Apply initial state
             UpdateDataGridColumns();
             UpdateToolbarVisibility();
@@ -171,6 +183,11 @@ namespace Protes
         private void AutoConnectCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             _settings.AutoConnect = AutoConnectCheckBox.IsChecked == true;
+        }
+
+        private void AutoConnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.AutoConnectOnSwitch = AutoConnectOnSwitchCheckBox.IsChecked == true;
         }
         private void SelectNotesButton_Click(object sender, RoutedEventArgs e)
         {
@@ -456,6 +473,36 @@ namespace Protes
             }
         }
 
+        // ===== NEW: Toolbar Visibility Submenu =====
+
+        private void ViewToolbarConnectMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            bool isVisible = ViewToolbarConnectMenuItem.IsChecked == true;
+            _settings.ViewToolbarConnect = isVisible;
+            ViewToolbarConnectainer.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void ViewToolbarACOLMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            bool isVisible = ViewToolbarACOLMenuItem.IsChecked == true;
+            _settings.ViewToolbarACOL = isVisible;
+            AutoConnectOLContainer.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void ViewToolbarACOSMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            bool isVisible = ViewToolbarACOSMenuItem.IsChecked == true;
+            _settings.ViewToolbarACOS = isVisible;
+            AutoConnectOSContainer.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void ViewToolbarLocalDBMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            bool isVisible = ViewToolbarLocalDBMenuItem.IsChecked == true;
+            _settings.ViewToolbarLocalDB = isVisible;
+            LocalDbControls.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         // Toolbar Visibility
         private void UpdateToolbarVisibility()
         {
@@ -479,6 +526,7 @@ namespace Protes
         {
             _currentMode = _settings.GetDatabaseMode();
             AutoConnectCheckBox.IsChecked = _settings.AutoConnect;
+            AutoConnectOnSwitchCheckBox.IsChecked = _settings.AutoConnectOnSwitch;
             UpdateDatabaseModeCheckmarks();
         }
 

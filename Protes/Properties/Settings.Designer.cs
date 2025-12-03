@@ -250,5 +250,53 @@ namespace Protes.Properties {
                 this["ViewMainToolbar"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ViewToolbarLocalDB {
+            get {
+                return ((bool)(this["ViewToolbarLocalDB"]));
+            }
+            set {
+                this["ViewToolbarLocalDB"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ViewToolbarACOL {
+            get {
+                return ((bool)(this["ViewToolbarACOL"]));
+            }
+            set {
+                this["ViewToolbarACOL"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ViewToolbarACOS {
+            get {
+                return ((bool)(this["ViewToolbarACOS"]));
+            }
+            set {
+                this["ViewToolbarACOS"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ViewToolbarConnect {
+            get {
+                return ((bool)(this["ViewToolbarConnect"]));
+            }
+            set {
+                this["ViewToolbarConnect"] = value;
+            }
+        }
     }
 }
