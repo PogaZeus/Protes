@@ -148,6 +148,17 @@ namespace Protes
             }
         }
 
+        // ===== ZOOM =====
+        public double DataGridZoom
+        {
+            get => global::Protes.Properties.Settings.Default.DataGridZoom;
+            set
+            {
+                global::Protes.Properties.Settings.Default.DataGridZoom = value;
+                Save();
+            }
+        }
+
         // ===== TOOLBAR SUBMENU VISIBILITY =====
         public bool ViewToolbarConnect
         {
@@ -195,6 +206,15 @@ namespace Protes
             set
             {
                 global::Protes.Properties.Settings.Default.ViewMainToolbar = value;
+                Save();
+            }
+        }
+        public bool ViewToolbarOptionsInMenu
+        {
+            get => global::Protes.Properties.Settings.Default.ViewToolbarOptionsInMenu;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ViewToolbarOptionsInMenu = value;
                 Save();
             }
         }

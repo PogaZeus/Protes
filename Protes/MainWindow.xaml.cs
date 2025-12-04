@@ -31,6 +31,10 @@ namespace Protes
         private string _externalConnectionString = "";
         private bool _isToolbarVisible = true;
         private bool _isSelectMode = false;
+        // Zoom settings
+        private const double DEFAULT_ZOOM = 13.0;
+        private const double MIN_ZOOM = 10.0;
+        private const double MAX_ZOOM = 20.0;
         public MainWindow()
         {
             string lastPath = _settings.LastLocalDatabasePath;
@@ -73,6 +77,12 @@ namespace Protes
             AutoConnectOSContainer.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
             LocalDbControls.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
 
+            // Load zoom level
+            double zoom = _settings.DataGridZoom;
+            if (zoom < MIN_ZOOM) zoom = DEFAULT_ZOOM;
+            if (zoom > MAX_ZOOM) zoom = DEFAULT_ZOOM;
+            NotesDataGrid.FontSize = zoom;
+
             // Apply initial state
             UpdateDataGridColumns();
             UpdateToolbarVisibility();
@@ -86,6 +96,14 @@ namespace Protes
             var showNotifications = _settings.ShowNotifications;
             SelectCheckBoxColumn.Visibility = Visibility.Collapsed;
 
+            // Hide/show "Toolbar Options" menu based on settings
+            {
+                var viewMenu = (MenuItem)MainMenu.Items[2];
+                if (!_settings.ViewToolbarOptionsInMenu)
+                {
+                    viewMenu.Items.Remove(ToolbarOptionsMenu);
+                }
+            }
         }
 
         private void OnCheckboxChanged(object sender, RoutedEventArgs e)
@@ -163,20 +181,30 @@ namespace Protes
             _isToolbarVisible = isChecked;
             UpdateToolbarVisibility();
         }
-        private void ZoomInMenuItem_Click(object sender, RoutedEventArgs e)
+        private void ZoomInMenuItem_Click(object sender, ExecutedRoutedEventArgs e)
         {
-            // TODO: Implement zoom for MainWindow (e.g., DataGrid font size)
-            MessageBox.Show("Zoom In (MainWindow) - Not implemented yet", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            double newZoom = NotesDataGrid.FontSize + 1.0;
+            if (newZoom <= MAX_ZOOM)
+            {
+                NotesDataGrid.FontSize = newZoom;
+                _settings.DataGridZoom = newZoom;
+            }
         }
 
-        private void ZoomOutMenuItem_Click(object sender, RoutedEventArgs e)
+        private void ZoomOutMenuItem_Click(object sender, ExecutedRoutedEventArgs e)
         {
-            MessageBox.Show("Zoom Out (MainWindow) - Not implemented yet", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            double newZoom = NotesDataGrid.FontSize - 1.0;
+            if (newZoom >= MIN_ZOOM)
+            {
+                NotesDataGrid.FontSize = newZoom;
+                _settings.DataGridZoom = newZoom;
+            }
         }
 
-        private void RestoreZoomMenuItem_Click(object sender, RoutedEventArgs e)
+        private void RestoreZoomMenuItem_Click(object sender, ExecutedRoutedEventArgs e)
         {
-            MessageBox.Show("Restore Zoom (MainWindow) - Not implemented yet", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            NotesDataGrid.FontSize = DEFAULT_ZOOM;
+            _settings.DataGridZoom = DEFAULT_ZOOM;
         }
 
         // Toolbar options
@@ -932,7 +960,55 @@ namespace Protes
         private void OpenSettings_Click(object sender, RoutedEventArgs e)
         {
             var settingsWindow = new SettingsWindow(_databasePath, this);
-            settingsWindow.ShowDialog();
+            bool? result = settingsWindow.ShowDialog();
+            if (result == true || result == false) // Either OK or Close
+            {
+                // 👇 Refresh toolbar UI from saved settings
+                RefreshToolbarSettingsFromSettingsManager();
+            }
+        }
+
+        public void RefreshToolbarSettingsFromSettingsManager()
+        {
+
+            // 1. Reload toolbar visibility
+            _isToolbarVisible = _settings.ViewMainToolbar;
+            ViewToolbarMenuItem.IsChecked = _isToolbarVisible;
+            UpdateToolbarVisibility();
+
+            // 2. Reload submenu item states
+            ViewToolbarConnectMenuItem.IsChecked = _settings.ViewToolbarConnect;
+            ViewToolbarACOLMenuItem.IsChecked = _settings.ViewToolbarACOL;
+            ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
+            ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
+
+            // 3. Update visibility of toolbar containers
+            ViewToolbarConnectainer.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
+            AutoConnectOLContainer.Visibility = _settings.ViewToolbarACOL ? Visibility.Visible : Visibility.Collapsed;
+            AutoConnectOSContainer.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
+            LocalDbControls.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
+
+            // Add to RefreshToolbarSettingsFromSettingsManager()
+            ViewTitleMenuItem.IsChecked = _settings.ViewMainWindowTitle;
+            ViewTagsMenuItem.IsChecked = _settings.ViewMainWindowTags;
+            ViewModifiedMenuItem.IsChecked = _settings.ViewMainWindowMod;
+            UpdateDataGridColumns(); // This already uses the settings
+
+            var viewMenu = (MenuItem)MainMenu.Items[2]; // Assuming "_View" is the 3rd top-level menu item
+            var toolbarOptionsMenu = ToolbarOptionsMenu;
+
+            bool shouldShow = _settings.ViewToolbarOptionsInMenu;
+
+            if (shouldShow && !viewMenu.Items.Contains(toolbarOptionsMenu))
+            {
+                // Insert it after "Toolbar" (which is the item before it)
+                int toolbarIndex = viewMenu.Items.IndexOf(ViewToolbarMenuItem);
+                viewMenu.Items.Insert(toolbarIndex + 1, toolbarOptionsMenu);
+            }
+            else if (!shouldShow && viewMenu.Items.Contains(toolbarOptionsMenu))
+            {
+                viewMenu.Items.Remove(toolbarOptionsMenu);
+            }
         }
 
         // ===== NOTE ACTIONS =====

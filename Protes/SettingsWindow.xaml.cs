@@ -16,11 +16,13 @@ namespace Protes.Views
         private MainWindow _mainWindow;
         private List<string> _importedDbPaths = new List<string>();
         private readonly SettingsManager _settings = new SettingsManager();
+        public string CurrentDbPath => _currentDatabasePath;
         public SettingsWindow(string currentDatabasePath, MainWindow mainWindow)
         {
             InitializeComponent();
             _currentDatabasePath = currentDatabasePath;
             _mainWindow = mainWindow;
+            DataContext = this;
 
             // ✅ Load user-defined default folder, or fallback to %AppData%\Protes
             string savedDefaultFolder = _settings.DefaultDatabaseFolder;
@@ -43,6 +45,14 @@ namespace Protes.Views
             AutoDisconnectOnSwitchCheckBox.IsChecked = _settings.AutoDisconnectOnSwitch;
             ShowNotificationsCheckBox.IsChecked = _settings.ShowNotifications;
             DefaultDbFolderText.Text = _appDataFolder;
+           
+            // Toolbar visibility
+            ViewToolbarMenuItem.IsChecked = _settings.ViewMainToolbar;
+            ViewToolbarOptionsInMenuCheckBox.IsChecked = _settings.ViewToolbarOptionsInMenu;
+            ViewToolbarConnectMenuItem.IsChecked = _settings.ViewToolbarConnect;
+            ViewToolbarACOLMenuItem.IsChecked = _settings.ViewToolbarACOL;
+            ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
+            ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
 
             CurrentDbPathText.Text = _currentDatabasePath;
             LoadLocalDatabases();
@@ -59,6 +69,44 @@ namespace Protes.Views
             }
         }
 
+
+        // ✅ NEW: Change Default Database Folder
+        private void ChangeDefaultFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            var folderDialog = new System.Windows.Forms.FolderBrowserDialog
+            {
+                Description = "Select the default folder for Protes databases:",
+                SelectedPath = _appDataFolder,
+                ShowNewFolderButton = true
+            };
+
+            // Must reference System.Windows.Forms for FolderBrowserDialog
+            if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                string newFolder = folderDialog.SelectedPath;
+
+                // Optional: confirm it's writable
+                try
+                {
+                    var testFile = Path.Combine(newFolder, ".protes_test");
+                    File.WriteAllText(testFile, "ok");
+                    File.Delete(testFile);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Cannot write to selected folder:\n{ex.Message}", "Access Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Update and save
+                _appDataFolder = newFolder;
+                _settings.DefaultDatabaseFolder = newFolder;
+                DefaultDbFolderText.Text = newFolder;
+
+                // Refresh list
+                LoadLocalDatabases();
+            }
+        }
         private void LoadLocalDatabases()
         {
             var dbFiles = new List<DbFileInfo>();
@@ -112,80 +160,23 @@ namespace Protes.Views
             // Password not loaded
         }
 
-        // ===== MORE OPTIONS =====
-
-        private void AutoConnectCheckBox_Checked(object sender, RoutedEventArgs e)
+        private void LocalDbList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            bool isChecked = AutoConnectCheckBox.IsChecked == true;
-            _settings.AutoConnect = isChecked;
-            _mainWindow.AutoConnectCheckBox.IsChecked = isChecked;
-        }
-        private void AutoConnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            bool isChecked = AutoConnectOnSwitchCheckBox.IsChecked == true;
-            _mainWindow.AutoConnectOnSwitchCheckBox.IsChecked = isChecked;
-            _settings.AutoConnectOnSwitch = isChecked;
-            if (isChecked)
+            if (LocalDbList.SelectedItem is DbFileInfo selected)
             {
-                _settings.AutoDisconnectOnSwitch = true;
-                AutoDisconnectOnSwitchCheckBox.IsChecked = true;
-                AutoDisconnectOnSwitchCheckBox.IsEnabled = false;
+                bool isCurrent = (selected.FullPath == _currentDatabasePath);
+                bool isInDefaultFolder = !selected.IsImported;
+
+                // "Load Selected" → hidden if current
+                LoadSelectedButton.Visibility = isCurrent ? Visibility.Collapsed : Visibility.Visible;
+
+                // "Remove from List" → hidden if in default folder OR if current
+                RemoveFromListButton.Visibility = (!isInDefaultFolder && !isCurrent) ? Visibility.Visible : Visibility.Collapsed;
+
             }
             else
             {
-                AutoDisconnectOnSwitchCheckBox.IsEnabled = true;
-            }
-        }
-
-        private void AutoDisconnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            // Only save if AutoConnectOnSwitch is OFF (otherwise it's forced ON)
-            if (!_settings.AutoConnectOnSwitch)
-            {
-                _settings.AutoDisconnectOnSwitch = AutoDisconnectOnSwitchCheckBox.IsChecked == true;
-            }
-        }
-        private void ShowNotificationsCheckBox_Changed(object sender, RoutedEventArgs e)
-        {
-            bool isChecked = ShowNotificationsCheckBox.IsChecked == true;
-            _settings.ShowNotifications = isChecked;
-        }
-
-        // ✅ NEW: Change Default Database Folder
-        private void ChangeDefaultFolderButton_Click(object sender, RoutedEventArgs e)
-        {
-            var folderDialog = new System.Windows.Forms.FolderBrowserDialog
-            {
-                Description = "Select the default folder for Protes databases:",
-                SelectedPath = _appDataFolder,
-                ShowNewFolderButton = true
-            };
-
-            // Must reference System.Windows.Forms for FolderBrowserDialog
-            if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                string newFolder = folderDialog.SelectedPath;
-
-                // Optional: confirm it's writable
-                try
-                {
-                    var testFile = Path.Combine(newFolder, ".protes_test");
-                    File.WriteAllText(testFile, "ok");
-                    File.Delete(testFile);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Cannot write to selected folder:\n{ex.Message}", "Access Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                // Update and save
-                _appDataFolder = newFolder;
-                _settings.DefaultDatabaseFolder = newFolder;
-                DefaultDbFolderText.Text = newFolder;
-
-                // Refresh list
-                LoadLocalDatabases();
+                
             }
         }
 
@@ -441,6 +432,74 @@ namespace Protes.Views
             _settings.External_Database = DatabaseTextBox.Text;
             _settings.External_Username = UsernameTextBox.Text;
             _settings.External_Password = PasswordBox.Password;
+        }
+
+        // ===== MORE OPTIONS =====
+
+        private void AutoConnectCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = AutoConnectCheckBox.IsChecked == true;
+            _settings.AutoConnect = isChecked;
+            _mainWindow.AutoConnectCheckBox.IsChecked = isChecked;
+        }
+        private void AutoConnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = AutoConnectOnSwitchCheckBox.IsChecked == true;
+            _mainWindow.AutoConnectOnSwitchCheckBox.IsChecked = isChecked;
+            _settings.AutoConnectOnSwitch = isChecked;
+            if (isChecked)
+            {
+                _settings.AutoDisconnectOnSwitch = true;
+                AutoDisconnectOnSwitchCheckBox.IsChecked = true;
+                AutoDisconnectOnSwitchCheckBox.IsEnabled = false;
+            }
+            else
+            {
+                AutoDisconnectOnSwitchCheckBox.IsEnabled = true;
+            }
+        }
+
+        private void AutoDisconnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            // Only save if AutoConnectOnSwitch is OFF (otherwise it's forced ON)
+            if (!_settings.AutoConnectOnSwitch)
+            {
+                _settings.AutoDisconnectOnSwitch = AutoDisconnectOnSwitchCheckBox.IsChecked == true;
+            }
+        }
+        private void ShowNotificationsCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = ShowNotificationsCheckBox.IsChecked == true;
+            _settings.ShowNotifications = isChecked;
+        }
+        private void ViewToolbarMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewMainToolbar = ViewToolbarMenuItem.IsChecked == true;
+        }
+        private void ViewToolbarOptionsInMenuCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewToolbarOptionsInMenu = ViewToolbarOptionsInMenuCheckBox.IsChecked == true;
+            _mainWindow.RefreshToolbarSettingsFromSettingsManager();
+        }
+
+        private void ViewToolbarConnectMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewToolbarConnect = ViewToolbarConnectMenuItem.IsChecked == true;
+        }
+
+        private void ViewToolbarACOLMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewToolbarACOL = ViewToolbarACOLMenuItem.IsChecked == true;
+        }
+
+        private void ViewToolbarACOSMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewToolbarACOS = ViewToolbarACOSMenuItem.IsChecked == true;
+        }
+
+        private void ViewToolbarLocalDBMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewToolbarLocalDB = ViewToolbarLocalDBMenuItem.IsChecked == true;
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)

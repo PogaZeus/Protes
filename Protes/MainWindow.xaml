@@ -50,8 +50,8 @@
                     <MenuItem Header="_Restore Zoom" Click="RestoreZoomMenuItem_Click" InputGestureText="Ctrl+0"/>
                 </MenuItem>
                 <Separator/>
-                <MenuItem x:Name="ViewToolbarMenuItem" Header="Show Toolbar" IsCheckable="True" Checked="ViewToolbarMenuItem_Checked" Unchecked="ViewToolbarMenuItem_Checked"/>
-                <MenuItem Header="Toolbar Options">
+                <MenuItem x:Name="ViewToolbarMenuItem" Header="Toolbar" IsCheckable="True" Checked="ViewToolbarMenuItem_Checked" Unchecked="ViewToolbarMenuItem_Checked"/>
+                <MenuItem x:Name="ToolbarOptionsMenu" Header="Toolbar Options">
                     <MenuItem x:Name="ViewToolbarConnectMenuItem" Header="Connect and Disconnect" IsCheckable="True" Checked="ViewToolbarConnectMenuItem_Checked" Unchecked="ViewToolbarConnectMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarACOLMenuItem" Header="(Auto) Connect On Launch" IsCheckable="True" Checked="ViewToolbarACOLMenuItem_Checked" Unchecked="ViewToolbarACOLMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarACOSMenuItem" Header="(Auto) Connect On Switch" IsCheckable="True" Checked="ViewToolbarACOSMenuItem_Checked" Unchecked="ViewToolbarACOSMenuItem_Checked"/>

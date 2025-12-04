@@ -1,16 +1,20 @@
 ﻿<Window x:Class="Protes.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Protes"
         Title="Mr E Tools - [Protes] Pro Notes Database - Settings" 
-        Height="680" Width="750"
+        Height="660" Width="500"
+        MinWidth="500"
+        MinHeight="660"
         FontFamily="Segoe UI" 
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResizeWithGrip">
 
     <Window.Resources>
-        <!-- Reusable style for action buttons (hide when no selection) -->
+        <!-- Reusable style for action buttons -->
         <Style x:Key="ActionButtonStyle" TargetType="Button">
             <Setter Property="Visibility" Value="Collapsed"/>
+            <Setter Property="Height" Value="26"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding ElementName=LocalDbList, Path=SelectedItems.Count}" Value="0">
                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -20,6 +24,12 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
+        <!-- Base button style for consistent height -->
+        <Style x:Key="ConsistentButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Padding" Value="10,0"/>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="15">
@@ -28,7 +38,6 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Tabs -->
         <TabControl x:Name="SettingsTabControl" Grid.Row="0" Margin="0,0,0,10">
 
             <!-- LOCAL DATABASE TAB -->
@@ -36,69 +45,105 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <Grid Margin="10">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Current Database -->
-                        <GroupBox Grid.Row="0" Header="Current Database" Margin="0,0,0,15">
-                            <TextBlock x:Name="CurrentDbPathText" Text="C:\Users\...\notes.db"
-                                       TextWrapping="Wrap"
-                                       FontStyle="Italic"/>
+                        <!-- Available Databases (now fills space and includes buttons inside) -->
+                        <GroupBox Grid.Row="0" Header="Available Databases" Margin="0,0,0,5">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <ListBox x:Name="LocalDbList" 
+                                         SelectionChanged="LocalDbList_SelectionChanged"
+                                         VerticalContentAlignment="Stretch">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding FileName}" FontWeight="Bold"/>
+                                                <TextBlock Text="{Binding FullPath}" FontStyle="Italic" FontSize="10" Foreground="Gray"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+
+                                <!-- Action buttons inside Available Databases box -->
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,0">
+                                    <Button x:Name="LoadSelectedButton"
+                                            Content=" Load Selected "
+                                            Style="{StaticResource ActionButtonStyle}"
+                                            Margin="0,0,10,0"
+                                            Click="LoadSelectedButton_Click"/>
+                                    <Button x:Name="RemoveFromListButton"
+                                            Content=" Remove from List "
+                                            Style="{StaticResource ActionButtonStyle}"
+                                            Margin="0,0,10,0"
+                                            Click="RemoveFromListButton_Click"/>
+                                                                        <Button x:Name="DeleteDatabaseButton"
+                                            Content=" Delete Database "
+                                            Style="{StaticResource ActionButtonStyle}"
+                                            Margin="0,0,10,0"
+                                            Click="DeleteDatabaseButton_Click"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,5,0,0">
+                                        <TextBlock 
+           Text="Note: Database's stored inside the default folder cannot be removed from the list." 
+           FontStyle="Italic" 
+           Foreground="Gray"/>
+                                </StackPanel>
+                            </Grid>
+                        </GroupBox>
+                        
+                        <!-- Current Database with buttons inside -->
+                        <GroupBox Grid.Row="1" Header="Current Database" Margin="0,0,0,5">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock x:Name="CurrentDbPathText" 
+                                           Text="C:\Users\...\notes.db"
+                                           TextWrapping="Wrap"
+                                           FontStyle="Italic"
+                                           Margin="0,5,0,10"/>
+                                <StackPanel Grid.Row="1" Orientation="Horizontal">
+                                    <Button x:Name="NewDbButton" Content="New…" Style="{StaticResource ConsistentButtonStyle}" Margin="0,0,10,0" Click="NewDbButton_Click"/>
+                                    <Button x:Name="ExportDbButton" Content="Export…" Style="{StaticResource ConsistentButtonStyle}" Margin="0,0,10,0" Click="ExportDbButton_Click"/>
+                                    <Button x:Name="ImportDbButton" Content="Import…" Style="{StaticResource ConsistentButtonStyle}" Click="ImportDbButton_Click"/>
+                                </StackPanel>
+                            </Grid>
                         </GroupBox>
 
-                        <!-- Actions -->
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
-                            <Button x:Name="NewDbButton" Content="New…" Padding="10,5" Margin="0,0,10,0" Click="NewDbButton_Click"/>
-                            <Button x:Name="ExportDbButton" Content="Export…" Padding="10,5" Margin="0,0,10,0" Click="ExportDbButton_Click"/>
-                            <Button x:Name="ImportDbButton" Content="Import…" Padding="10,5" Click="ImportDbButton_Click"/>
-                        </StackPanel>
-
-                        <!-- Available Databases List -->
-                        <GroupBox Grid.Row="2" Header="Available Databases" Margin="0,0,0,15">
-                            <ListBox x:Name="LocalDbList">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding FileName}" FontWeight="Bold"/>
-                                            <TextBlock Text="{Binding FullPath}" FontStyle="Italic" FontSize="10" Foreground="Gray"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
+                        <!-- Default Database Folder (now at bottom) -->
+                        <GroupBox Grid.Row="2" Header="Default Database Folder" Margin="0,0,0,15">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock x:Name="DefaultDbFolderText"
+                                           Text="C:\Users\...\AppData\Roaming\Protes"
+                                           TextWrapping="Wrap"
+                                           FontStyle="Italic"
+                                           Margin="0,5,0,5"/>
+                                <Button Grid.Row="1"
+                                        Content="Change Folder…"
+                                        Style="{StaticResource ConsistentButtonStyle}"
+                                        HorizontalAlignment="Left"
+                                        Click="ChangeDefaultFolderButton_Click"/>
+                            </Grid>
                         </GroupBox>
 
-                        <!-- Action Buttons (Load, Remove, Delete) -->
-                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,15">
-                            <Button x:Name="LoadSelectedButton"
-                                    Content="Load Selected"
-                                    Padding="10,5"
-                                    Click="LoadSelectedButton_Click"
-                                    Style="{StaticResource ActionButtonStyle}"/>
-                            <Button x:Name="RemoveFromListButton"
-                                    Content="Remove from List"
-                                    Padding="10,5"
-                                    Click="RemoveFromListButton_Click"
-                                    Style="{StaticResource ActionButtonStyle}"
-                                    Margin="10,0,0,0"/>
-                            <Button x:Name="DeleteDatabaseButton"
-                                    Content="Delete Database"
-                                    Padding="10,5"
-                                    Click="DeleteDatabaseButton_Click"
-                                    Style="{StaticResource ActionButtonStyle}"
-                                    Margin="10,0,0,0"/>
-                        </StackPanel>
-
-                        <TextBlock Grid.Row="4" Text="Note: Databases are stored in the default Protes app data folder. (See: More Options)" 
-                                   FontStyle="Italic" Foreground="Gray"/>
                     </Grid>
                 </ScrollViewer>
             </TabItem>
 
-            <!-- EXTERNAL DATABASE TAB -->
+            <!-- EXTERNAL DATABASE TAB (unchanged) -->
             <TabItem Header="External Database">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
@@ -108,7 +153,6 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Schema Requirements -->
                     <GroupBox Grid.Row="0" Header="Required Table Schema" Margin="0,0,0,20">
                         <TabControl>
                             <TabItem Header="Requirements">
@@ -144,7 +188,6 @@
                         </TabControl>
                     </GroupBox>
 
-                    <!-- Connection Details -->
                     <GroupBox Grid.Row="1" Header="Connection Details" Margin="0,0,0,20">
                         <Grid Margin="5">
                             <Grid.ColumnDefinitions>
@@ -176,7 +219,6 @@
                         </Grid>
                     </GroupBox>
 
-                    <!-- Action Buttons -->
                     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="Save Settings" Padding="12,5" Margin="0,0,10,0" Click="SaveExternalSettings_Click"/>
                         <Button Content="Connect Now" Padding="12,5" Click="ConnectNowButton_Click"/>
@@ -196,57 +238,76 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Default Database Folder -->
-                        <GroupBox Grid.Row="1" Header="Default Database Folder" Margin="0,0,0,15">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <TextBlock x:Name="DefaultDbFolderText"
-                                           Text="C:\Users\...\AppData\Roaming\Protes"
-                                           TextWrapping="Wrap"
-                                           FontStyle="Italic"
-                                           Margin="0,0,0,5"/>
-                                <Button Grid.Row="1"
-                                        Content="Change Folder…"
-                                        Padding="8,3"
-                                        HorizontalAlignment="Left"
-                                        Click="ChangeDefaultFolderButton_Click"/>
-                            </Grid>
-                        </GroupBox>
-                        
                         <!-- Auto Connect -->
-                        <GroupBox Grid.Row="2" Header="Connection Automation" Margin="0,0,0,15">
+                        <GroupBox Grid.Row="0" Header="Connection Automation" Margin="0,0,0,15">
                             <StackPanel>
                                 <CheckBox x:Name="AutoConnectCheckBox"
-                  Content="Connect when program launches"
-                  Checked="AutoConnectCheckBox_Checked"
-                  Unchecked="AutoConnectCheckBox_Checked" Margin="0,5,0,0"/>
+                                          Content="Connect when program launches"
+                                          Checked="AutoConnectCheckBox_Checked"
+                                          Unchecked="AutoConnectCheckBox_Checked"
+                                          Margin="0,5,0,0"/>
                                 <CheckBox x:Name="AutoConnectOnSwitchCheckBox"
-                  Content="Connect when switching database mode (options menu)"
-                  Checked="AutoConnectOnSwitchCheckBox_Checked"
-                  Unchecked="AutoConnectOnSwitchCheckBox_Checked" Margin="0,5,0,0"/>
+                                          Content="Connect when switching database mode (options menu)"
+                                          Checked="AutoConnectOnSwitchCheckBox_Checked"
+                                          Unchecked="AutoConnectOnSwitchCheckBox_Checked"
+                                          Margin="0,5,0,0"/>
                                 <CheckBox x:Name="AutoDisconnectOnSwitchCheckBox"
-                  Content="Disconnect when switching database mode (options menu)"
-                  Checked="AutoDisconnectOnSwitchCheckBox_Checked"
-                  Unchecked="AutoDisconnectOnSwitchCheckBox_Checked" Margin="0,5,0,0"/>
+                                          Content="Disconnect when switching database mode (options menu)"
+                                          Checked="AutoDisconnectOnSwitchCheckBox_Checked"
+                                          Unchecked="AutoDisconnectOnSwitchCheckBox_Checked"
+                                          Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
 
                         <!-- Notifications -->
-                        <GroupBox Grid.Row="3" Header="Notifications" Margin="0,0,0,15">
+                        <GroupBox Grid.Row="1" Header="Notifications" Margin="0,0,0,15">
                             <CheckBox x:Name="ShowNotificationsCheckBox"
                                       Content="Show connect/disconnect notifications"
                                       Checked="ShowNotificationsCheckBox_Changed"
-                                      Unchecked="ShowNotificationsCheckBox_Changed" Margin="0,5,0,0"/>
+                                      Unchecked="ShowNotificationsCheckBox_Changed"
+                                      Margin="0,5,0,0"/>
+                        </GroupBox>
+
+                        <!-- NEW: Toolbar Settings -->
+                        <GroupBox Grid.Row="2" Header="Toolbar Settings" Margin="0,0,0,15">
+                            <StackPanel>
+                                <CheckBox x:Name="ViewToolbarMenuItem"
+                                          Content="Show Toolbar"
+                                          Checked="ViewToolbarMenuItem_Checked"
+                                          Unchecked="ViewToolbarMenuItem_Checked"
+                                          Margin="0,5,0,0"/>
+                                <CheckBox x:Name="ViewToolbarOptionsInMenuCheckBox"
+                                          Content="Show Toolbar Options in Menu"
+                                          Checked="ViewToolbarOptionsInMenuCheckBox_Checked"
+                                          Unchecked="ViewToolbarOptionsInMenuCheckBox_Checked"
+                                          Margin="0,5,0,5"/>
+                                <CheckBox x:Name="ViewToolbarConnectMenuItem"
+                                          Content="Connect and Disconnect"
+                                          Checked="ViewToolbarConnectMenuItem_Checked"
+                                          Unchecked="ViewToolbarConnectMenuItem_Checked"
+                                          Margin="0,5,0,0"/>
+                                <CheckBox x:Name="ViewToolbarACOLMenuItem"
+                                          Content="(Auto) Connect On Launch"
+                                          Checked="ViewToolbarACOLMenuItem_Checked"
+                                          Unchecked="ViewToolbarACOLMenuItem_Checked"
+                                          Margin="0,5,0,0"/>
+                                <CheckBox x:Name="ViewToolbarACOSMenuItem"
+                                          Content="(Auto) Connect On Switch"
+                                          Checked="ViewToolbarACOSMenuItem_Checked"
+                                          Unchecked="ViewToolbarACOSMenuItem_Checked"
+                                          Margin="0,5,0,0"/>
+                                <CheckBox x:Name="ViewToolbarLocalDBMenuItem"
+                                          Content="Local Databases"
+                                          Checked="ViewToolbarLocalDBMenuItem_Checked"
+                                          Unchecked="ViewToolbarLocalDBMenuItem_Checked"
+                                          Margin="0,5,0,0"/>
+                            </StackPanel>
                         </GroupBox>
                     </Grid>
                 </ScrollViewer>
             </TabItem>
         </TabControl>
 
-        <!-- Bottom: Close button -->
         <Button Grid.Row="1" Content="Close" HorizontalAlignment="Right" Padding="12,5" Click="CloseButton_Click"/>
     </Grid>
 </Window>
