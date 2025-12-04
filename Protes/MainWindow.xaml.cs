@@ -82,6 +82,8 @@ namespace Protes
             if (zoom < MIN_ZOOM) zoom = DEFAULT_ZOOM;
             if (zoom > MAX_ZOOM) zoom = DEFAULT_ZOOM;
             NotesDataGrid.FontSize = zoom;
+            // Use AddHandler to capture even if inner controls handled it
+            this.AddHandler(KeyDownEvent, new KeyEventHandler(MainWindow_PreviewKeyDown), true);
 
             // Apply initial state
             UpdateDataGridColumns();
@@ -205,6 +207,33 @@ namespace Protes
         {
             NotesDataGrid.FontSize = DEFAULT_ZOOM;
             _settings.DataGridZoom = DEFAULT_ZOOM;
+        }
+
+        private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            var modifiers = Keyboard.Modifiers;
+
+            if (modifiers == ModifierKeys.Control)
+            {
+                if (e.Key == Key.OemPlus || e.Key == Key.Add)
+                {
+                    ZoomInMenuItem_Click(this, new RoutedEventArgs());
+                    e.Handled = true;
+                    return;
+                }
+                else if (e.Key == Key.OemMinus || e.Key == Key.Subtract)
+                {
+                    ZoomOutMenuItem_Click(this, new RoutedEventArgs());
+                    e.Handled = true;
+                    return;
+                }
+                else if (e.Key == Key.D0)
+                {
+                    RestoreZoomMenuItem_Click(this, new RoutedEventArgs());
+                    e.Handled = true;
+                    return;
+                }
+            }
         }
 
         // Toolbar options
