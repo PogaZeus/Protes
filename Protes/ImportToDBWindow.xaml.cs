@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,15 +20,25 @@ namespace Protes.Views
         private readonly string _externalConnectionString;
         private readonly INoteRepository _noteRepository;
         private readonly ObservableCollection<ImportFileItem> _fileItems = new ObservableCollection<ImportFileItem>();
-        public ImportToDBWindow(string databasePath, DatabaseMode databaseMode, string externalConnectionString, INoteRepository noteRepository)
+        private CancellationTokenSource _scanCancellationTokenSource;
+        public event PropertyChangedEventHandler PropertyChanged;
+        private int _totalFilesToScan = 0;
+        private int _filesScanned = 0;
+        private readonly object _progressLock = new object();
+        private readonly Action _onImportCompleted;
+        private bool _isBulkUpdating = false;
+        public ImportToDBWindow(string databasePath, DatabaseMode databaseMode, string externalConnectionString, INoteRepository noteRepository, Action onImportCompleted)
         {
             InitializeComponent();
+            DataContext = this;
             _databasePath = databasePath;
             _databaseMode = databaseMode;
             _externalConnectionString = externalConnectionString;
             _noteRepository = noteRepository;
-
+            _onImportCompleted = onImportCompleted;
+            _fileItems = new ObservableCollection<ImportFileItem>();
             FileListDataGrid.ItemsSource = _fileItems;
+            UpdateClearListButtonState();
             UpdateDatabaseInfo();
 
             // Enable Import button if any item is selected
@@ -35,7 +46,10 @@ namespace Protes.Views
             FileListDataGrid.AddHandler(CheckBox.CheckedEvent, new RoutedEventHandler(OnItemChecked));
             FileListDataGrid.AddHandler(CheckBox.UncheckedEvent, new RoutedEventHandler(OnItemChecked));
         }
-
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
         private void UpdateDatabaseInfo()
         {
             if (_databaseMode == DatabaseMode.Local)
@@ -64,120 +78,152 @@ namespace Protes.Views
                         _fileItems.Add(new ImportFileItem { FullPath = file });
                     }
                 }
+                UpdateImportButtonState();
+                UpdateClearListButtonState(); 
             }
         }
 
         private async void AddFolderButton_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new System.Windows.Forms.FolderBrowserDialog();
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                return;
+
+            // Reset progress state
+            _totalFilesToScan = 0;
+            _filesScanned = 0;
+            ScanProgressBar.Value = 0;
+            ScanProgressBar.IsIndeterminate = false;
+
+            // Cancel any ongoing scan
+            _scanCancellationTokenSource?.Cancel();
+            _scanCancellationTokenSource = new CancellationTokenSource();
+
+            string rootFolder = dialog.SelectedPath;
+            UpdateStatus("Scanning folder...", isScanning: true);
+
+            try
             {
-                string rootFolder = dialog.SelectedPath;
-                UpdateStatus("Scanning folder...", isScanning: true);
-
-                try
+                var scannedFiles = await Task.Run(() =>
                 {
-                    var validFiles = await Task.Run(() =>
-                    {
-                        var files = new List<string>();
-                        ScanFolderRecursively(rootFolder, files);
-                        return files;
-                    });
+                    var files = new List<string>();
+                    ScanFolderRecursively(rootFolder, files, _scanCancellationTokenSource.Token);
+                    return files;
+                }, _scanCancellationTokenSource.Token);
 
-                    // Filter by extension
-                    var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".txt", ".md", ".csv" };
-                    var filteredFiles = validFiles.Where(f => allowedExtensions.Contains(Path.GetExtension(f))).ToList();
+                // Filter by extension
+                var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".txt", ".md", ".csv" };
+                var validFiles = scannedFiles.Where(f => allowedExtensions.Contains(Path.GetExtension(f))).ToList();
 
-                    // Add to list (avoid duplicates)
-                    foreach (var file in filteredFiles)
+                // Add to list (avoid duplicates)
+                foreach (var file in validFiles)
+                {
+                    if (!_fileItems.Any(f => f.FullPath == file))
                     {
-                        if (!_fileItems.Any(f => f.FullPath == file))
-                        {
-                            _fileItems.Add(new ImportFileItem { FullPath = file });
-                        }
-                    }
-
-                    if (filteredFiles.Count == 0)
-                    {
-                        UpdateStatus("No .txt, .md, or .csv files found.");
-                        MessageBox.Show("No valid files found.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    else
-                    {
-                        UpdateStatus($"{filteredFiles.Count} file(s) added.");
+                        _fileItems.Add(new ImportFileItem { FullPath = file });
                     }
                 }
-                catch (Exception ex)
+                UpdateClearListButtonState();
+                if (validFiles.Count == 0)
                 {
-                    UpdateStatus("Scan failed.");
-                    MessageBox.Show($"Scan failed:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    UpdateStatus("No .txt, .md, or .csv files found.");
+                    MessageBox.Show("No valid files found in the selected folder.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
+                else
+                {
+                    UpdateStatus($"{validFiles.Count} file(s) added.");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                UpdateStatus("Scan canceled.");
+            }
+            catch (Exception ex)
+            {
+                UpdateStatus("Scan failed.");
+                MessageBox.Show($"Failed to scan folder:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            finally
+            {
+                _scanCancellationTokenSource?.Dispose();
+                _scanCancellationTokenSource = null;
             }
         }
 
-        private void ScanFolderRecursively(string folderPath, List<string> fileList)
+        private void ScanFolderRecursively(string folderPath, List<string> fileList, CancellationToken token)
         {
+            if (token.IsCancellationRequested) return;
+
             try
             {
-                // Get files in current folder
-                var files = Directory.GetFiles(folderPath);
-                fileList.AddRange(files);
+                var files = Directory.GetFiles(folderPath, "*", SearchOption.TopDirectoryOnly);
+                lock (_progressLock)
+                {
+                    _totalFilesToScan += files.Length;
+                    fileList.AddRange(files);
+                    _filesScanned += files.Length;
 
-                // Get subdirectories
+                    // Safely update progress on UI thread
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (_totalFilesToScan > 0)
+                        {
+                            ScanProgressBar.IsIndeterminate = false;
+                            ScanProgressBar.Value = (double)_filesScanned / _totalFilesToScan * 100;
+                        }
+                        string msg = $"Scanning {_filesScanned:N0} of {_totalFilesToScan:N0} files...";
+                        StatusText.Text = msg;
+                    }, System.Windows.Threading.DispatcherPriority.Background);
+                }
+
                 var subDirs = Directory.GetDirectories(folderPath);
                 foreach (var subDir in subDirs)
                 {
-                    ScanFolderRecursively(subDir, fileList); // Recurse
+                    if (token.IsCancellationRequested) return;
+                    ScanFolderRecursively(subDir, fileList, token);
                 }
             }
-            catch (UnauthorizedAccessException)
-            {
-                // Skip this folder and continue
-                return;
-            }
-            catch (DirectoryNotFoundException)
-            {
-                // Folder was deleted during scan – skip
-                return;
-            }
-            catch (IOException)
-            {
-                // Device not ready, etc. – skip
-                return;
-            }
+            catch (UnauthorizedAccessException) { /* Skip */ }
+            catch (DirectoryNotFoundException) { /* Skip */ }
+            catch (IOException) { /* Skip */ }
         }
 
-        private void UpdateStatus(string message, bool isScanning = false)
+        // === HEADER CHECKBOX (FIXED) ===
+        private bool _allItemsAreChecked;
+        public bool AllItemsAreChecked
         {
-            StatusText.Text = message;
-            ScanProgressBar.Visibility = isScanning ? Visibility.Visible : Visibility.Collapsed;
-        }
+            get => _allItemsAreChecked;
+            set
+            {
+                if (_allItemsAreChecked != value)
+                {
+                    _allItemsAreChecked = value;
+                    OnPropertyChanged(nameof(AllItemsAreChecked));
 
-        private void HeaderCheck_Checked(object sender, RoutedEventArgs e)
-        {
-            foreach (var item in _fileItems)
-                item.IsSelected = true;
-            UpdateImportButtonState();
-        }
-
-        private void HeaderCheck_Unchecked(object sender, RoutedEventArgs e)
-        {
-            foreach (var item in _fileItems)
-                item.IsSelected = false;
-            UpdateImportButtonState();
+                    _isBulkUpdating = true; // 👈 START BULK
+                    try
+                    {
+                        foreach (var item in _fileItems)
+                        {
+                            item.IsSelected = value;
+                        }
+                    }
+                    finally
+                    {
+                        _isBulkUpdating = false; // 👈 END BULK
+                    }
+                    UpdateImportButtonState();
+                }
+            }
         }
 
         private void OnItemChecked(object sender, RoutedEventArgs e)
         {
+            if (_isBulkUpdating) return;
             var allChecked = _fileItems.All(f => f.IsSelected);
             var anyChecked = _fileItems.Any(f => f.IsSelected);
-            var headerCheck = FileListDataGrid.Columns[0].Header as CheckBox;
 
-            if (headerCheck != null)
-            {
-                headerCheck.IsChecked = allChecked;
-                headerCheck.IsThreeState = anyChecked && !allChecked;
-            }
+            AllItemsAreChecked = allChecked; // This updates the header via binding
             UpdateImportButtonState();
         }
 
@@ -186,6 +232,7 @@ namespace Protes.Views
             ImportButton.IsEnabled = _fileItems.Any(f => f.IsSelected);
         }
 
+        // === IMPORT LOGIC ===
         private void ImportButton_Click(object sender, RoutedEventArgs e)
         {
             var selectedFiles = _fileItems.Where(f => f.IsSelected).ToList();
@@ -206,11 +253,19 @@ namespace Protes.Views
                     }
                 }
                 MessageBox.Show($"{selectedFiles.Count} file(s) imported successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Clear list after successful import
+                _fileItems.Clear();
+                UpdateClearListButtonState();
+                UpdateStatus("");
+                ImportButton.IsEnabled = false;
+                _onImportCompleted?.Invoke();
                 Close();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Import failed:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                UpdateStatus("");
             }
         }
 
@@ -219,8 +274,6 @@ namespace Protes.Views
             var title = Path.GetFileNameWithoutExtension(filePath);
             var content = File.ReadAllText(filePath);
             var tags = Path.GetDirectoryName(filePath).Split(Path.DirectorySeparatorChar).LastOrDefault() ?? "Imported";
-            var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
-
             _noteRepository.SaveNote(title, content, tags);
         }
 
@@ -264,26 +317,84 @@ namespace Protes.Views
             }
         }
 
+        // === CANCELLATION & STATUS ===
+
+        private void UpdateClearListButtonState()
+        {
+            ClearListButton.IsEnabled = _fileItems.Count > 0;
+        }
+        private void UpdateStatus(string message, bool isScanning = false, int filesScanned = 0, int totalFiles = 0)
+        {
+            if (isScanning && totalFiles > 0)
+            {
+                string progressMsg = $"Scanning {filesScanned:N0} of {totalFiles:N0} files...";
+                StatusText.Text = progressMsg;
+                ScanProgressBar.IsIndeterminate = false;
+                ScanProgressBar.Visibility = Visibility.Visible;
+                CancelButton.Visibility = Visibility.Visible;
+                double percent = Math.Min(100, Math.Max(0, (double)filesScanned / totalFiles * 100));
+                ScanProgressBar.Value = percent;
+
+                // Force layout update for smooth progress
+                StatusText.Dispatcher.BeginInvoke(
+                    new Action(() => { }),
+                    System.Windows.Threading.DispatcherPriority.Background
+                );
+            }
+            else if (isScanning)
+            {
+                StatusText.Text = "Scanning files...";
+                ScanProgressBar.IsIndeterminate = true;
+                ScanProgressBar.Visibility = Visibility.Visible;
+                CancelButton.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                StatusText.Text = message;
+                ScanProgressBar.Visibility = Visibility.Collapsed;
+                CancelButton.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void ClearListButton_Click(object sender, RoutedEventArgs e)
+        {
+            _fileItems.Clear();
+            UpdateStatus(""); // Hides progress + status
+            ImportButton.IsEnabled = false;
+            UpdateClearListButtonState();
+        }
+
         private void CancelButton_Click(object sender, RoutedEventArgs e)
+        {
+            _scanCancellationTokenSource?.Cancel();
+            UpdateStatus("Operation canceled.");
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             Close();
         }
-    }
 
-    public class ImportFileItem : INotifyPropertyChanged
-    {
-        private bool _isSelected;
-        public string FullPath { get; set; }
-        public bool IsSelected
+        // === DATA MODEL ===
+        public class ImportFileItem : INotifyPropertyChanged
         {
-            get => _isSelected;
-            set { _isSelected = value; OnPropertyChanged(); }
-        }
+            private bool _isSelected;
+            public string FullPath { get; set; }
+            public bool IsSelected
+            {
+                get => _isSelected;
+                set
+                {
+                    _isSelected = value;
+                    OnPropertyChanged();
+                }
+            }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            public event PropertyChangedEventHandler PropertyChanged;
+            protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            }
         }
     }
 }

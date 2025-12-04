@@ -1361,7 +1361,13 @@ namespace Protes
                 MessageBox.Show("Please connect to a database first.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            var importWindow = new ImportToDBWindow(_databasePath, _currentMode, _externalConnectionString, _noteRepository);
+            var importWindow = new ImportToDBWindow(
+                _databasePath,
+                _currentMode,
+                _externalConnectionString,
+                _noteRepository,
+                () => LoadNotesFromDatabase() // 👈 CALLBACK to refresh
+            );
             importWindow.Owner = this;
             importWindow.ShowDialog();
         }
