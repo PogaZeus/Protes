@@ -181,7 +181,7 @@ namespace Protes
             _isToolbarVisible = isChecked;
             UpdateToolbarVisibility();
         }
-        private void ZoomInMenuItem_Click(object sender, ExecutedRoutedEventArgs e)
+        private void ZoomInMenuItem_Click(object sender, RoutedEventArgs e)
         {
             double newZoom = NotesDataGrid.FontSize + 1.0;
             if (newZoom <= MAX_ZOOM)
@@ -191,7 +191,7 @@ namespace Protes
             }
         }
 
-        private void ZoomOutMenuItem_Click(object sender, ExecutedRoutedEventArgs e)
+        private void ZoomOutMenuItem_Click(object sender, RoutedEventArgs e)
         {
             double newZoom = NotesDataGrid.FontSize - 1.0;
             if (newZoom >= MIN_ZOOM)
@@ -201,7 +201,7 @@ namespace Protes
             }
         }
 
-        private void RestoreZoomMenuItem_Click(object sender, ExecutedRoutedEventArgs e)
+        private void RestoreZoomMenuItem_Click(object sender, RoutedEventArgs e)
         {
             NotesDataGrid.FontSize = DEFAULT_ZOOM;
             _settings.DataGridZoom = DEFAULT_ZOOM;
