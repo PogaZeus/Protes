@@ -89,17 +89,16 @@ namespace Protes.Views
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 return;
 
-            // Reset progress state
-            _totalFilesToScan = 0;
-            _filesScanned = 0;
-            ScanProgressBar.Value = 0;
-            ScanProgressBar.IsIndeterminate = false;
-
             // Cancel any ongoing scan
             _scanCancellationTokenSource?.Cancel();
             _scanCancellationTokenSource = new CancellationTokenSource();
 
             string rootFolder = dialog.SelectedPath;
+
+            // Reset counters
+            _filesScanned = 0;
+            _totalFilesToScan = 0;
+
             UpdateStatus("Scanning folder...", isScanning: true);
 
             try
@@ -163,14 +162,9 @@ namespace Protes.Views
                     fileList.AddRange(files);
                     _filesScanned += files.Length;
 
-                    // Safely update progress on UI thread
+                    // Update status text on UI thread
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        if (_totalFilesToScan > 0)
-                        {
-                            ScanProgressBar.IsIndeterminate = false;
-                            ScanProgressBar.Value = (double)_filesScanned / _totalFilesToScan * 100;
-                        }
                         string msg = $"Scanning {_filesScanned:N0} of {_totalFilesToScan:N0} files...";
                         StatusText.Text = msg;
                     }, System.Windows.Threading.DispatcherPriority.Background);
@@ -323,27 +317,11 @@ namespace Protes.Views
         {
             ClearListButton.IsEnabled = _fileItems.Count > 0;
         }
-        private void UpdateStatus(string message, bool isScanning = false, int filesScanned = 0, int totalFiles = 0)
+        private void UpdateStatus(string message, bool isScanning = false)
         {
-            if (isScanning && totalFiles > 0)
+            if (isScanning)
             {
-                string progressMsg = $"Scanning {filesScanned:N0} of {totalFiles:N0} files...";
-                StatusText.Text = progressMsg;
-                ScanProgressBar.IsIndeterminate = false;
-                ScanProgressBar.Visibility = Visibility.Visible;
-                CancelButton.Visibility = Visibility.Visible;
-                double percent = Math.Min(100, Math.Max(0, (double)filesScanned / totalFiles * 100));
-                ScanProgressBar.Value = percent;
-
-                // Force layout update for smooth progress
-                StatusText.Dispatcher.BeginInvoke(
-                    new Action(() => { }),
-                    System.Windows.Threading.DispatcherPriority.Background
-                );
-            }
-            else if (isScanning)
-            {
-                StatusText.Text = "Scanning files...";
+                StatusText.Text = message;
                 ScanProgressBar.IsIndeterminate = true;
                 ScanProgressBar.Visibility = Visibility.Visible;
                 CancelButton.Visibility = Visibility.Visible;

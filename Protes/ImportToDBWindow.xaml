@@ -65,7 +65,7 @@
             <!-- Progress & Cancel (left) -->
             <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
                 <TextBlock x:Name="StatusText" Text="" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="Gray"/>
-                <ProgressBar x:Name="ScanProgressBar" Width="180" Height="16" Visibility="Collapsed" Margin="0,0,10,0" Minimum="0" Maximum="100" Value="0"/>
+                <ProgressBar x:Name="ScanProgressBar" Width="180" Height="16" Visibility="Collapsed" Margin="0,0,10,0"/>
                 <Button x:Name="CancelButton" Content="Cancel" Padding="8,4" Click="CancelButton_Click" Visibility="Collapsed"/>
             </StackPanel>
 
