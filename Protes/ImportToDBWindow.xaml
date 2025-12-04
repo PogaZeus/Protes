@@ -1,0 +1,63 @@
+﻿<Window x:Class="Protes.Views.ImportToDBWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Mr E Tools - [Protes] - Import to Database" Height="600" Width="600"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip"
+        FontFamily="Segoe UI">
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Database Info -->
+        <TextBlock x:Name="DatabaseInfoText" Text="Database: ..." FontSize="14" FontWeight="Bold" Margin="0,0,0,15"/>
+
+        <!-- Add Buttons -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,15">
+            <Button Content="Add Files…" Padding="10,5" Click="AddFilesButton_Click" Margin="0,0,10,0"/>
+            <Button Content="Add Folder…" Padding="10,5" Click="AddFolderButton_Click"/>
+        </StackPanel>
+
+        <!-- File List -->
+        <DataGrid Grid.Row="2" x:Name="FileListDataGrid"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserSortColumns="True"
+                  SelectionUnit="FullRow"
+                  HeadersVisibility="Column">
+            <DataGrid.Columns>
+                <!-- Checkbox Column -->
+                <DataGridTemplateColumn Width="40">
+                    <DataGridTemplateColumn.Header>
+                        <CheckBox Name="HeaderCheck" Checked="HeaderCheck_Checked" Unchecked="HeaderCheck_Unchecked"/>
+                    </DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- File Path -->
+                <DataGridTextColumn Header="File Path" Binding="{Binding FullPath}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Progress Bar & Status -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,5,0,0">
+            <TextBlock x:Name="StatusText" Text="" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="Gray"/>
+            <ProgressBar x:Name="ScanProgressBar" Width="200" Height="16" Visibility="Collapsed" Margin="0,0,10,0"/>
+        </StackPanel>
+
+        <!-- Bottom Buttons -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="Cancel" Padding="12,5" Click="CancelButton_Click" Margin="0,0,10,0"/>
+            <Button x:Name="ImportButton" Content="Import to DB" Padding="12,5" Click="ImportButton_Click" IsEnabled="False"/>
+        </StackPanel>
+    </Grid>
+</Window>

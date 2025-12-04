@@ -1239,7 +1239,15 @@ namespace Protes
         }
 
         // ===== Load Notes
-
+        private string GetFirstTwoLines(string content, int softLimit = 200)
+        {
+            if (string.IsNullOrEmpty(content)) return "";
+            var lines = content.Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
+            var result = lines.Take(2).Select(line =>
+                line.Length > softLimit ? line.Substring(0, softLimit) + "…" : line
+            );
+            return string.Join("\n", result);
+        }
         private void LoadNotesFromDatabase(string searchTerm = "", string searchField = "All")
         {
             // 🔒 SAFETY: If no repository, show disconnected state
@@ -1261,7 +1269,7 @@ namespace Protes
                 {
                     Id = note.Id,
                     Title = note.Title,
-                    Preview = note.Content.Length > 60 ? note.Content.Substring(0, 57) + "..." : note.Content,
+                    Preview = GetFirstTwoLines(note.Content),
                     Tags = note.Tags,
                     LastModified = note.LastModified,
                     //IsSelected = false
@@ -1344,6 +1352,18 @@ namespace Protes
                     }
                 }
             }
+        }
+        // ImportToDB Window
+        private void ImportFilesMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_isConnected)
+            {
+                MessageBox.Show("Please connect to a database first.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            var importWindow = new ImportToDBWindow(_databasePath, _currentMode, _externalConnectionString, _noteRepository);
+            importWindow.Owner = this;
+            importWindow.ShowDialog();
         }
 
         // ===== HELPERS =====

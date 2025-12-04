@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:Protes"
         Title="Mr E Tools - [Protes] Pro Notes Database - Settings" 
-        Height="660" Width="500"
+        Height="610" Width="500"
         MinWidth="500"
-        MinHeight="660"
+        MinHeight="615"
         FontFamily="Segoe UI" 
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResizeWithGrip">
@@ -38,12 +38,12 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TabControl x:Name="SettingsTabControl" Grid.Row="0" Margin="0,0,0,10">
+        <TabControl x:Name="SettingsTabControl" Grid.Row="0" Margin="0,0,0,5">
 
             <!-- LOCAL DATABASE TAB -->
             <TabItem Header="Local Database">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Grid Margin="10">
+                    <Grid Margin="5">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
@@ -52,8 +52,8 @@
                         </Grid.RowDefinitions>
 
                         <!-- Available Databases (now fills space and includes buttons inside) -->
-                        <GroupBox Grid.Row="0" Header="Available Databases" Margin="0,0,0,5">
-                            <Grid>
+                        <GroupBox Grid.Row="0" Header="Available Databases" Margin="0,2,0,5">
+                            <Grid Margin="0,5,0,0">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
@@ -84,7 +84,7 @@
                                             Style="{StaticResource ActionButtonStyle}"
                                             Margin="0,0,10,0"
                                             Click="RemoveFromListButton_Click"/>
-                                                                        <Button x:Name="DeleteDatabaseButton"
+                                    <Button x:Name="DeleteDatabaseButton"
                                             Content=" Delete Database "
                                             Style="{StaticResource ActionButtonStyle}"
                                             Margin="0,0,10,0"
@@ -110,7 +110,7 @@
                                            Text="C:\Users\...\notes.db"
                                            TextWrapping="Wrap"
                                            FontStyle="Italic"
-                                           Margin="0,5,0,10"/>
+                                           Margin="0,5,0,5"/>
                                 <StackPanel Grid.Row="1" Orientation="Horizontal">
                                     <Button x:Name="NewDbButton" Content="New…" Style="{StaticResource ConsistentButtonStyle}" Margin="0,0,10,0" Click="NewDbButton_Click"/>
                                     <Button x:Name="ExportDbButton" Content="Export…" Style="{StaticResource ConsistentButtonStyle}" Margin="0,0,10,0" Click="ExportDbButton_Click"/>
@@ -145,7 +145,7 @@
 
             <!-- EXTERNAL DATABASE TAB (unchanged) -->
             <TabItem Header="External Database">
-                <Grid Margin="10">
+                <Grid Margin="0,5,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -153,8 +153,8 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <GroupBox Grid.Row="0" Header="Required Table Schema" Margin="0,0,0,20">
-                        <TabControl>
+                    <GroupBox Grid.Row="0" Header="Required Table Schema" Margin="5,0,5,5">
+                        <TabControl Margin="0,5,0,0">
                             <TabItem Header="Requirements">
                                 <StackPanel Margin="10">
                                     <TextBlock Text="Your external database must contain a table named:" FontWeight="Bold"/>
@@ -188,7 +188,7 @@
                         </TabControl>
                     </GroupBox>
 
-                    <GroupBox Grid.Row="1" Header="Connection Details" Margin="0,0,0,20">
+                    <GroupBox Grid.Row="1" Header="Connection Details" Margin="5,0,5,5">
                         <Grid Margin="5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -242,12 +242,12 @@
                         <GroupBox Grid.Row="0" Header="Connection Automation" Margin="0,0,0,15">
                             <StackPanel>
                                 <CheckBox x:Name="AutoConnectCheckBox"
-                                          Content="Connect when program launches"
+                                          Content="Connect when program launches (AC-OL)"
                                           Checked="AutoConnectCheckBox_Checked"
                                           Unchecked="AutoConnectCheckBox_Checked"
                                           Margin="0,5,0,0"/>
                                 <CheckBox x:Name="AutoConnectOnSwitchCheckBox"
-                                          Content="Connect when switching database mode (options menu)"
+                                          Content="Connect when switching database mode (options menu) (AC-OS)"
                                           Checked="AutoConnectOnSwitchCheckBox_Checked"
                                           Unchecked="AutoConnectOnSwitchCheckBox_Checked"
                                           Margin="0,5,0,0"/>
@@ -281,25 +281,26 @@
                                           Checked="ViewToolbarOptionsInMenuCheckBox_Checked"
                                           Unchecked="ViewToolbarOptionsInMenuCheckBox_Checked"
                                           Margin="0,5,0,5"/>
+                                <TextBlock Text="Toolbar Icons:" Margin="0,0"/>
                                 <CheckBox x:Name="ViewToolbarConnectMenuItem"
-                                          Content="Connect and Disconnect"
+                                          Content="Connect/Disconnect"
                                           Checked="ViewToolbarConnectMenuItem_Checked"
                                           Unchecked="ViewToolbarConnectMenuItem_Checked"
                                           Margin="0,5,0,0"/>
+                                <CheckBox x:Name="ViewToolbarLocalDBMenuItem"
+                                          Content="Local Databases (Dropdown Menu and Load Icon)"
+                                          Checked="ViewToolbarLocalDBMenuItem_Checked"
+                                          Unchecked="ViewToolbarLocalDBMenuItem_Checked"
+                                          Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarACOLMenuItem"
-                                          Content="(Auto) Connect On Launch"
+                                          Content="AC-OL (Auto Connect On Launch)"
                                           Checked="ViewToolbarACOLMenuItem_Checked"
                                           Unchecked="ViewToolbarACOLMenuItem_Checked"
                                           Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarACOSMenuItem"
-                                          Content="(Auto) Connect On Switch"
+                                          Content="AC-OS (Auto Connect On Switch) - switching database mode"
                                           Checked="ViewToolbarACOSMenuItem_Checked"
                                           Unchecked="ViewToolbarACOSMenuItem_Checked"
-                                          Margin="0,5,0,0"/>
-                                <CheckBox x:Name="ViewToolbarLocalDBMenuItem"
-                                          Content="Local Databases"
-                                          Checked="ViewToolbarLocalDBMenuItem_Checked"
-                                          Unchecked="ViewToolbarLocalDBMenuItem_Checked"
                                           Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>

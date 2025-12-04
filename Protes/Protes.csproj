@@ -131,6 +131,9 @@
     <Compile Include="FontPickerWindow.xaml.cs">
       <DependentUpon>FontPickerWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ImportToDBWindow.xaml.cs">
+      <DependentUpon>ImportToDBWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="NoteRepository.cs" />
     <Compile Include="ReplaceDialog.xaml.cs">
       <DependentUpon>ReplaceDialog.xaml</DependentUpon>
@@ -148,6 +151,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="FontPickerWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ImportToDBWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

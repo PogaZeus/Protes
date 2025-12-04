@@ -22,6 +22,7 @@
             <MenuItem Header="_File">
                 <!-- NEW: Note actions -->
                 <MenuItem x:Name="NewNoteMenuItem" Header="_New" Click="NewNoteButton_Click"/>
+                <MenuItem Header="_Import File(s)…" Click="ImportFilesMenuItem_Click"/>
                 <MenuItem x:Name="EditNoteMenuItem" Header="_Edit" Click="EditNoteButton_Click"/>
                 <MenuItem x:Name="DeleteNoteMenuItem" Header="_Delete" Click="DeleteNoteButton_Click"/>
                 <Separator/>
@@ -52,10 +53,10 @@
                 <Separator/>
                 <MenuItem x:Name="ViewToolbarMenuItem" Header="Toolbar" IsCheckable="True" Checked="ViewToolbarMenuItem_Checked" Unchecked="ViewToolbarMenuItem_Checked"/>
                 <MenuItem x:Name="ToolbarOptionsMenu" Header="Toolbar Options">
-                    <MenuItem x:Name="ViewToolbarConnectMenuItem" Header="Connect and Disconnect" IsCheckable="True" Checked="ViewToolbarConnectMenuItem_Checked" Unchecked="ViewToolbarConnectMenuItem_Checked"/>
-                    <MenuItem x:Name="ViewToolbarACOLMenuItem" Header="(Auto) Connect On Launch" IsCheckable="True" Checked="ViewToolbarACOLMenuItem_Checked" Unchecked="ViewToolbarACOLMenuItem_Checked"/>
-                    <MenuItem x:Name="ViewToolbarACOSMenuItem" Header="(Auto) Connect On Switch" IsCheckable="True" Checked="ViewToolbarACOSMenuItem_Checked" Unchecked="ViewToolbarACOSMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarConnectMenuItem" Header="Connect/Disconnect" IsCheckable="True" Checked="ViewToolbarConnectMenuItem_Checked" Unchecked="ViewToolbarConnectMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarLocalDBMenuItem" Header="Local Databases" IsCheckable="True" Checked="ViewToolbarLocalDBMenuItem_Checked" Unchecked="ViewToolbarLocalDBMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarACOLMenuItem" Header="AC-OL" IsCheckable="True" Checked="ViewToolbarACOLMenuItem_Checked" Unchecked="ViewToolbarACOLMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarACOSMenuItem" Header="AC-OS" IsCheckable="True" Checked="ViewToolbarACOSMenuItem_Checked" Unchecked="ViewToolbarACOSMenuItem_Checked"/>
                 </MenuItem>
             </MenuItem>
 
@@ -66,7 +67,7 @@
         </Menu>
 
         <!-- === ICON TRAY + NOTE ACTIONS + SEARCH === -->
-        <StackPanel x:Name="ToolbarStackPanel" Grid.Row="1" Orientation="Horizontal" Margin="10,5"
+        <StackPanel x:Name="ToolbarStackPanel" Grid.Row="1" Orientation="Horizontal" Margin="5,5"
             HorizontalAlignment="Left" VerticalAlignment="Top">
             <!-- Connection & Settings Icons -->
             <StackPanel x:Name="ViewToolbarConnectainer" Orientation="Horizontal" VerticalAlignment="Center">
@@ -180,7 +181,15 @@
                 </DataGridTemplateColumn>
 
                 <DataGridTextColumn Header="Title" Binding="{Binding Title, UpdateSourceTrigger=PropertyChanged}" Width="1*"/>
-                <DataGridTextColumn Header="Preview" Binding="{Binding Preview}" IsReadOnly="True" Width="3*"/>
+                <DataGridTextColumn Header="Preview" Binding="{Binding Preview}" IsReadOnly="True" Width="3*">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="VerticalAlignment" Value="Top"/>
+                            <Setter Property="ToolTip" Value="{Binding Preview}"/>
+                            <!-- Do NOT set TextWrapping="Wrap" <Setter Property="TextWrapping" Value="Wrap"/> preserve line count -->
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
                 <DataGridTextColumn Header="Tags" Binding="{Binding Tags, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
                 <DataGridTextColumn Header="Modified" Binding="{Binding LastModified}" IsReadOnly="True" Width="120"/>
             </DataGrid.Columns>
