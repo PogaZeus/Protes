@@ -305,6 +305,7 @@ namespace Protes
             EditNoteMenuItem.IsEnabled = isConnected && selectedCount == 1;
             DeleteNoteMenuItem.IsEnabled = isConnected && selectedCount >= 1;
             ImportFilesMenuItem.IsEnabled = isConnected;
+            ExportFilesMenuItem.IsEnabled = isConnected;
 
             ConnectMenuItem.IsEnabled = !isConnected;
             DisconnectMenuItem.IsEnabled = isConnected;
@@ -1378,7 +1379,8 @@ namespace Protes
                 MessageBox.Show("No notes available to export.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            var exportWindow = new ExportFromDBWindow(_fullNotesCache);
+
+            var exportWindow = new ExportFromDBWindow(_fullNotesCache, _databasePath, _currentMode);
             exportWindow.Owner = this;
             exportWindow.ShowDialog();
         }

@@ -18,11 +18,15 @@ namespace Protes.Views
         private readonly List<FullNote> _notes;
         private readonly ObservableCollection<ExportNoteItem> _exportItems = new ObservableCollection<ExportNoteItem>();
         private bool _isBulkUpdating = false;
-
-        public ExportFromDBWindow(List<FullNote> notes)
+        private string _selectedFolder = null;
+        private readonly string _databasePath;
+        private readonly DatabaseMode _databaseMode;
+        public ExportFromDBWindow(List<FullNote> notes, string databasePath, DatabaseMode databaseMode)
         {
             InitializeComponent();
             _notes = notes ?? new List<FullNote>();
+            _databasePath = databasePath;
+            _databaseMode = databaseMode;
             DataContext = this;
 
             // Populate grid
@@ -39,15 +43,27 @@ namespace Protes.Views
             ExportDataGrid.ItemsSource = _exportItems;
 
             // Set database info
-            DatabaseInfoText.Text = "Database: (from current connection)";
+            UpdateDatabaseInfo();
 
             // Initialize UI
             ExportFormatComboBox.SelectedIndex = 0;
             UpdateButtonState();
 
-            // 👇 CRITICAL: Hook up row checkbox events
+            // Hook up row checkbox events
             ExportDataGrid.AddHandler(CheckBox.CheckedEvent, new RoutedEventHandler(OnRowCheckboxChanged));
             ExportDataGrid.AddHandler(CheckBox.UncheckedEvent, new RoutedEventHandler(OnRowCheckboxChanged));
+        }
+
+        private void UpdateDatabaseInfo()
+        {
+            if (_databaseMode == DatabaseMode.Local)
+            {
+                DatabaseInfoText.Text = $"Database: Local ({_databasePath})";
+            }
+            else
+            {
+                DatabaseInfoText.Text = $"Database: External (Notes table)";
+            }
         }
 
         // ===== PROPERTIES =====
@@ -77,6 +93,22 @@ namespace Protes.Views
         }
 
         // ===== EVENT HANDLERS =====
+        private void SelectFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            var folderDialog = new System.Windows.Forms.FolderBrowserDialog
+            {
+                Description = "Select output folder for exported files:",
+                ShowNewFolderButton = true
+            };
+
+            if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                _selectedFolder = folderDialog.SelectedPath;
+                SelectedFolderText.Text = $"Selected folder: {_selectedFolder}";
+                UpdateButtonState();
+            }
+        }
+
         private void OnRowCheckboxChanged(object sender, RoutedEventArgs e)
         {
             // This line ensures the compiler sees a READ of _isBulkUpdating
@@ -98,9 +130,11 @@ namespace Protes.Views
             CsvFilenamePanel.Visibility = (selected == 0) ? Visibility.Visible : Visibility.Collapsed;
 
             if (selected == 0) // CSV
-                InfoNoteText.Text = "This will export the selected entries into 1 CSV file.";
-            else // TXT / MD
-                InfoNoteText.Text = "This will export the selected entries into multiple text files.";
+                InfoNoteText.Text = "This will export the selected entries into 1 CSV file.\nDelimiter: Comma | Text Delimiter: Double quotes | Character set: Unicode (UTF-8)";
+            else if (selected == 1) // TXT
+                InfoNoteText.Text = "Creates *.txt files - created with 'title' as the filename";
+            else // MD
+                InfoNoteText.Text = "Creates *.md files - created with 'title' as the filename";
 
             UpdateButtonState();
         }
@@ -111,6 +145,12 @@ namespace Protes.Views
             if (!selectedItems.Any())
             {
                 MessageBox.Show("Please select at least one note to export.", "Export", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(_selectedFolder))
+            {
+                MessageBox.Show("Please select an output folder.", "Export", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -140,44 +180,32 @@ namespace Protes.Views
         }
 
         // ===== EXPORT LOGIC =====
+        // ===== EXPORT LOGIC =====
         private void ExportAsCsv(List<ExportNoteItem> items)
         {
-            var saveDialog = new SaveFileDialog
-            {
-                Filter = "CSV Files|*.csv",
-                FileName = CsvFilenameTextBox.Text.TrimEnd('.', 'c', 's', 'v') + ".csv",
-                DefaultExt = "csv"
-            };
-
-            if (saveDialog.ShowDialog() != true) return;
+            var filename = CsvFilenameTextBox.Text.TrimEnd('.', 'c', 's', 'v') + ".csv";
+            var fullPath = Path.Combine(_selectedFolder, filename);
 
             var csv = new StringBuilder();
-            csv.AppendLine("Id,Title,Content,Tags,LastModified");
+            csv.AppendLine("Title,Content,Tags,LastModified");
 
             foreach (var item in items)
             {
                 var note = _notes.First(n => n.Id == item.Id);
-                csv.AppendLine($"\"{note.Id}\",\"{EscapeCsv(note.Title)}\",\"{EscapeCsv(note.Content)}\",\"{EscapeCsv(note.Tags)}\",\"{note.LastModified}\"");
+                csv.AppendLine($"{EscapeCsv(note.Title)},{EscapeCsv(note.Content)},{EscapeCsv(note.Tags)},{EscapeCsv(note.LastModified)}");
             }
 
-            File.WriteAllText(saveDialog.FileName, csv.ToString());
+            File.WriteAllText(fullPath, csv.ToString());
         }
 
         private void ExportAsTextFiles(List<ExportNoteItem> items, bool isMarkdown)
         {
-            var folderDialog = new System.Windows.Forms.FolderBrowserDialog
-            {
-                Description = "Select folder to save exported files:"
-            };
-
-            if (folderDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
             var ext = isMarkdown ? ".md" : ".txt";
             foreach (var item in items)
             {
                 var note = _notes.First(n => n.Id == item.Id);
                 var safeTitle = string.Join("_", note.Title.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries)).Trim('_');
-                var filename = Path.Combine(folderDialog.SelectedPath, $"{safeTitle}{ext}");
+                var filename = Path.Combine(_selectedFolder, $"{safeTitle}{ext}");
                 File.WriteAllText(filename, note.Content);
             }
         }
@@ -193,7 +221,10 @@ namespace Protes.Views
 
         private void UpdateButtonState()
         {
-            ExportButton.IsEnabled = _exportItems.Any(i => i.IsSelected);
+            bool hasSelectedItems = _exportItems.Any(i => i.IsSelected);
+            bool hasFolderSelected = !string.IsNullOrEmpty(_selectedFolder);
+
+            ExportButton.IsEnabled = hasSelectedItems && hasFolderSelected;
         }
 
         // ===== DATA MODEL =====

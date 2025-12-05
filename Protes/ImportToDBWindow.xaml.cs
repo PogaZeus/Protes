@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -276,16 +277,17 @@ namespace Protes.Views
             var lines = File.ReadAllLines(filePath);
             if (lines.Length == 0) return;
 
-            var headers = lines[0].Split(',');
+            // Parse the header row
+            var headers = ParseCsvLine(lines[0]);
             int titleCol = -1, contentCol = -1, tagsCol = -1, modifiedCol = -1;
 
-            for (int i = 0; i < headers.Length; i++)
+            for (int i = 0; i < headers.Count; i++)
             {
                 var header = headers[i].Trim();
                 if (header.Equals("Title", StringComparison.OrdinalIgnoreCase)) titleCol = i;
                 else if (header.Equals("Content", StringComparison.OrdinalIgnoreCase)) contentCol = i;
                 else if (header.Equals("Tags", StringComparison.OrdinalIgnoreCase)) tagsCol = i;
-                else if (header.Equals("Modified", StringComparison.OrdinalIgnoreCase)) modifiedCol = i;
+                else if (header.Equals("LastModified", StringComparison.OrdinalIgnoreCase)) modifiedCol = i;
             }
 
             if (titleCol == -1 || contentCol == -1)
@@ -294,14 +296,19 @@ namespace Protes.Views
                 return;
             }
 
-            for (int i = 1; i < lines.Length; i++)
+            // Parse each data row (handling multi-line fields)
+            string fullText = File.ReadAllText(filePath);
+            var records = ParseCsvFile(fullText);
+
+            // Skip header row
+            for (int i = 1; i < records.Count; i++)
             {
-                var fields = lines[i].Split(',');
-                var title = titleCol < fields.Length ? fields[titleCol].Trim('\"') : "";
-                var content = contentCol < fields.Length ? fields[contentCol].Trim('\"') : "";
-                var tags = tagsCol < fields.Length && !string.IsNullOrEmpty(fields[tagsCol]) ? fields[tagsCol].Trim('\"') : "Imported";
-                var modified = modifiedCol < fields.Length && !string.IsNullOrEmpty(fields[modifiedCol])
-                    ? fields[modifiedCol].Trim('\"')
+                var fields = records[i];
+                var title = titleCol < fields.Count ? fields[titleCol] : "";
+                var content = contentCol < fields.Count ? fields[contentCol] : "";
+                var tags = tagsCol < fields.Count && !string.IsNullOrEmpty(fields[tagsCol]) ? fields[tagsCol] : "Imported";
+                var modified = modifiedCol < fields.Count && !string.IsNullOrEmpty(fields[modifiedCol])
+                    ? fields[modifiedCol]
                     : DateTime.Now.ToString("yyyy-MM-dd HH:mm");
 
                 if (!string.IsNullOrWhiteSpace(title) || !string.IsNullOrWhiteSpace(content))
@@ -309,6 +316,132 @@ namespace Protes.Views
                     _noteRepository.SaveNote(title, content, tags);
                 }
             }
+        }
+
+        private List<List<string>> ParseCsvFile(string csvContent)
+        {
+            var records = new List<List<string>>();
+            var currentRecord = new List<string>();
+            var currentField = new StringBuilder();
+            bool inQuotes = false;
+
+            for (int i = 0; i < csvContent.Length; i++)
+            {
+                char c = csvContent[i];
+                char? nextChar = (i + 1 < csvContent.Length) ? csvContent[i + 1] : (char?)null;
+
+                if (inQuotes)
+                {
+                    if (c == '"')
+                    {
+                        if (nextChar == '"')
+                        {
+                            // Escaped quote - add single quote to field
+                            currentField.Append('"');
+                            i++; // Skip next quote
+                        }
+                        else
+                        {
+                            // End of quoted field
+                            inQuotes = false;
+                        }
+                    }
+                    else
+                    {
+                        currentField.Append(c);
+                    }
+                }
+                else
+                {
+                    if (c == '"')
+                    {
+                        // Start of quoted field
+                        inQuotes = true;
+                    }
+                    else if (c == ',')
+                    {
+                        // End of field
+                        currentRecord.Add(currentField.ToString());
+                        currentField.Clear();
+                    }
+                    else if (c == '\r' || c == '\n')
+                    {
+                        // End of record
+                        if (currentField.Length > 0 || currentRecord.Count > 0)
+                        {
+                            currentRecord.Add(currentField.ToString());
+                            records.Add(currentRecord);
+                            currentRecord = new List<string>();
+                            currentField.Clear();
+                        }
+                        // Skip \r\n pairs
+                        if (c == '\r' && nextChar == '\n')
+                            i++;
+                    }
+                    else
+                    {
+                        currentField.Append(c);
+                    }
+                }
+            }
+
+            // Add final field and record if any
+            if (currentField.Length > 0 || currentRecord.Count > 0)
+            {
+                currentRecord.Add(currentField.ToString());
+                records.Add(currentRecord);
+            }
+
+            return records;
+        }
+
+        private List<string> ParseCsvLine(string line)
+        {
+            var fields = new List<string>();
+            var currentField = new StringBuilder();
+            bool inQuotes = false;
+
+            for (int i = 0; i < line.Length; i++)
+            {
+                char c = line[i];
+                char? nextChar = (i + 1 < line.Length) ? line[i + 1] : (char?)null;
+
+                if (inQuotes)
+                {
+                    if (c == '"' && nextChar == '"')
+                    {
+                        currentField.Append('"');
+                        i++;
+                    }
+                    else if (c == '"')
+                    {
+                        inQuotes = false;
+                    }
+                    else
+                    {
+                        currentField.Append(c);
+                    }
+                }
+                else
+                {
+                    if (c == '"')
+                    {
+                        inQuotes = true;
+                    }
+                    else if (c == ',')
+                    {
+                        fields.Add(currentField.ToString());
+                        currentField.Clear();
+                    }
+                    else
+                    {
+                        currentField.Append(c);
+                    }
+                }
+            }
+
+            fields.Add(currentField.ToString());
+            return fields;
         }
 
         // === CANCELLATION & STATUS ===
