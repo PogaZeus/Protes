@@ -31,6 +31,7 @@ namespace Protes
         private string _externalConnectionString = "";
         private bool _isToolbarVisible = true;
         private bool _isSelectMode = false;
+        private List<FullNote> _copiedNotes = new List<FullNote>();
         // Zoom settings
         private const double DEFAULT_ZOOM = 13.0;
         private const double MIN_ZOOM = 10.0;
@@ -293,24 +294,20 @@ namespace Protes
             ConnectIconBtn.IsEnabled = !isConnected;
             DisconnectIconBtn.IsEnabled = isConnected;
             SelectNotesButton.IsEnabled = isConnected;
+            ImportFilesButton.IsEnabled = isConnected;
+            ExportFilesButton.IsEnabled = isConnected && (_fullNotesCache?.Any() == true);
+            CopyNoteButton.IsEnabled = isConnected && selectedCount >= 1;
+            PasteNoteButton.IsEnabled = isConnected && _copiedNotes.Any();
 
             // File menu
+            // File menu — direct access via x:Name
             NewNoteMenuItem.IsEnabled = isConnected;
             EditNoteMenuItem.IsEnabled = isConnected && selectedCount == 1;
             DeleteNoteMenuItem.IsEnabled = isConnected && selectedCount >= 1;
+            ImportFilesMenuItem.IsEnabled = isConnected;
 
-            // Connect/Disconnect menu items
-            if (MainMenu?.Items.Count > 0)
-            {
-                var fileMenuItem = MainMenu.Items[0] as MenuItem;
-                if (fileMenuItem?.Items.Count >= 6)
-                {
-                    var connectMenuItem = fileMenuItem.Items[4] as MenuItem;
-                    var disconnectMenuItem = fileMenuItem.Items[5] as MenuItem;
-                    connectMenuItem?.SetValue(MenuItem.IsEnabledProperty, !isConnected);
-                    disconnectMenuItem?.SetValue(MenuItem.IsEnabledProperty, isConnected);
-                }
-            }
+            ConnectMenuItem.IsEnabled = !isConnected;
+            DisconnectMenuItem.IsEnabled = isConnected;
 
             // 🔥 CRITICAL FIX: Disable local DB switcher unless in Local mode
             bool isLocalMode = (_currentMode == DatabaseMode.Local);
@@ -1354,6 +1351,8 @@ namespace Protes
             }
         }
         // ImportToDB Window
+
+
         private void ImportFilesMenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (!_isConnected)
@@ -1370,6 +1369,75 @@ namespace Protes
             );
             importWindow.Owner = this;
             importWindow.ShowDialog();
+        }
+
+        private void ExportFilesMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_isConnected || _fullNotesCache == null || !_fullNotesCache.Any())
+            {
+                MessageBox.Show("No notes available to export.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            var exportWindow = new ExportFromDBWindow(_fullNotesCache);
+            exportWindow.Owner = this;
+            exportWindow.ShowDialog();
+        }
+
+        // ===== COPY/PASTE =====
+        private void CopyNoteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_isConnected) return;
+
+            List<FullNote> notesToCopy = new List<FullNote>();
+
+            if (_isSelectMode)
+            {
+                var items = NotesDataGrid.ItemsSource as List<NoteItem>;
+                var selectedIds = items?.Where(n => n.IsSelected).Select(n => n.Id).ToList() ?? new List<long>();
+                notesToCopy = _fullNotesCache.Where(n => selectedIds.Contains(n.Id)).ToList();
+            }
+            else
+            {
+                if (NotesDataGrid.SelectedItem is NoteItem selectedNote)
+                {
+                    var fullNote = _fullNotesCache.Find(n => n.Id == selectedNote.Id);
+                    if (fullNote != null)
+                        notesToCopy = new List<FullNote> { fullNote };
+                }
+            }
+
+            if (notesToCopy.Any())
+            {
+                _copiedNotes = new List<FullNote>(notesToCopy); // Deep copy not needed for this use case
+                UpdateButtonStates(); // Enable Paste button
+                MessageBox.Show($"{notesToCopy.Count} note{(notesToCopy.Count == 1 ? "" : "s")} copied to clipboard.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Please select a note to copy.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void PasteNoteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_isConnected || _noteRepository == null || !_copiedNotes.Any())
+                return;
+
+            try
+            {
+                foreach (var note in _copiedNotes)
+                {
+                    // Add " (Copy)" to title to avoid confusion
+                    string newTitle = $"{note.Title} (Copy)";
+                    _noteRepository.SaveNote(newTitle, note.Content, note.Tags);
+                }
+                LoadNotesFromDatabase();
+                MessageBox.Show($"{_copiedNotes.Count} note{(_copiedNotes.Count == 1 ? "" : "s")} pasted successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to paste notes:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         // ===== HELPERS =====

@@ -22,12 +22,14 @@
             <MenuItem Header="_File">
                 <!-- NEW: Note actions -->
                 <MenuItem x:Name="NewNoteMenuItem" Header="_New" Click="NewNoteButton_Click"/>
-                <MenuItem Header="_Import File(s)…" Click="ImportFilesMenuItem_Click"/>
                 <MenuItem x:Name="EditNoteMenuItem" Header="_Edit" Click="EditNoteButton_Click"/>
                 <MenuItem x:Name="DeleteNoteMenuItem" Header="_Delete" Click="DeleteNoteButton_Click"/>
                 <Separator/>
-                <MenuItem Header="_Connect" Click="Connect_Click"/>
-                <MenuItem Header="_Disconnect" Click="Disconnect_Click"/>
+                <MenuItem x:Name="ImportFilesMenuItem" Header="_Import File(s)…" Click="ImportFilesMenuItem_Click"/>
+                <MenuItem x:Name="ExportFilesMenuItem" Header="_Export File(s)…" Click="ExportFilesMenuItem_Click"/>
+                <Separator/>
+                <MenuItem x:Name="ConnectMenuItem" Header="_Connect" Click="Connect_Click"/>
+                <MenuItem x:Name="DisconnectMenuItem" Header="_Disconnect" Click="Disconnect_Click"/>
                 <Separator/>
                 <MenuItem Header="_Quit" Click="Quit_Click"/>
             </MenuItem>
@@ -106,7 +108,11 @@
                 <Button x:Name="LoadSelectedDbButton" Content="↻" FontSize="16" Width="32" Height="32"
             ToolTip="Load Selected Database" Click="LoadSelectedDbButton_Click" Margin="0,0,12,0"/>
             </StackPanel>
-            
+            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
+            <Button x:Name="ImportFilesButton" Content="📁" Padding="6,5"
+        FontSize="16" Click="ImportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Import Files"/>
+            <Button x:Name="ExportFilesButton" Content="📤" Padding="6,5"
+        FontSize="16" Click="ExportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Export Files"/>
             <!-- Separator -->
             <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
 
@@ -121,6 +127,13 @@
             <!-- Separator -->
             <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
 
+            <Button x:Name="CopyNoteButton" Content="📋" Padding="6,5"
+        FontSize="16" Click="CopyNoteButton_Click" Margin="0,0,8,0" ToolTip="Copy Note(s)"/>
+            <Button x:Name="PasteNoteButton" Content="📄" Padding="6,5"
+        FontSize="16" Click="PasteNoteButton_Click" Margin="0,0,8,0" ToolTip="Paste Note(s)"/>
+            <!-- Separator -->
+            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
+            
             <!-- 👇 NEW: Search with dropdown -->
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="Search:" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,8,0"/>

@@ -1,0 +1,85 @@
+﻿<Window x:Class="Protes.Views.ExportFromDBWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Export File(s) from Database" 
+        Height="500" Width="600"
+        MinHeight="500" MinWidth="600"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="Segoe UI"
+        ResizeMode="CanResizeWithGrip">
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Database Info -->
+        <TextBlock x:Name="DatabaseInfoText" Text="Database: ..." FontSize="14" FontWeight="Bold" Margin="0,5,0,5"/>
+
+        <!-- Export Data Grid -->
+        <DataGrid Grid.Row="1" x:Name="ExportDataGrid"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserSortColumns="True"
+                  SelectionUnit="FullRow"
+                  HeadersVisibility="Column">
+            <DataGrid.Columns>
+                <!-- Checkbox Column -->
+                <DataGridTemplateColumn Header="Select All" Width="50">
+                    <DataGridTemplateColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}, Path=DataContext.AllItemsAreChecked, Mode=TwoWay}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center" Margin="6,0" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.HeaderTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="2*"/>
+                <DataGridTextColumn Header="Modified" Binding="{Binding LastModified}" Width="1*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Export Controls -->
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Format Selection -->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Export Format:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox x:Name="ExportFormatComboBox" SelectedIndex="0" SelectionChanged="ExportFormatComboBox_SelectionChanged">
+                    <ComboBoxItem Content="*.CSV"/>
+                    <ComboBoxItem Content="*.TXT"/>
+                    <ComboBoxItem Content="*.MD"/>
+                </ComboBox>
+            </StackPanel>
+
+            <!-- Filename (only for CSV) -->
+            <StackPanel x:Name="CsvFilenamePanel" Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,8,0,0">
+                <TextBlock Text="Filename:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox x:Name="CsvFilenameTextBox" Width="200" Height="26" Text="export.csv"/>
+                <TextBlock Text=".csv" VerticalAlignment="Center" Margin="8,0,0,0"/>
+            </StackPanel>
+
+            <!-- Info Note -->
+            <TextBlock x:Name="InfoNoteText" Grid.Row="2" Text="This will export the selected entries into 1 CSV file." 
+                       FontStyle="Italic" Foreground="Gray" Margin="0,8,0,0"/>
+
+            <!-- Buttons -->
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+                <Button Content="Cancel" Padding="12,5" Click="CancelButton_Click" Margin="0,0,10,0"/>
+                <Button x:Name="ExportButton" Content="Export" Padding="12,5" Click="ExportButton_Click"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
