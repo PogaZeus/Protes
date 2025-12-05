@@ -48,29 +48,57 @@ namespace Protes.Views
             InitializeComponent();
             PreviewKeyDown += NoteEditorWindow_PreviewKeyDown;
 
-            // Display tag bar or not
+            // ===== LOAD DEFAULT FONT FROM SETTINGS =====
+            var settings = new SettingsManager();
+            try
+            {
+                ContentBox.FontFamily = new FontFamily(settings.DefaultNoteEditorFontFamily);
+                ContentBox.FontSize = settings.DefaultNoteEditorFontSize;
+                ContentBox.FontWeight = ParseFontWeight(settings.DefaultNoteEditorFontWeight);
+                ContentBox.FontStyle = ParseFontStyle(settings.DefaultNoteEditorFontStyle);
+            }
+            catch (Exception ex)
+            {
+                // Fallback to safe defaults if settings are corrupted
+                ContentBox.FontFamily = SystemFonts.MessageFontFamily;
+                ContentBox.FontSize = 12.0;
+                ContentBox.FontWeight = FontWeights.Normal;
+                ContentBox.FontStyle = FontStyles.Normal;
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"Font settings load error: {ex.Message}");
+#endif
+            }
+
+
+            // Store original font size for zooming
+            _originalFontSize = ContentBox.FontSize;
+            _currentZoomLevel = 1.0;
+            UpdateZoomDisplay();
+
+            // ===== UI VISIBILITY (Tags, Title) =====
             bool displayTags = Properties.Settings.Default.DisplayTags;
             TagsRow.Visibility = displayTags ? Visibility.Visible : Visibility.Collapsed;
             DisplayTagsMenuItem.IsChecked = displayTags;
 
-            // Display title bar or not
             bool displayTitle = Properties.Settings.Default.DisplayTitle;
             TitleBar.Visibility = displayTitle ? Visibility.Visible : Visibility.Collapsed;
             DisplayTitleMenuItem.IsChecked = displayTitle;
 
+            // ===== INITIAL NOTE DATA =====
             _originalTitle = title ?? "";
             _originalContent = content ?? "";
             _originalTags = tags ?? "";
 
-            // Update title after content is set
-            UpdateWindowTitle();
+            TitleBox.Text = title;
+            ContentBox.Text = content;
+            TagsBox.Text = tags;
 
-            // Track changes
+            // ===== EVENT HANDLERS =====
+            UpdateWindowTitle();
             TitleBox.TextChanged += (s, e) => UpdateWindowTitle();
             ContentBox.TextChanged += (s, e) => UpdateWindowTitle();
             TagsBox.TextChanged += (s, e) => UpdateWindowTitle();
 
-            // Set up real-time updates (Ln, Col)
             ContentBox.SelectionChanged += (s, e) => UpdateCursorPosition();
             ContentBox.TextChanged += (s, e) =>
             {
@@ -81,14 +109,9 @@ namespace Protes.Views
             UpdateCursorPosition();
             UpdateFileFormatInfo();
 
-            // Rest of initialization
+            // ===== FINAL INIT =====
             _onSaveRequested = onSaveRequested;
             _noteId = noteId;
-            _originalFontSize = ContentBox.FontSize;
-            UpdateZoomDisplay();
-            TitleBox.Text = title;
-            ContentBox.Text = content;
-            TagsBox.Text = tags;
 
             CommandManager.AddPreviewCanExecuteHandler(this, OnPreviewCanExecute);
             CommandManager.AddPreviewExecutedHandler(this, OnPreviewExecuted);
@@ -565,16 +588,20 @@ namespace Protes.Views
         {
             try
             {
+                var settings = new SettingsManager();
                 var currentFont = ContentBox.FontFamily ?? System.Windows.SystemFonts.MessageFontFamily;
                 var currentSize = double.IsNaN(ContentBox.FontSize) ? 12.0 : ContentBox.FontSize;
 
-                var fontPicker = new FontPickerWindow(currentFont, currentSize) { Owner = this };
+                var fontPicker = new FontPickerWindow(currentFont, currentSize, settings) { Owner = this };
 
                 if (fontPicker.ShowDialog() == true)
                 {
                     ContentBox.FontFamily = fontPicker.SelectedFontFamily;
                     ContentBox.FontSize = fontPicker.SelectedFontSize;
-                    _originalFontSize = ContentBox.FontSize;
+                    ContentBox.FontWeight = fontPicker.SelectedFontWeight;
+                    ContentBox.FontStyle = fontPicker.SelectedFontStyleEnum;
+
+                    _originalFontSize = ContentBox.FontSize; // if you still use this
                     _currentZoomLevel = 1.0;
                 }
             }
@@ -748,6 +775,26 @@ namespace Protes.Views
             foreach (char c in Path.GetInvalidFileNameChars())
                 name = name.Replace(c.ToString(), "_");
             return name.TrimEnd('.');
+        }
+
+        //helpers
+        private static FontWeight ParseFontWeight(string weightStr)
+        {
+            if (weightStr == "Bold") return FontWeights.Bold;
+            if (weightStr == "Black") return FontWeights.Black;
+            if (weightStr == "ExtraBold") return FontWeights.ExtraBold;
+            if (weightStr == "DemiBold") return FontWeights.DemiBold;
+            if (weightStr == "Light") return FontWeights.Light;
+            if (weightStr == "ExtraLight") return FontWeights.ExtraLight;
+            if (weightStr == "Thin") return FontWeights.Thin;
+            return FontWeights.Normal;
+        }
+
+        private static FontStyle ParseFontStyle(string styleStr)
+        {
+            if (styleStr == "Italic") return FontStyles.Italic;
+            if (styleStr == "Oblique") return FontStyles.Oblique;
+            return FontStyles.Normal;
         }
     }
 }

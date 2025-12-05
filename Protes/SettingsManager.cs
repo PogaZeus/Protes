@@ -244,6 +244,46 @@ namespace Protes
             DatabaseModeSetting = mode == DatabaseMode.Local ? "Local" : "External";
         }
 
+        // ===== DEFAULT NOTE EDITOR FONT =====
+        public string DefaultNoteEditorFontFamily
+        {
+            get => global::Protes.Properties.Settings.Default.DefaultNoteEditorFontFamily;
+            set
+            {
+                global::Protes.Properties.Settings.Default.DefaultNoteEditorFontFamily = value;
+                Save();
+            }
+        }
+
+        public double DefaultNoteEditorFontSize
+        {
+            get => global::Protes.Properties.Settings.Default.DefaultNoteEditorFontSize;
+            set
+            {
+                global::Protes.Properties.Settings.Default.DefaultNoteEditorFontSize = value;
+                Save();
+            }
+        }
+
+        public string DefaultNoteEditorFontWeight
+        {
+            get => global::Protes.Properties.Settings.Default.DefaultNoteEditorFontWeight;
+            set
+            {
+                global::Protes.Properties.Settings.Default.DefaultNoteEditorFontWeight = value;
+                Save();
+            }
+        }
+
+        public string DefaultNoteEditorFontStyle
+        {
+            get => global::Protes.Properties.Settings.Default.DefaultNoteEditorFontStyle;
+            set
+            {
+                global::Protes.Properties.Settings.Default.DefaultNoteEditorFontStyle = value;
+                Save();
+            }
+        }
         // ===== MISCELLANEOUS =====
         public string DefaultDatabaseFolder
         {

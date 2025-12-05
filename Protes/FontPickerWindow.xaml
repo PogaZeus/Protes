@@ -1,27 +1,128 @@
 ﻿<Window x:Class="Protes.Views.FontPickerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Choose Font" Height="200" Width="400"
+        Title="Font" Height="450" Width="550"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize">
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <StackPanel>
-            <TextBlock Text="Font:" Margin="0,0,0,5"/>
-            <ComboBox x:Name="FontFamilyComboBox" ItemsSource="{Binding FontFamilies}"
-                      SelectedItem="{Binding SelectedFontFamily}" Height="25"/>
 
-            <TextBlock Text="Size:" Margin="0,10,0,5"/>
-            <ComboBox x:Name="FontSizeComboBox" ItemsSource="{Binding FontSizes}"
-                      SelectedItem="{Binding SelectedFontSize}" Height="25"/>
+        <!-- Font, Style, Size headers and textboxes -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="140"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="80"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Font:" Margin="0,0,0,3"/>
+                <TextBox x:Name="FontTextBox" Height="23" IsReadOnly="True"
+                         Text="{Binding SelectedFontFamily.Source, Mode=OneWay}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Font style:" Margin="0,0,0,3"/>
+                <TextBox x:Name="FontStyleTextBox" Height="23" IsReadOnly="True"
+                         Text="{Binding SelectedFontStyleName, Mode=OneWay}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="4">
+                <TextBlock Text="Size:" Margin="0,0,0,3"/>
+                <ComboBox x:Name="FontSizeComboBox" Height="23" IsEditable="True"
+                          ItemsSource="{Binding FontSizes}"
+                          SelectedItem="{Binding SelectedFontSize}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Font, Style, Size lists -->
+        <Grid Grid.Row="1" Margin="0,5,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="140"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="80"/>
+            </Grid.ColumnDefinitions>
+
+            <ListBox x:Name="FontListBox" Grid.Column="0"
+                     ItemsSource="{Binding FontFamilies}"
+                     SelectedItem="{Binding SelectedFontFamily}"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Source}"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <ListBox x:Name="FontStyleListBox" Grid.Column="2"
+                     ItemsSource="{Binding FontStyles}"
+                     SelectedItem="{Binding SelectedFontStyle}"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Name}"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <ListBox x:Name="FontSizeListBox" Grid.Column="4"
+                     ItemsSource="{Binding FontSizes}"
+                     SelectedItem="{Binding SelectedFontSize}"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+        </Grid>
+
+        <!-- Sample and Script section -->
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="230"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="80"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Column="0" Grid.Row="0" Text="Sample" Margin="0,0,0,3"/>
+            <Border Grid.Column="0" Grid.Row="1" BorderBrush="#ABADB3" BorderThickness="1" Background="White">
+                <TextBlock x:Name="SampleTextBlock" Text="AaBbYyZz" 
+           FontFamily="{Binding SelectedFontFamily}"
+           FontSize="{Binding SampleFontSize}"
+           FontWeight="{Binding SelectedFontWeight}"
+           FontStyle="{Binding SelectedFontStyleEnum}"
+           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+
+            <StackPanel Grid.Column="2" Grid.Row="0" Grid.RowSpan="2">
+                <TextBlock Text="Script:" Margin="0,0,0,3"/>
+                <ComboBox x:Name="ScriptComboBox" Height="23"
+                          ItemsSource="{Binding Scripts}"
+                          SelectedItem="{Binding SelectedScript}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Set as default and Restore default buttons -->
+        <StackPanel Grid.Row="3" Margin="0,10,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
+            <CheckBox x:Name="SetAsDefaultCheckBox" Content="Set as default" 
+                      VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <Button x:Name="RestoreDefaultButton" Content="Restore default" 
+                    Click="RestoreDefaultButton_Click" Width="100" Height="23"/>
         </StackPanel>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button Content="OK" Click="OKButton_Click" Width="70" Margin="0,0,5,0"/>
-            <Button Content="Cancel" Click="CancelButton_Click" Width="70"/>
+        <!-- OK and Cancel buttons -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="OK" Click="OKButton_Click" Width="75" Height="23" Margin="0,0,5,0"/>
+            <Button Content="Cancel" Click="CancelButton_Click" Width="75" Height="23"/>
         </StackPanel>
     </Grid>
 </Window>

@@ -38,7 +38,7 @@
                     <DataGridTemplateColumn.HeaderTemplate>
                         <DataTemplate>
                             <CheckBox IsChecked="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}, Path=DataContext.AllItemsAreChecked, Mode=TwoWay}"
-                                      HorizontalAlignment="Center" VerticalAlignment="Center" Margin="6,0" />
+                                      HorizontalAlignment="Center" VerticalAlignment="Center" Margin="11,0" />
                         </DataTemplate>
                     </DataGridTemplateColumn.HeaderTemplate>
                     <DataGridTemplateColumn.CellTemplate>

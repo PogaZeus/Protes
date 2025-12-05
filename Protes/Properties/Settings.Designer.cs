@@ -322,5 +322,53 @@ namespace Protes.Properties {
                 this["DataGridZoom"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Segoe UI")]
+        public string DefaultNoteEditorFontFamily {
+            get {
+                return ((string)(this["DefaultNoteEditorFontFamily"]));
+            }
+            set {
+                this["DefaultNoteEditorFontFamily"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("14")]
+        public double DefaultNoteEditorFontSize {
+            get {
+                return ((double)(this["DefaultNoteEditorFontSize"]));
+            }
+            set {
+                this["DefaultNoteEditorFontSize"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Normal")]
+        public string DefaultNoteEditorFontWeight {
+            get {
+                return ((string)(this["DefaultNoteEditorFontWeight"]));
+            }
+            set {
+                this["DefaultNoteEditorFontWeight"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Normal")]
+        public string DefaultNoteEditorFontStyle {
+            get {
+                return ((string)(this["DefaultNoteEditorFontStyle"]));
+            }
+            set {
+                this["DefaultNoteEditorFontStyle"] = value;
+            }
+        }
     }
 }

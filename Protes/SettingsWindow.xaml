@@ -239,7 +239,7 @@
                         </Grid.RowDefinitions>
 
                         <!-- Auto Connect -->
-                        <GroupBox Grid.Row="0" Header="Connection Automation" Margin="0,0,0,15">
+                        <GroupBox Grid.Row="0" Header="Connection Automation" Margin="0,0,0,10">
                             <StackPanel>
                                 <CheckBox x:Name="AutoConnectCheckBox"
                                           Content="Connect when program launches (AC-OL)"
@@ -260,7 +260,7 @@
                         </GroupBox>
 
                         <!-- Notifications -->
-                        <GroupBox Grid.Row="1" Header="Notifications" Margin="0,0,0,15">
+                        <GroupBox Grid.Row="1" Header="Notifications" Margin="0,0,0,10">
                             <CheckBox x:Name="ShowNotificationsCheckBox"
                                       Content="Show connect/disconnect notifications"
                                       Checked="ShowNotificationsCheckBox_Changed"
@@ -277,7 +277,7 @@
                                           Unchecked="ViewToolbarMenuItem_Checked"
                                           Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarOptionsInMenuCheckBox"
-                                          Content="Show Toolbar Options in Menu"
+                                          Content="Show 'Toolbar Options' in Menu"
                                           Checked="ViewToolbarOptionsInMenuCheckBox_Checked"
                                           Unchecked="ViewToolbarOptionsInMenuCheckBox_Checked"
                                           Margin="0,5,0,5"/>
@@ -288,17 +288,17 @@
                                           Unchecked="ViewToolbarConnectMenuItem_Checked"
                                           Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarLocalDBMenuItem"
-                                          Content="Local Databases (Dropdown Menu and Load Icon)"
+                                          Content="Local Databases - Dropdown menu and load icon"
                                           Checked="ViewToolbarLocalDBMenuItem_Checked"
                                           Unchecked="ViewToolbarLocalDBMenuItem_Checked"
                                           Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarACOLMenuItem"
-                                          Content="AC-OL (Auto Connect On Launch)"
+                                          Content="AC-OL - Auto connect when program starts)"
                                           Checked="ViewToolbarACOLMenuItem_Checked"
                                           Unchecked="ViewToolbarACOLMenuItem_Checked"
                                           Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarACOSMenuItem"
-                                          Content="AC-OS (Auto Connect On Switch) - switching database mode"
+                                          Content="AC-OS - Auto connect when switching database mode"
                                           Checked="ViewToolbarACOSMenuItem_Checked"
                                           Unchecked="ViewToolbarACOSMenuItem_Checked"
                                           Margin="0,5,0,0"/>

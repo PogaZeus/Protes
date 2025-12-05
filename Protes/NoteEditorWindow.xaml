@@ -94,7 +94,7 @@
             <!-- Content -->
             <TextBox x:Name="ContentBox" Grid.Row="1" AcceptsReturn="True"
                      AcceptsTab="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                     FontSize="13" IsUndoEnabled="True" IsReadOnly="False" Focusable="True"/>
+                     IsUndoEnabled="True" IsReadOnly="False" Focusable="True"/>
 
             <!-- Tags (full width) -->
             <Grid x:Name="TagsRow" Grid.Row="2" Margin="0,3,0,0">
