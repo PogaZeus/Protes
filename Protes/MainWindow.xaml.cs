@@ -1452,6 +1452,77 @@ namespace Protes
             }
         }
 
+        // Right click menu stuff
+        private void NotesDataGrid_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            // Get the context menu
+            var contextMenu = NotesDataGrid.ContextMenu;
+            if (contextMenu == null) return;
+
+            // Update all context menu items to match current state
+            bool hasSelection = NotesDataGrid?.SelectedItem != null;
+            int selectedCount = 0;
+
+            if (_isSelectMode)
+            {
+                var items = NotesDataGrid.ItemsSource as List<NoteItem>;
+                selectedCount = items?.Count(n => n.IsSelected) ?? 0;
+            }
+            else
+            {
+                selectedCount = hasSelection ? 1 : 0;
+            }
+
+            bool isConnected = _isConnected;
+
+            // Find menu items by name
+            var newItem = FindContextMenuItem(contextMenu, "ContextNewNoteMenuItem");
+            var editItem = FindContextMenuItem(contextMenu, "ContextEditNoteMenuItem");
+            var copyItem = FindContextMenuItem(contextMenu, "ContextCopyNoteMenuItem");
+            var pasteItem = FindContextMenuItem(contextMenu, "ContextPasteNoteMenuItem");
+            var selectItem = FindContextMenuItem(contextMenu, "ContextSelectNotesMenuItem");
+            var deleteItem = FindContextMenuItem(contextMenu, "ContextDeleteNoteMenuItem");
+            var importItem = FindContextMenuItem(contextMenu, "ContextImportFilesMenuItem");
+            var exportItem = FindContextMenuItem(contextMenu, "ContextExportFilesMenuItem");
+            var connectItem = FindContextMenuItem(contextMenu, "ContextConnectMenuItem");
+            var disconnectItem = FindContextMenuItem(contextMenu, "ContextDisconnectMenuItem");
+            var switchDbItem = FindContextMenuItem(contextMenu, "ContextSwitchDatabaseMenuItem");
+            var localDbItem = FindContextMenuItem(contextMenu, "ContextLocalDbMenuItem");
+            var externalDbItem = FindContextMenuItem(contextMenu, "ContextExternalDbMenuItem");
+
+            // Apply states
+            if (newItem != null) newItem.IsEnabled = isConnected;
+            if (editItem != null) editItem.IsEnabled = isConnected && selectedCount == 1;
+            if (copyItem != null) copyItem.IsEnabled = isConnected && selectedCount >= 1;
+            if (pasteItem != null) pasteItem.IsEnabled = isConnected && _copiedNotes.Any();
+            if (selectItem != null) selectItem.IsEnabled = isConnected;
+            if (deleteItem != null) deleteItem.IsEnabled = isConnected && selectedCount >= 1;
+            if (importItem != null) importItem.IsEnabled = isConnected;
+            if (exportItem != null) exportItem.IsEnabled = isConnected && (_fullNotesCache?.Any() == true);
+            if (connectItem != null) connectItem.IsEnabled = !isConnected;
+            if (disconnectItem != null) disconnectItem.IsEnabled = isConnected;
+
+            // Update Switch Database submenu checkmarks
+            if (localDbItem != null) localDbItem.IsChecked = (_currentMode == DatabaseMode.Local);
+            if (externalDbItem != null)
+            {
+                externalDbItem.IsChecked = (_currentMode == DatabaseMode.External);
+                externalDbItem.IsEnabled = !string.IsNullOrWhiteSpace(_settings.External_Host) &&
+                                            !string.IsNullOrWhiteSpace(_settings.External_Database);
+            }
+        }
+
+        private MenuItem FindContextMenuItem(ContextMenu menu, string name)
+        {
+            foreach (var item in menu.Items)
+            {
+                if (item is MenuItem menuItem && menuItem.Name == name)
+                    return menuItem;
+            }
+            return null;
+        }
+
+
         // ===== HELPERS =====
 
         internal string BuildExternalConnectionString()

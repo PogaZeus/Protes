@@ -4,7 +4,76 @@
         Title="Mr E Tools - [Protes] Pro Notes Database" 
         WindowState="Maximized"
         FontFamily="Segoe UI" WindowStartupLocation="CenterScreen">
-
+    <Window.Resources>
+        <ContextMenu x:Key="DataGridContextMenu">
+            <MenuItem x:Name="ContextNewNoteMenuItem" Header="_New" Click="NewNoteButton_Click">
+                <MenuItem.Icon>
+                    <TextBlock Text="➕" FontSize="14"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem x:Name="ContextEditNoteMenuItem" Header="_Edit" Click="EditNoteButton_Click">
+                <MenuItem.Icon>
+                    <TextBlock Text="🖊️" FontSize="14"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem x:Name="ContextCopyNoteMenuItem" Header="_Copy" Click="CopyNoteButton_Click">
+                <MenuItem.Icon>
+                    <TextBlock Text="📋" FontSize="14"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem x:Name="ContextPasteNoteMenuItem" Header="_Paste" Click="PasteNoteButton_Click">
+                <MenuItem.Icon>
+                    <TextBlock Text="📄" FontSize="14"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem x:Name="ContextSelectNotesMenuItem" Header="_Select" Click="SelectNotesButton_Click">
+                <MenuItem.Icon>
+                    <TextBlock Text="✅" FontSize="14"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem x:Name="ContextDeleteNoteMenuItem" Header="_Delete" Click="DeleteNoteButton_Click">
+                <MenuItem.Icon>
+                    <TextBlock Text="🗑️" FontSize="14"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <Separator/>
+            <MenuItem x:Name="ContextImportFilesMenuItem" Header="_Import File(s)…" Click="ImportFilesMenuItem_Click">
+                <MenuItem.Icon>
+                    <TextBlock Text="📁" FontSize="14"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem x:Name="ContextExportFilesMenuItem" Header="_Export File(s)…" Click="ExportFilesMenuItem_Click">
+                <MenuItem.Icon>
+                    <TextBlock Text="📤" FontSize="14"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <Separator/>
+            <MenuItem x:Name="ContextSwitchDatabaseMenuItem" Header="Switch Database">
+                <MenuItem.Icon>
+                    <TextBlock Text="🔄" FontSize="14"/>
+                </MenuItem.Icon>
+                <MenuItem x:Name="ContextLocalDbMenuItem" Header="Local Database" Click="UseLocalDb_Click"/>
+                <MenuItem x:Name="ContextExternalDbMenuItem" Header="External Database" Click="UseExternalDb_Click"/>
+            </MenuItem>
+            <MenuItem x:Name="ContextConnectMenuItem" Header="_Connect" Click="Connect_Click">
+                <MenuItem.Icon>
+                    <TextBlock Text="🔌" FontSize="14"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem x:Name="ContextDisconnectMenuItem" Header="_Disconnect" Click="Disconnect_Click">
+                <MenuItem.Icon>
+                    <TextBlock Text="🚫" FontSize="14"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <Separator/>
+            <MenuItem x:Name="ContextOptionsMenuItem" Header="_Options" Click="OpenSettings_Click">
+                <MenuItem.Icon>
+                    <TextBlock Text="⚙️" FontSize="14"/>
+                </MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+    </Window.Resources>
+    
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -153,7 +222,9 @@
 
         <!-- === NOTES TABLE (DATA GRID) === -->
 
-        <DataGrid Grid.Row="2" x:Name="NotesDataGrid" 
+        <DataGrid Grid.Row="2" x:Name="NotesDataGrid"
+                  ContextMenu="{StaticResource DataGridContextMenu}"
+          ContextMenuOpening="NotesDataGrid_ContextMenuOpening"
           PreviewMouseDown="NotesDataGrid_PreviewMouseDown" 
           Margin="5"
           AutoGenerateColumns="False"
