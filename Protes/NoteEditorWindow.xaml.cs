@@ -2,6 +2,7 @@
 using Microsoft.Win32;
 using System;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -737,13 +738,28 @@ namespace Protes.Views
         private void ExportAsCsv_Click(object sender, RoutedEventArgs e) =>
             ExportToFile("CSV Files (*.csv)|*.csv", ".csv", content =>
             {
+                var csv = new StringBuilder();
+                // Add header row to match import format
+                csv.AppendLine("Title,Content,Tags,LastModified");
+
+                // Add data row with all fields escaped
                 string title = EscapeCsvField(TitleBox.Text);
                 string escapedContent = EscapeCsvField(content);
                 string tags = EscapeCsvField(TagsBox.Text);
-                return $"\"{title}\",\"{escapedContent}\",\"{tags}\"";
+                string modified = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+
+                csv.Append($"{title},{escapedContent},{tags},{modified}");
+                return csv.ToString();
             });
 
-        private string EscapeCsvField(string input) => string.IsNullOrEmpty(input) ? string.Empty : input.Replace("\"", "\"\"");
+        private string EscapeCsvField(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return "\"\"";
+
+            // Always wrap fields in quotes and escape internal quotes by doubling them
+            string escaped = input.Replace("\"", "\"\"");
+            return $"\"{escaped}\"";
+        }
 
         private void ExportToFile(string filter, string defaultExt, Func<string, string> formatContent)
         {

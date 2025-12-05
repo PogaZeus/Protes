@@ -233,9 +233,13 @@ namespace Protes.Views
             var selectedFiles = _fileItems.Where(f => f.IsSelected).ToList();
             if (!selectedFiles.Any()) return;
 
-            try
+            int successCount = 0;
+            int failCount = 0;
+            var errors = new List<string>();
+
+            foreach (var fileItem in selectedFiles)
             {
-                foreach (var fileItem in selectedFiles)
+                try
                 {
                     var ext = Path.GetExtension(fileItem.FullPath).ToLowerInvariant();
                     if (ext == ".csv")
@@ -246,8 +250,19 @@ namespace Protes.Views
                     {
                         ImportTextFile(fileItem.FullPath);
                     }
+                    successCount++;
                 }
-                MessageBox.Show($"{selectedFiles.Count} file(s) imported successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                catch (Exception ex)
+                {
+                    failCount++;
+                    errors.Add($"{Path.GetFileName(fileItem.FullPath)}: {ex.Message}");
+                }
+            }
+
+            // Show appropriate message based on results
+            if (failCount == 0)
+            {
+                MessageBox.Show($"{successCount} file(s) imported successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 // Clear list after successful import
                 _fileItems.Clear();
@@ -257,10 +272,28 @@ namespace Protes.Views
                 _onImportCompleted?.Invoke();
                 Close();
             }
-            catch (Exception ex)
+            else if (successCount == 0)
             {
-                MessageBox.Show($"Import failed:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Import failed for all {failCount} file(s):\n\n" + string.Join("\n", errors),
+                    "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
                 UpdateStatus("");
+            }
+            else
+            {
+                MessageBox.Show($"Partial import: {successCount} succeeded, {failCount} failed.\n\nErrors:\n" + string.Join("\n", errors),
+                    "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+                // Remove successfully imported files
+                var failedPaths = errors.Select(err => err.Split(':')[0]).ToList();
+                var itemsToRemove = _fileItems.Where(f => !failedPaths.Contains(Path.GetFileName(f.FullPath))).ToList();
+                foreach (var item in itemsToRemove)
+                {
+                    _fileItems.Remove(item);
+                }
+
+                UpdateClearListButtonState();
+                UpdateStatus("");
+                _onImportCompleted?.Invoke();
             }
         }
 
@@ -292,8 +325,7 @@ namespace Protes.Views
 
             if (titleCol == -1 || contentCol == -1)
             {
-                MessageBox.Show($"CSV file '{Path.GetFileName(filePath)}' is missing required columns 'Title' and 'Content'.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                throw new InvalidOperationException($"CSV file '{Path.GetFileName(filePath)}' is missing required columns 'Title' and 'Content'.");
             }
 
             // Parse each data row (handling multi-line fields)
