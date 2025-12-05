@@ -92,9 +92,9 @@ namespace Protes
 
             Loaded += MainWindow_Loaded;
     
-            // Attach to row checkboxes via event handlers
-            NotesDataGrid.AddHandler(CheckBox.CheckedEvent, new RoutedEventHandler(OnCheckboxChanged));
-            NotesDataGrid.AddHandler(CheckBox.UncheckedEvent, new RoutedEventHandler(OnCheckboxChanged));
+            // Hook up row checkbox events to detect individual changes
+            NotesDataGrid.AddHandler(CheckBox.CheckedEvent, new RoutedEventHandler(OnRowCheckboxChanged));
+            NotesDataGrid.AddHandler(CheckBox.UncheckedEvent, new RoutedEventHandler(OnRowCheckboxChanged));
             NotesDataGrid.SelectionChanged += (s, e) => UpdateButtonStates();
             var showNotifications = _settings.ShowNotifications;
             SelectCheckBoxColumn.Visibility = Visibility.Collapsed;
@@ -109,20 +109,26 @@ namespace Protes
             }
         }
 
-        private void OnCheckboxChanged(object sender, RoutedEventArgs e)
+        private void OnRowCheckboxChanged(object sender, RoutedEventArgs e)
         {
+            // Prevent infinite loop during bulk updates
             if (_isBulkUpdating) return;
 
+            // Check if all items are now checked or unchecked
             var items = NotesDataGrid.ItemsSource as List<NoteItem>;
             if (items != null)
             {
-                bool allChecked = items.All(item => item.IsSelected);
-                if (AllItemsAreChecked != allChecked)
+                bool allChecked = items.All(n => n.IsSelected);
+
+                // Update header checkbox without triggering bulk update
+                if (_allItemsAreChecked != allChecked)
                 {
-                    AllItemsAreChecked = allChecked;
+                    _allItemsAreChecked = allChecked;
+                    OnPropertyChanged(nameof(AllItemsAreChecked));
                 }
+
+                UpdateButtonStates();
             }
-            UpdateButtonStates();
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -1435,6 +1441,10 @@ namespace Protes
                 }
                 LoadNotesFromDatabase();
                 MessageBox.Show($"{_copiedNotes.Count} note{(_copiedNotes.Count == 1 ? "" : "s")} pasted successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // ✅ Clear the clipboard after successful paste
+                _copiedNotes.Clear();
+                UpdateButtonStates(); // This will disable the Paste button
             }
             catch (Exception ex)
             {

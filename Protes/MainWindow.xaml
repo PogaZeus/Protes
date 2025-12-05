@@ -76,7 +76,7 @@
             <Button x:Name="ConnectIconBtn" Content="🔌" FontSize="16" Width="32" Height="32"
         ToolTip="Connect" Click="Connect_Click" Margin="0,0,8,0"/>
             <Button x:Name="DisconnectIconBtn" Content="🚫" FontSize="16" Width="32" Height="32"
-        ToolTip="Disconnect" Click="Disconnect_Click" Margin="0,0,12,0"/>
+        ToolTip="Disconnect" Click="Disconnect_Click" Margin="0,0,8,0"/>
             </StackPanel>
 
             <Border x:Name="AutoConnectOSContainer">
@@ -91,11 +91,11 @@
   Content="AC-OL" 
   VerticalAlignment="Center"
   Checked="AutoConnectCheckBox_Checked"
-  Unchecked="AutoConnectCheckBox_Checked" Margin="0,0,12,0"/>
+  Unchecked="AutoConnectCheckBox_Checked" Margin="0,0,8,0"/>
             </Border>
 
             <!-- Separator -->
-            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
+            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
 
             <Button x:Name="SettingsIconBtn" Content="⚙️" FontSize="16" Width="32" Height="32"
             ToolTip="Settings" Click="OpenSettings_Click" Margin="0,0,8,0"/>
@@ -106,7 +106,7 @@
                 <ComboBox x:Name="AvailableDatabasesComboBox" MinWidth="150" Margin="0,0,8,0" VerticalContentAlignment="Center" Height="28"
               DisplayMemberPath="FileName" SelectedValuePath="FullPath"/>
                 <Button x:Name="LoadSelectedDbButton" Content="↻" FontSize="16" Width="32" Height="32"
-            ToolTip="Load Selected Database" Click="LoadSelectedDbButton_Click" Margin="0,0,12,0"/>
+            ToolTip="Load Selected Database" Click="LoadSelectedDbButton_Click" Margin="0,0,8,0"/>
             </StackPanel>
             <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
             <Button x:Name="ImportFilesButton" Content="📁" Padding="6,5"
@@ -114,7 +114,7 @@
             <Button x:Name="ExportFilesButton" Content="📤" Padding="6,5"
         FontSize="16" Click="ExportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Export Files"/>
             <!-- Separator -->
-            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
+            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
 
             <Button x:Name="NewNoteButton" Content="➕" Padding="6,5"
             FontSize="16" Click="NewNoteButton_Click" Margin="0,0,8,0" ToolTip="New"/>
@@ -125,14 +125,14 @@
             <Button x:Name="DeleteNoteButton" Content="🗑️" Padding="6,5"
             FontSize="16" Click="DeleteNoteButton_Click" Margin="0,0,8,0" ToolTip="Delete"/>
             <!-- Separator -->
-            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
+            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
 
             <Button x:Name="CopyNoteButton" Content="📋" Padding="6,5"
         FontSize="16" Click="CopyNoteButton_Click" Margin="0,0,8,0" ToolTip="Copy Note(s)"/>
             <Button x:Name="PasteNoteButton" Content="📄" Padding="6,5"
         FontSize="16" Click="PasteNoteButton_Click" Margin="0,0,8,0" ToolTip="Paste Note(s)"/>
             <!-- Separator -->
-            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,12,0" Opacity="0.6"/>
+            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
             
             <!-- 👇 NEW: Search with dropdown -->
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
