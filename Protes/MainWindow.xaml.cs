@@ -8,6 +8,9 @@ using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows.Interop;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -41,6 +44,9 @@ namespace Protes
 
         public MainWindow()
         {
+            //External File incoming!
+            this.Title = "Mr E Tools - [Protes] Pro Notes Database";
+
             string lastPath = _settings.LastLocalDatabasePath;
             if (!string.IsNullOrWhiteSpace(lastPath) && File.Exists(lastPath))
             {
@@ -373,10 +379,7 @@ namespace Protes
             var selectedItem = AvailableDatabasesComboBox.SelectedItem as DbFileInfo;
             if (selectedItem != null)
             {
-                // Save as last used (optional but recommended)
-                var settings = new SettingsManager();
-                settings.LastLocalDatabasePath = selectedItem.FullPath;
-                settings.Save();
+                _settings.LastLocalDatabasePath = selectedItem.FullPath;
 
                 // Switch to it
                 SwitchToLocalDatabase(selectedItem.FullPath);
@@ -1303,11 +1306,9 @@ namespace Protes
         // Load Database for the Dropdown Menu
         private void LoadAvailableDatabases()
         {
-            var settings = new SettingsManager();
             var dbFiles = new List<DbFileInfo>();
 
-            // Default folder (user-defined or fallback)
-            string defaultFolder = settings.DefaultDatabaseFolder;
+            string defaultFolder = _settings.DefaultDatabaseFolder;
             if (string.IsNullOrWhiteSpace(defaultFolder) || !Directory.Exists(defaultFolder))
             {
                 defaultFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Protes");
@@ -1327,7 +1328,7 @@ namespace Protes
             }
 
             // Imported paths
-            var importedRaw = settings.ImportedDatabasePaths;
+            var importedRaw = _settings.ImportedDatabasePaths;
             var importedPaths = new List<string>();
             if (!string.IsNullOrWhiteSpace(importedRaw))
             {
@@ -1352,7 +1353,7 @@ namespace Protes
             AvailableDatabasesComboBox.ItemsSource = uniqueFiles;
 
             // Select LastLocalDatabasePath if available
-            string lastPath = settings.LastLocalDatabasePath;
+            string lastPath = _settings.LastLocalDatabasePath;
             if (!string.IsNullOrEmpty(lastPath) && File.Exists(lastPath))
             {
                 foreach (DbFileInfo item in uniqueFiles)
@@ -1394,6 +1395,180 @@ namespace Protes
             }
 
             base.OnStateChanged(e);
+        }
+
+        //Opening a .prote file (External file incoming!)
+        public void HandleIpcMessage(string message)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (message == "-new")
+                {
+                    // User wants to create a new note in the currently connected database
+                    ActivateWindow();
+
+                    if (!_isConnected)
+                    {
+                        MessageBox.Show(
+                            "Please connect to a database first before creating a new note.\n\n" +
+                            "Go to Options → Use Local Database or Use External Database, then click Connect.",
+                            "Protes",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    var editor = new NoteEditorWindow(
+                        noteId: null,
+                        onSaveRequested: OnSaveNoteRequested
+                    );
+                    editor.Owner = this;
+                    editor.Show();
+                }
+                else if (File.Exists(message) &&
+                         (message.EndsWith(".db", StringComparison.OrdinalIgnoreCase) ||
+                          message.EndsWith(".prote", StringComparison.OrdinalIgnoreCase)))
+                {
+                    // User double-clicked a .prote/.db file - check if imported and switch
+                    PromptAndSwitchDatabase(message);
+                }
+                else
+                {
+                    // Unknown message or file doesn't exist - just activate
+                    ActivateWindow();
+                }
+            }));
+        }
+
+        public void ActivateWindow()
+        {
+            Show();
+            WindowState = WindowState.Normal;
+            Activate();
+        }
+
+        // ===== DATABASE IMPORT HELPERS =====
+        // Add these methods to your MainWindow.xaml.cs class
+
+        private void PromptAndSwitchDatabase(string databasePath)
+        {
+            // If not connected, just switch directly
+            if (!_isConnected)
+            {
+                SwitchToLocalDatabase(databasePath);
+                return;
+            }
+
+            // Check if already connected to this exact database
+            if (_connectedMode == DatabaseMode.Local &&
+                _databasePath.Equals(databasePath, StringComparison.OrdinalIgnoreCase))
+            {
+                // Already connected to this database, just activate window
+                ActivateWindow();
+                return;
+            }
+
+            // Check if this database is in the available/imported list
+            bool isInList = IsDatabaseInAvailableList(databasePath);
+
+            string message;
+            if (isInList)
+            {
+                message = $"Another database is currently open.\n\n" +
+                          $"Do you want to switch to:\n{Path.GetFileName(databasePath)}?";
+            }
+            else
+            {
+                message = $"Another database is currently open.\n\n" +
+                          $"The database you're trying to open is not in your imported list:\n" +
+                          $"{Path.GetFileName(databasePath)}\n\n" +
+                          $"Do you want to import and switch to this database?";
+            }
+
+            var result = MessageBox.Show(
+                message,
+                "Switch Database",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question,
+                MessageBoxResult.Yes);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                // If not in list, add it to imported databases
+                if (!isInList)
+                {
+                    AddDatabaseToImportedList(databasePath);
+                }
+
+                SwitchToLocalDatabase(databasePath);
+            }
+        }
+
+        private bool IsDatabaseInAvailableList(string databasePath)
+        {
+            // Check default folder
+            string defaultFolder = _settings.DefaultDatabaseFolder;
+            if (string.IsNullOrWhiteSpace(defaultFolder) || !Directory.Exists(defaultFolder))
+            {
+                defaultFolder = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "Protes");
+            }
+
+            // Check if file is in default folder
+            if (File.Exists(databasePath))
+            {
+                string fileDir = Path.GetDirectoryName(databasePath);
+                if (fileDir.Equals(defaultFolder, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            // Check imported databases list
+            var importedRaw = _settings.ImportedDatabasePaths;
+            if (!string.IsNullOrWhiteSpace(importedRaw))
+            {
+                var importedPaths = importedRaw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                               .Select(p => p.Trim())
+                                               .ToList();
+
+                if (importedPaths.Any(p => p.Equals(databasePath, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void AddDatabaseToImportedList(string databasePath)
+        {
+            var importedRaw = _settings.ImportedDatabasePaths ?? "";
+            var importedPaths = importedRaw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                           .Select(p => p.Trim())
+                                           .ToList();
+
+            // Add if not already in list
+            if (!importedPaths.Any(p => p.Equals(databasePath, StringComparison.OrdinalIgnoreCase)))
+            {
+                importedPaths.Add(databasePath);
+                _settings.ImportedDatabasePaths = string.Join(";", importedPaths);
+
+                // Refresh the dropdown if in Local mode
+                if (_currentMode == DatabaseMode.Local)
+                {
+                    LoadAvailableDatabases();
+                }
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct COPYDATASTRUCT
+        {
+            public IntPtr dwData;
+            public int cbData;
+            public IntPtr lpData;
         }
         private void SetupNotifyIcon()
         {
@@ -1627,7 +1802,6 @@ namespace Protes
 
 
         // ===== HELPERS =====
-
         internal string BuildExternalConnectionString()
         {
             var host = _settings.External_Host;
@@ -1667,6 +1841,20 @@ namespace Protes
             var aboutWindow = new Protes.Views.AboutWindow();
             aboutWindow.Owner = this;
             aboutWindow.ShowDialog();
+        }
+
+        // Close to system tray;
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            if (_settings.MinimizeToTray)
+            {
+                e.Cancel = true; // Prevent actual close
+                WindowState = WindowState.Minimized; // This triggers OnStateChanged → hides to tray
+            }
+            else
+            {
+                base.OnClosing(e);
+            }
         }
     }
 

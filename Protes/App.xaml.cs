@@ -1,49 +1,127 @@
 ﻿using Protes.Views;
 using System;
 using System.IO;
+using System.IO.Pipes;
+using System.Threading;
 using System.Windows;
 
 namespace Protes
 {
     public partial class App : Application
     {
+        private const string MutexName = "Protes_Singleton_v1";
+        private const string PipeName = "Protes_IPC_Pipe_v1";
+        private Mutex _mutex; // 👈 Store mutex as field to keep it alive
+
         protected override void OnStartup(StartupEventArgs e)
         {
+            bool firstInstance;
+            _mutex = new Mutex(true, MutexName, out firstInstance);
+
+            if (!firstInstance)
+            {
+                // Send args to first instance via named pipe
+                SendToFirstInstance(e.Args);
+                Shutdown();
+                return;
+            }
+
+            // Start pipe server in background
+            ThreadPool.QueueUserWorkItem(_ => ListenForRequests());
+
             base.OnStartup(e);
 
-            string[] args = e.Args;
+            var mainWindow = new MainWindow();
+            mainWindow.Title = "Mr E Tools - [Protes] Pro Notes Database";
+            mainWindow.Show();
 
-            // Handle "New → Note Editor (Protes)" → launch NoteEditorWindow directly
-            if (args.Length == 1 && args[0] == "-new")
+            // 👇 Handle command-line args if .prote file was double-clicked or -new command
+            if (e.Args.Length > 0)
             {
-                var editor = new NoteEditorWindow();
-                editor.Show();
-                return;
+                mainWindow.HandleIpcMessage(e.Args[0]);
             }
+        }
 
-            // Handle double-click on .db file
-            if (args.Length == 1 &&
-                File.Exists(args[0]) &&
-                args[0].EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+        protected override void OnExit(ExitEventArgs e)
+        {
+            // Clean up mutex
+            _mutex?.ReleaseMutex();
+            _mutex?.Dispose();
+            base.OnExit(e);
+        }
+
+        private void SendToFirstInstance(string[] args)
+        {
+            try
             {
-                var mainWindow = new MainWindow();
-                mainWindow.Show();
-
-                // Delay slightly to ensure MainWindow is initialized
-                var timer = new System.Windows.Threading.DispatcherTimer();
-                timer.Interval = TimeSpan.FromMilliseconds(300);
-                timer.Tick += (s, _) =>
+                using (var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out))
                 {
-                    mainWindow.SwitchToLocalDatabase(args[0]);
-                    timer.Stop();
-                };
-                timer.Start();
-                return;
+                    client.Connect(2000); // 2-second timeout
+                    using (var writer = new StreamWriter(client) { AutoFlush = true })
+                    {
+                        if (args.Length > 0)
+                        {
+                            // Send the file path or command
+                            writer.WriteLine(args[0]);
+                        }
+                        else
+                        {
+                            writer.WriteLine("!ACTIVATE");
+                        }
+                    }
+                }
             }
+            catch (Exception ex)
+            {
+                // Log or show error if needed
+                System.Diagnostics.Debug.WriteLine($"Failed to send to first instance: {ex.Message}");
+            }
+        }
 
-            // Normal startup
-            var main = new MainWindow();
-            main.Show();
+        private void ListenForRequests()
+        {
+            while (true)
+            {
+                try
+                {
+                    using (var server = new NamedPipeServerStream(PipeName, PipeDirection.In))
+                    {
+                        server.WaitForConnection();
+                        using (var reader = new StreamReader(server))
+                        {
+                            string message = reader.ReadLine();
+
+                            if (string.IsNullOrEmpty(message))
+                                continue;
+
+                            Dispatcher.BeginInvoke(new Action(() =>
+                            {
+                                var mainWindow = Current.MainWindow as MainWindow;
+                                if (mainWindow != null)
+                                {
+                                    if (message == "!ACTIVATE")
+                                    {
+                                        mainWindow.ActivateWindow();
+                                    }
+                                    else
+                                    {
+                                        // Bring window to front first
+                                        mainWindow.ActivateWindow();
+                                        // Then handle the message (file path or command)
+                                        mainWindow.HandleIpcMessage(message);
+                                    }
+                                }
+                            }));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log pipe errors but continue listening
+                    System.Diagnostics.Debug.WriteLine($"Pipe error: {ex.Message}");
+                    Thread.Sleep(100); // Brief pause before retry
+                }
+            }
         }
     }
 }

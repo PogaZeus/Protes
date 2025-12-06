@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime;
@@ -74,52 +75,82 @@ namespace Protes.Views
             {
                 AutoDisconnectOnSwitchCheckBox.IsEnabled = true;
             }
+            _isInitializing = false;
         }
 
         private void RegisterShellNew()
-{
-    const string extension = ".prote";
-    const string progId = "Protes.NoteEditorFile";
-    const string friendlyTypeName = "Note Editor (Protes)";
+        {
+            const string extension = ".prote";
+            const string progId = "Protes.DatabaseFile";
+            string exePath = Process.GetCurrentProcess().MainModule.FileName;
 
-    // 1. Register the file extension and associate it with ProgID
-    using (var extKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{extension}"))
-    {
-        extKey.SetValue("", progId);
-        //extKey.SetValue("PerceivedType", "text"); // Makes it behave like a text file
-    }
-
-    // 2. Define the ProgID (file type info)
-    using (var progIdKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{progId}"))
-    {
-        progIdKey.SetValue("", friendlyTypeName);
-    }
-
-    // 3. Associate your app with double-click open
-    using (var commandKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{progId}\shell\open\command"))
-    {
-        string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
-                //commandKey.SetValue("", $"\"{exePath}\" \"%1\"");
-                commandKey.SetValue("", $"\"{exePath}\" -new");
+            // 1. Register file extension
+            using (var extKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{extension}"))
+            {
+                extKey.SetValue("", progId);
+                extKey.SetValue("PerceivedType", "document");
             }
 
-    // 4. Enable "New" menu entry (creates empty file)
-    using (var shellNewKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{extension}\ShellNew"))
-    {
-        shellNewKey.SetValue("NullFile", ""); // Creates 0-byte file
-        // Optionally: shellNewKey.SetValue("ItemName", $"@{friendlyTypeName}"); // Localizable name
-    }
-}
+            // 2. Define ProgID
+            using (var progIdKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{progId}"))
+            {
+                progIdKey.SetValue("", "Protes Database");
+                progIdKey.SetValue("FriendlyTypeName", "Pro Notes Database Editor");
+            }
 
-private void UnregisterShellNew()
-{
-    const string extension = ".prote";
-    const string progId = "Protes.NoteEditorFile";
+            // 3. Associate app with double-click (open/connect to database file)
+            using (var openKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{progId}\shell\open"))
+            {
+                openKey.SetValue("", "Open with Protes");
+                openKey.SetValue("Icon", $"\"{exePath}\",0");
 
-    // Clean up keys (ignore if missing)
-    try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{extension}"); } catch { }
-    try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{progId}"); } catch { }
-} 
+                using (var cmdKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{progId}\shell\open\command"))
+                {
+                    cmdKey.SetValue("", $"\"{exePath}\" \"%1\"");
+                }
+            }
+
+            // 4. Add "New Protes Note" to Windows "New" context menu
+            // This sends the -new command to open NoteEditorWindow in the existing instance
+            using (var shellNewKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{extension}\ShellNew"))
+            {
+                shellNewKey.SetValue("Command", $"\"{exePath}\" -new");
+                shellNewKey.SetValue("ItemName", "Protes Note");
+                // Remove NullFile if it exists from previous versions
+                try { shellNewKey.DeleteValue("NullFile"); } catch { }
+            }
+
+            // 5. Add "Create New Note" to .prote file context menu
+            using (var newNoteKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{progId}\shell\newnote"))
+            {
+                newNoteKey.SetValue("", "Create New Note");
+                newNoteKey.SetValue("Icon", $"\"{exePath}\",0");
+
+                using (var cmdKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{progId}\shell\newnote\command"))
+                {
+                    cmdKey.SetValue("", $"\"{exePath}\" -new");
+                }
+            }
+
+            MessageBox.Show(
+                "File associations registered successfully!\n\n" +
+                "You can now:\n" +
+                "• Double-click .prote files to open/switch to them\n" +
+                "• Right-click .prote files → 'Create New Note'\n" +
+                "• Right-click in folders → New → Protes Note (opens note editor)",
+                "Protes",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+
+        private void UnregisterShellNew()
+        {
+            const string extension = ".prote";
+            const string progId = "Protes.DatabaseFile"; // ✅ Match RegisterShellNew
+
+            try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{extension}"); } catch { }
+            try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{progId}"); } catch { }
+        }
 
         // ✅ NEW: Change Default Database Folder
         private void ChangeDefaultFolderButton_Click(object sender, RoutedEventArgs e)
@@ -237,8 +268,8 @@ private void UnregisterShellNew()
         {
             var saveDialog = new SaveFileDialog
             {
-                Filter = "SQLite Database|*.db",
-                FileName = Path.GetFileName(_currentDatabasePath),
+                Filter = "Protes Database (*.prote)|*.prote|SQLite Database (*.db)|*.db",
+                FileName = Path.GetFileNameWithoutExtension(_currentDatabasePath) + ".prote", // prefer .prote
                 InitialDirectory = _appDataFolder
             };
 
@@ -284,8 +315,8 @@ private void UnregisterShellNew()
         {
             var saveDialog = new SaveFileDialog
             {
-                Filter = "SQLite Database|*.db",
-                FileName = $"notes_{DateTime.Now:yyyyMMdd_HHmm}.db",
+                Filter = "Protes Database (*.prote)|*.prote|SQLite Database (*.db)|*.db",
+                FileName = $"notes_{DateTime.Now:yyyyMMdd_HHmm}.prote",
                 InitialDirectory = _appDataFolder
             };
 
@@ -297,19 +328,20 @@ private void UnregisterShellNew()
                     {
                         conn.Open();
                         using (var cmd = new System.Data.SQLite.SQLiteCommand(@"
-                            CREATE TABLE IF NOT EXISTS Notes (
-                                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                Title TEXT NOT NULL,
-                                Content TEXT,
-                                Tags TEXT,
-                                LastModified TEXT
-                            )", conn))
+                    CREATE TABLE IF NOT EXISTS Notes (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        Title TEXT NOT NULL,
+                        Content TEXT,
+                        Tags TEXT,
+                        LastModified TEXT
+                    )", conn))
                         {
                             cmd.ExecuteNonQuery();
                         }
                     }
 
                     SwitchToDatabase(saveDialog.FileName);
+                    LoadLocalDatabases(); // ✅ ADD THIS LINE
                     MessageBox.Show("New database created successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
@@ -330,7 +362,7 @@ private void UnregisterShellNew()
         {
             var openDialog = new OpenFileDialog
             {
-                Filter = "SQLite Database|*.db"
+                Filter = "Protes Database (*.prote;*.db)|*.prote;*.db|SQLite Database (*.db)|*.db|All files (*.*)|*.*"
             };
 
             if (openDialog.ShowDialog() == true)
@@ -566,8 +598,11 @@ private void UnregisterShellNew()
         {
             _settings.MinimizeToTray = MinimizeToSystemTray.IsChecked == true;
         }
+        private bool _isInitializing = true;
         private void ShellNewCheckBox_Checked(object sender, RoutedEventArgs e)
         {
+            if (_isInitializing) return;
+
             if (MessageBox.Show(
                 "This will add 'Note Editor (Protes)' to the Windows 'New' menu in File Explorer.\n\n" +
                 "Allow this?",
@@ -593,6 +628,8 @@ private void UnregisterShellNew()
 
         private void ShellNewCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
+            if (_isInitializing) return;
+
             try
             {
                 UnregisterShellNew();
