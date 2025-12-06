@@ -13,6 +13,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using SWF = System.Windows.Forms;
 
 namespace Protes
 {
@@ -32,10 +33,12 @@ namespace Protes
         private bool _isToolbarVisible = true;
         private bool _isSelectMode = false;
         private List<FullNote> _copiedNotes = new List<FullNote>();
+        private SWF.NotifyIcon _notifyIcon;
         // Zoom settings
         private const double DEFAULT_ZOOM = 13.0;
         private const double MIN_ZOOM = 10.0;
         private const double MAX_ZOOM = 20.0;
+
         public MainWindow()
         {
             string lastPath = _settings.LastLocalDatabasePath;
@@ -57,6 +60,7 @@ namespace Protes
             EnsureAppDataFolder();
             UpdateStatusBar();
             UpdateButtonStates();
+            SetupNotifyIcon();
 
             // Load View settings
             ViewTitleMenuItem.IsChecked = _settings.ViewMainWindowTitle;
@@ -1226,7 +1230,11 @@ namespace Protes
                 }
 
                 LoadNotesFromDatabase();
-                MessageBox.Show($"{notesToDelete.Count} note{(notesToDelete.Count == 1 ? "" : "s")} deleted successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (_settings.NotifyDeleted)
+                {
+                    MessageBox.Show($"{notesToDelete.Count} note{(notesToDelete.Count == 1 ? "" : "s")} deleted successfully.",
+                                    "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
             catch (Exception ex)
             {
@@ -1357,9 +1365,96 @@ namespace Protes
                 }
             }
         }
+        protected override void OnClosed(EventArgs e)
+        {
+            if (_notifyIcon != null)
+            {
+                _notifyIcon.Visible = false;
+                _notifyIcon.Dispose();
+                _notifyIcon = null;
+            }
+            base.OnClosed(e);
+        }
+        protected override void OnStateChanged(EventArgs e)
+        {
+            if (_settings.MinimizeToTray && WindowState == WindowState.Minimized)
+            {
+                Hide();
+                if (_notifyIcon != null)
+                {
+                    _notifyIcon.Visible = true;
+                }
+            }
+            else if (WindowState == WindowState.Normal || WindowState == WindowState.Maximized)
+            {
+                if (_notifyIcon != null)
+                {
+                    _notifyIcon.Visible = false;
+                }
+            }
+
+            base.OnStateChanged(e);
+        }
+        private void SetupNotifyIcon()
+        {
+            System.IO.Stream iconStream = null;
+            try
+            {
+                var uri = new Uri("pack://application:,,,/MrEProtesTealBevel.ico");
+                var resource = Application.GetResourceStream(uri);
+                iconStream = resource?.Stream;
+
+                if (iconStream == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("Tray icon 'MrEProtesTealBevel.ico' not found as resource.");
+                    return;
+                }
+
+                var icon = new System.Drawing.Icon(iconStream);
+
+                _notifyIcon = new SWF.NotifyIcon();
+                _notifyIcon.Icon = icon;
+                _notifyIcon.Visible = false;
+                _notifyIcon.Text = "Protes - Note Editor";
+
+                // Double-click to restore
+                _notifyIcon.DoubleClick += (s, e) =>
+                {
+                    Show();
+                    WindowState = WindowState.Normal;
+                    Activate();
+                };
+
+                // Context menu
+                var contextMenu = new SWF.ContextMenu();
+                contextMenu.MenuItems.Add("Open", (s, e) =>
+                {
+                    Show();
+                    WindowState = WindowState.Normal;
+                    Activate();
+                });
+                contextMenu.MenuItems.Add("Exit", (s, e) =>
+                {
+                    _notifyIcon.Visible = false;
+                    Application.Current.Shutdown();
+                });
+                _notifyIcon.ContextMenu = contextMenu;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Failed to setup tray icon: " + ex.Message);
+                iconStream?.Dispose();
+            }
+        }
+
+        private void RestoreWindow()
+        {
+            Show();
+            WindowState = WindowState.Normal;
+            Activate();
+        }
+
         // ImportToDB Window
-
-
         private void ImportFilesMenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (!_isConnected)
@@ -1418,7 +1513,11 @@ namespace Protes
             {
                 _copiedNotes = new List<FullNote>(notesToCopy); // Deep copy not needed for this use case
                 UpdateButtonStates(); // Enable Paste button
-                MessageBox.Show($"{notesToCopy.Count} note{(notesToCopy.Count == 1 ? "" : "s")} copied to clipboard.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (_settings.NotifyCopied)
+                {
+                    MessageBox.Show($"{notesToCopy.Count} note{(notesToCopy.Count == 1 ? "" : "s")} copied to clipboard.",
+                                    "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
             else
             {
@@ -1440,7 +1539,11 @@ namespace Protes
                     _noteRepository.SaveNote(newTitle, note.Content, note.Tags);
                 }
                 LoadNotesFromDatabase();
-                MessageBox.Show($"{_copiedNotes.Count} note{(_copiedNotes.Count == 1 ? "" : "s")} pasted successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (_settings.NotifyPasted)
+                {
+                    MessageBox.Show($"{_copiedNotes.Count} note{(_copiedNotes.Count == 1 ? "" : "s")} pasted successfully.",
+                                    "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
 
                 // ✅ Clear the clipboard after successful paste
                 _copiedNotes.Clear();

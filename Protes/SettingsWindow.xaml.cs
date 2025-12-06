@@ -44,6 +44,9 @@ namespace Protes.Views
             AutoConnectOnSwitchCheckBox.IsChecked = _settings.AutoConnectOnSwitch;
             AutoDisconnectOnSwitchCheckBox.IsChecked = _settings.AutoDisconnectOnSwitch;
             ShowNotificationsCheckBox.IsChecked = _settings.ShowNotifications;
+            NotifyDeletedCheckBox.IsChecked = _settings.NotifyDeleted;
+            NotifyCopiedCheckBox.IsChecked = _settings.NotifyCopied;
+            NotifyPastedCheckBox.IsChecked = _settings.NotifyPasted;
             DefaultDbFolderText.Text = _appDataFolder;
            
             // Toolbar visibility
@@ -53,6 +56,9 @@ namespace Protes.Views
             ViewToolbarACOLMenuItem.IsChecked = _settings.ViewToolbarACOL;
             ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
             ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
+
+            //Systray
+            MinimizeToSystemTray.IsChecked = _settings.MinimizeToTray;
 
             CurrentDbPathText.Text = _currentDatabasePath;
             LoadLocalDatabases();
@@ -472,6 +478,20 @@ namespace Protes.Views
             bool isChecked = ShowNotificationsCheckBox.IsChecked == true;
             _settings.ShowNotifications = isChecked;
         }
+        private void NotifyDeletedCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            _settings.NotifyDeleted = NotifyDeletedCheckBox.IsChecked == true;
+        }
+
+        private void NotifyCopiedCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            _settings.NotifyCopied = NotifyCopiedCheckBox.IsChecked == true;
+        }
+
+        private void NotifyPastedCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            _settings.NotifyPasted = NotifyPastedCheckBox.IsChecked == true;
+        }
         private void ViewToolbarMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewMainToolbar = ViewToolbarMenuItem.IsChecked == true;
@@ -495,6 +515,11 @@ namespace Protes.Views
         private void ViewToolbarACOSMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarACOS = ViewToolbarACOSMenuItem.IsChecked == true;
+        }
+
+        private void MinimizeToSystemTray_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.MinimizeToTray = MinimizeToSystemTray.IsChecked == true;
         }
 
         private void ViewToolbarLocalDBMenuItem_Checked(object sender, RoutedEventArgs e)

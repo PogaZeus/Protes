@@ -261,15 +261,35 @@
 
                         <!-- Notifications -->
                         <GroupBox Grid.Row="1" Header="Notifications" Margin="0,0,0,10">
-                            <CheckBox x:Name="ShowNotificationsCheckBox"
-                                      Content="Show connect/disconnect notifications"
-                                      Checked="ShowNotificationsCheckBox_Changed"
-                                      Unchecked="ShowNotificationsCheckBox_Changed"
-                                      Margin="0,5,0,0"/>
+                            <StackPanel>
+                                <TextBlock Text="• [Off By Default]" Margin="0,5,0,5"/>
+                                <CheckBox x:Name="ShowNotificationsCheckBox"
+                  Content="Show connected/disconnected notifications"
+                  Checked="ShowNotificationsCheckBox_Changed"
+                  Unchecked="ShowNotificationsCheckBox_Changed"
+                  Margin="0,0,0,0"/>
+                                <CheckBox x:Name="NotifyDeletedCheckBox"
+                  Content="Show File(s) deleted successfully"
+                  Checked="NotifyDeletedCheckBox_Changed"
+                  Unchecked="NotifyDeletedCheckBox_Changed"
+                  Margin="0,5,0,0"/>
+
+                                <CheckBox x:Name="NotifyCopiedCheckBox"
+                  Content="Show File(s) copied successfully"
+                  Checked="NotifyCopiedCheckBox_Changed"
+                  Unchecked="NotifyCopiedCheckBox_Changed"
+                  Margin="0,5,0,0"/>
+
+                                <CheckBox x:Name="NotifyPastedCheckBox"
+                  Content="Show File(s) pasted successfully"
+                  Checked="NotifyPastedCheckBox_Changed"
+                  Unchecked="NotifyPastedCheckBox_Changed"
+                  Margin="0,5,0,0"/>
+                            </StackPanel>
                         </GroupBox>
 
                         <!-- NEW: Toolbar Settings -->
-                        <GroupBox Grid.Row="2" Header="Toolbar Settings" Margin="0,0,0,15">
+                        <GroupBox Grid.Row="2" Header="Toolbar Settings" Margin="0,0,0,10">
                             <StackPanel>
                                 <CheckBox x:Name="ViewToolbarMenuItem"
                                           Content="Show Toolbar"
@@ -281,7 +301,7 @@
                                           Checked="ViewToolbarOptionsInMenuCheckBox_Checked"
                                           Unchecked="ViewToolbarOptionsInMenuCheckBox_Checked"
                                           Margin="0,5,0,5"/>
-                                <TextBlock Text="Toolbar Icons:" Margin="0,0"/>
+                                <TextBlock Text="• Toolbar Icons:" Margin="0,0"/>
                                 <CheckBox x:Name="ViewToolbarConnectMenuItem"
                                           Content="Connect/Disconnect"
                                           Checked="ViewToolbarConnectMenuItem_Checked"
@@ -293,7 +313,7 @@
                                           Unchecked="ViewToolbarLocalDBMenuItem_Checked"
                                           Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarACOLMenuItem"
-                                          Content="AC-OL - Auto connect when program starts)"
+                                          Content="AC-OL - Auto connect when program starts"
                                           Checked="ViewToolbarACOLMenuItem_Checked"
                                           Unchecked="ViewToolbarACOLMenuItem_Checked"
                                           Margin="0,5,0,0"/>
@@ -302,6 +322,15 @@
                                           Checked="ViewToolbarACOSMenuItem_Checked"
                                           Unchecked="ViewToolbarACOSMenuItem_Checked"
                                           Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Grid.Row="3" Header="Application Settings" Margin="0,0,0,10">
+                            <StackPanel>
+                                <CheckBox x:Name="MinimizeToSystemTray"
+           Content="Minimize to system tray instead of taskbar"
+           Checked="MinimizeToSystemTray_Checked"
+           Unchecked="MinimizeToSystemTray_Checked"
+           Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
                     </Grid>

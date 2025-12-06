@@ -117,6 +117,46 @@ namespace Protes
             }
         }
 
+        public bool NotifyDeleted
+        {
+            get => global::Protes.Properties.Settings.Default.NotifyDeleted;
+            set
+            {
+                global::Protes.Properties.Settings.Default.NotifyDeleted = value;
+                Save();
+            }
+        }
+
+        public bool MinimizeToTray
+        {
+            get => Properties.Settings.Default.MinimizeToTray;
+            set
+            {
+                Properties.Settings.Default.MinimizeToTray = value;
+                Save();
+            }
+        }
+
+        public bool NotifyCopied
+        {
+            get => global::Protes.Properties.Settings.Default.NotifyCopied;
+            set
+            {
+                global::Protes.Properties.Settings.Default.NotifyCopied = value;
+                Save();
+            }
+        }
+
+        public bool NotifyPasted
+        {
+            get => global::Protes.Properties.Settings.Default.NotifyPasted;
+            set
+            {
+                global::Protes.Properties.Settings.Default.NotifyPasted = value;
+                Save();
+            }
+        }
+
         // ===== VIEW PREFERENCES =====
         public bool ViewMainWindowTitle
         {
