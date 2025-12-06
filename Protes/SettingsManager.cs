@@ -126,7 +126,15 @@ namespace Protes
                 Save();
             }
         }
-
+        public bool ShellNewIntegrationEnabled
+        {
+            get => Properties.Settings.Default.ShellNewIntegrationEnabled;
+            set
+            {
+                Properties.Settings.Default.ShellNewIntegrationEnabled = value;
+                Save();
+            }
+        }
         public bool MinimizeToTray
         {
             get => Properties.Settings.Default.MinimizeToTray;

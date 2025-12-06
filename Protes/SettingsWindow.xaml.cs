@@ -59,6 +59,7 @@ namespace Protes.Views
 
             //Systray
             MinimizeToSystemTray.IsChecked = _settings.MinimizeToTray;
+            ShellNewCheckBox.IsChecked = _settings.ShellNewIntegrationEnabled;
 
             CurrentDbPathText.Text = _currentDatabasePath;
             LoadLocalDatabases();
@@ -75,6 +76,50 @@ namespace Protes.Views
             }
         }
 
+        private void RegisterShellNew()
+{
+    const string extension = ".prote";
+    const string progId = "Protes.NoteEditorFile";
+    const string friendlyTypeName = "Note Editor (Protes)";
+
+    // 1. Register the file extension and associate it with ProgID
+    using (var extKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{extension}"))
+    {
+        extKey.SetValue("", progId);
+        //extKey.SetValue("PerceivedType", "text"); // Makes it behave like a text file
+    }
+
+    // 2. Define the ProgID (file type info)
+    using (var progIdKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{progId}"))
+    {
+        progIdKey.SetValue("", friendlyTypeName);
+    }
+
+    // 3. Associate your app with double-click open
+    using (var commandKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{progId}\shell\open\command"))
+    {
+        string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+                //commandKey.SetValue("", $"\"{exePath}\" \"%1\"");
+                commandKey.SetValue("", $"\"{exePath}\" -new");
+            }
+
+    // 4. Enable "New" menu entry (creates empty file)
+    using (var shellNewKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{extension}\ShellNew"))
+    {
+        shellNewKey.SetValue("NullFile", ""); // Creates 0-byte file
+        // Optionally: shellNewKey.SetValue("ItemName", $"@{friendlyTypeName}"); // Localizable name
+    }
+}
+
+private void UnregisterShellNew()
+{
+    const string extension = ".prote";
+    const string progId = "Protes.NoteEditorFile";
+
+    // Clean up keys (ignore if missing)
+    try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{extension}"); } catch { }
+    try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{progId}"); } catch { }
+} 
 
         // ✅ NEW: Change Default Database Folder
         private void ChangeDefaultFolderButton_Click(object sender, RoutedEventArgs e)
@@ -520,6 +565,44 @@ namespace Protes.Views
         private void MinimizeToSystemTray_Checked(object sender, RoutedEventArgs e)
         {
             _settings.MinimizeToTray = MinimizeToSystemTray.IsChecked == true;
+        }
+        private void ShellNewCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (MessageBox.Show(
+                "This will add 'Note Editor (Protes)' to the Windows 'New' menu in File Explorer.\n\n" +
+                "Allow this?",
+                "Protes", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    RegisterShellNew();
+                    _settings.ShellNewIntegrationEnabled = true;
+                    MessageBox.Show("Integration enabled successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to enable integration:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ShellNewCheckBox.IsChecked = false;
+                }
+            }
+            else
+            {
+                ShellNewCheckBox.IsChecked = false;
+            }
+        }
+
+        private void ShellNewCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                UnregisterShellNew();
+                _settings.ShellNewIntegrationEnabled = false;
+                MessageBox.Show("Integration removed.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to remove integration:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private void ViewToolbarLocalDBMenuItem_Checked(object sender, RoutedEventArgs e)

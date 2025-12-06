@@ -418,5 +418,17 @@ namespace Protes.Properties {
                 this["MinimizeToTray"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ShellNewIntegrationEnabled {
+            get {
+                return ((bool)(this["ShellNewIntegrationEnabled"]));
+            }
+            set {
+                this["ShellNewIntegrationEnabled"] = value;
+            }
+        }
     }
 }
