@@ -45,7 +45,7 @@ namespace Protes
         public MainWindow()
         {
             //External File incoming!
-            this.Title = "Mr E Tools - [Protes] Pro Notes Database";
+            this.Title = "[Protes] Pro Notes Database";
 
             string lastPath = _settings.LastLocalDatabasePath;
             if (!string.IsNullOrWhiteSpace(lastPath) && File.Exists(lastPath))
@@ -78,13 +78,17 @@ namespace Protes
 
             // Load Toolbar Submenu Settings
             ViewToolbarConnectMenuItem.IsChecked = _settings.ViewToolbarConnect;
-            ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
             ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
+            ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
+            ViewToolbarImpExMenuItem.IsChecked = _settings.ViewToolbarImpEx;
+            ViewToolbarSearchMenuItem.IsChecked = _settings.ViewToolbarSearch;
 
             // Apply initial visibility
             ViewToolbarConnectainer.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
             AutoConnectOSContainer.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
             LocalDbControls.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
+            ImportExportControls.Visibility = _settings.ViewToolbarImpEx ? Visibility.Visible : Visibility.Collapsed;
+            SearchDatabase.Visibility = _settings.ViewToolbarSearch ? Visibility.Visible : Visibility.Collapsed;
 
             // Load zoom level
             double zoom = _settings.DataGridZoom;
@@ -543,6 +547,12 @@ namespace Protes
             _settings.ViewToolbarConnect = isVisible;
             ViewToolbarConnectainer.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         }
+        private void ViewToolbarLocalDBMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            bool isVisible = ViewToolbarLocalDBMenuItem.IsChecked == true;
+            _settings.ViewToolbarLocalDB = isVisible;
+            LocalDbControls.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
 
         private void ViewToolbarACOSMenuItem_Checked(object sender, RoutedEventArgs e)
         {
@@ -550,12 +560,18 @@ namespace Protes
             _settings.ViewToolbarACOS = isVisible;
             AutoConnectOSContainer.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         }
-
-        private void ViewToolbarLocalDBMenuItem_Checked(object sender, RoutedEventArgs e)
+        private void ViewToolbarImpExMenuItem_Checked(object sender, RoutedEventArgs e)
         {
-            bool isVisible = ViewToolbarLocalDBMenuItem.IsChecked == true;
-            _settings.ViewToolbarLocalDB = isVisible;
-            LocalDbControls.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+            bool isVisible = ViewToolbarImpExMenuItem.IsChecked == true;
+            _settings.ViewToolbarImpEx = isVisible;
+            ImportExportControls.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void ViewToolbarSearchMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            bool isVisible = ViewToolbarSearchMenuItem.IsChecked == true;
+            _settings.ViewToolbarSearch = isVisible;
+            SearchDatabase.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         }
 
         // Toolbar Visibility
@@ -586,9 +602,9 @@ namespace Protes
 
         public void UpdateDatabaseModeCheckmarks()
         {
+            // Main Options Menu (existing)
             var localItem = (MenuItem)OptionsMenu.Items[0];
             var externalItem = (MenuItem)OptionsMenu.Items[1];
-
             localItem.IsChecked = (_currentMode == DatabaseMode.Local);
             externalItem.IsChecked = (_currentMode == DatabaseMode.External);
             externalItem.IsEnabled = !string.IsNullOrWhiteSpace(_settings.External_Host) &&
@@ -1006,11 +1022,15 @@ namespace Protes
             ViewToolbarConnectMenuItem.IsChecked = _settings.ViewToolbarConnect;
             ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
             ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
+            ViewToolbarImpExMenuItem.IsChecked = _settings.ViewToolbarImpEx;
+            ViewToolbarSearchMenuItem.IsChecked = _settings.ViewToolbarSearch;
 
             // 3. Update visibility of toolbar containers
             ViewToolbarConnectainer.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
             AutoConnectOSContainer.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
             LocalDbControls.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
+            SearchDatabase.Visibility = _settings.ViewToolbarSearch ? Visibility.Visible : Visibility.Collapsed;
+            ImportExportControls.Visibility = _settings.ViewToolbarImpEx ? Visibility.Visible : Visibility.Collapsed;
 
             // Add to RefreshToolbarSettingsFromSettingsManager()
             ViewTitleMenuItem.IsChecked = _settings.ViewMainWindowTitle;
@@ -1300,7 +1320,10 @@ namespace Protes
 
             if (Directory.Exists(defaultFolder))
             {
-                foreach (var file in Directory.GetFiles(defaultFolder, "*.db"))
+                // Load both .db and .prote files from the default folder
+                var dbFilesInFolder = Directory.GetFiles(defaultFolder, "*.db")
+                                              .Concat(Directory.GetFiles(defaultFolder, "*.prote"));
+                foreach (var file in dbFilesInFolder)
                 {
                     dbFiles.Add(new DbFileInfo
                     {
@@ -1311,7 +1334,7 @@ namespace Protes
                 }
             }
 
-            // Imported paths
+            // Imported paths (already support any extension, including .prote)
             var importedRaw = _settings.ImportedDatabasePaths;
             var importedPaths = new List<string>();
             if (!string.IsNullOrWhiteSpace(importedRaw))
@@ -1564,13 +1587,13 @@ namespace Protes
             System.IO.Stream iconStream = null;
             try
             {
-                var uri = new Uri("pack://application:,,,/MrEProtesTealBevel.ico");
+                var uri = new Uri("pack://application:,,,/Protes_W_Trans.ico");
                 var resource = Application.GetResourceStream(uri);
                 iconStream = resource?.Stream;
 
                 if (iconStream == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("Tray icon 'MrEProtesTealBevel.ico' not found as resource.");
+                    System.Diagnostics.Debug.WriteLine("Tray icon 'Protes_W_Trans.ico' not found as resource.");
                     return;
                 }
 
@@ -1740,6 +1763,20 @@ namespace Protes
                 selectedCount = hasSelection ? 1 : 0;
             }
 
+            // Find the new "Switch Local" menu item
+            var switchLocalItem = FindContextMenuItem(contextMenu, "ContextSwitchLocalMenuItem");
+
+            // Show "Switch Local" only in Local mode and when connected
+            bool showSwitchLocal = (_currentMode == DatabaseMode.Local) && _isConnected;
+            switchLocalItem?.SetCurrentValue(UIElement.VisibilityProperty,
+                showSwitchLocal ? Visibility.Visible : Visibility.Collapsed);
+
+            // Populate it if visible
+            if (showSwitchLocal && switchLocalItem != null)
+            {
+                PopulateSwitchLocalContextMenu(switchLocalItem);
+            }
+
             bool isConnected = _isConnected;
 
             // Find menu items by name
@@ -1753,7 +1790,7 @@ namespace Protes
             var exportItem = FindContextMenuItem(contextMenu, "ContextExportFilesMenuItem");
             var connectItem = FindContextMenuItem(contextMenu, "ContextConnectMenuItem");
             var disconnectItem = FindContextMenuItem(contextMenu, "ContextDisconnectMenuItem");
-            var switchDbItem = FindContextMenuItem(contextMenu, "ContextSwitchDatabaseMenuItem");
+            var switchDbItem = FindContextMenuItem(contextMenu, "ContextSwitchModeMenuItem");
             var localDbItem = FindContextMenuItem(contextMenu, "ContextLocalDbMenuItem");
             var externalDbItem = FindContextMenuItem(contextMenu, "ContextExternalDbMenuItem");
 
@@ -1783,8 +1820,26 @@ namespace Protes
         {
             foreach (var item in menu.Items)
             {
-                if (item is MenuItem menuItem && menuItem.Name == name)
+                if (FindMenuItemByName(item, name) is MenuItem found)
+                    return found;
+            }
+            return null;
+        }
+
+        private object FindMenuItemByName(object item, string name)
+        {
+            if (item is MenuItem menuItem)
+            {
+                if (menuItem.Name == name)
                     return menuItem;
+
+                // Recursively search submenu items
+                foreach (var child in menuItem.Items)
+                {
+                    var found = FindMenuItemByName(child, name);
+                    if (found != null)
+                        return found;
+                }
             }
             return null;
         }
@@ -1823,6 +1878,75 @@ namespace Protes
             _currentMode = mode;
             UpdateDatabaseModeCheckmarks();
             UpdateStatusBar();
+        }
+
+        //Populate right click sub menu with LocalDatabase List
+        private void PopulateSwitchLocalContextMenu(MenuItem switchLocalMenuItem)
+        {
+            // Clear existing items
+            switchLocalMenuItem.Items.Clear();
+
+            // Get available databases (same logic as LoadAvailableDatabases)
+            var dbFiles = new List<DbFileInfo>();
+            string defaultFolder = _settings.DefaultDatabaseFolder;
+            if (string.IsNullOrWhiteSpace(defaultFolder) || !Directory.Exists(defaultFolder))
+            {
+                defaultFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Protes");
+            }
+
+            if (Directory.Exists(defaultFolder))
+            {
+                foreach (var file in Directory.GetFiles(defaultFolder, "*.db").Concat(Directory.GetFiles(defaultFolder, "*.prote")))
+                {
+                    dbFiles.Add(new DbFileInfo
+                    {
+                        FileName = Path.GetFileName(file),
+                        FullPath = file,
+                        IsImported = false
+                    });
+                }
+            }
+
+            var importedRaw = _settings.ImportedDatabasePaths;
+            if (!string.IsNullOrWhiteSpace(importedRaw))
+            {
+                var importedPaths = importedRaw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                               .Where(p => File.Exists(p)).ToList();
+                foreach (var path in importedPaths)
+                {
+                    dbFiles.Add(new DbFileInfo
+                    {
+                        FileName = Path.GetFileName(path) + " (imported)",
+                        FullPath = path,
+                        IsImported = true
+                    });
+                }
+            }
+
+            var uniqueFiles = dbFiles.GroupBy(f => f.FullPath).Select(g => g.First()).ToList();
+
+            // Add each database as a checkable menu item
+            foreach (var db in uniqueFiles)
+            {
+                var menuItem = new MenuItem
+                {
+                    Header = db.FileName,
+                    IsCheckable = true,
+                    IsChecked = db.FullPath.Equals(_databasePath, StringComparison.OrdinalIgnoreCase),
+                    Tag = db.FullPath // Store path for click handler
+                };
+                menuItem.Click += SwitchLocalDbContextMenuItem_Click;
+                switchLocalMenuItem.Items.Add(menuItem);
+            }
+        }
+        // Right click Sub Menu Local DB list - switch
+        private void SwitchLocalDbContextMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is string dbPath)
+            {
+                // Switch to this database
+                SwitchToLocalDatabase(dbPath);
+            }
         }
 
         private void AboutMenuItem_Click(object sender, RoutedEventArgs e)

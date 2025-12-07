@@ -217,13 +217,12 @@ namespace Protes
                 Save();
             }
         }
-
-        public bool ViewToolbarACOL
+        public bool ViewToolbarLocalDB
         {
-            get => global::Protes.Properties.Settings.Default.ViewToolbarACOL;
+            get => global::Protes.Properties.Settings.Default.ViewToolbarLocalDB;
             set
             {
-                global::Protes.Properties.Settings.Default.ViewToolbarACOL = value;
+                global::Protes.Properties.Settings.Default.ViewToolbarLocalDB = value;
                 Save();
             }
         }
@@ -238,12 +237,21 @@ namespace Protes
             }
         }
 
-        public bool ViewToolbarLocalDB
+        public bool ViewToolbarImpEx
         {
-            get => global::Protes.Properties.Settings.Default.ViewToolbarLocalDB;
+            get => global::Protes.Properties.Settings.Default.ViewToolbarImpEx;
             set
             {
-                global::Protes.Properties.Settings.Default.ViewToolbarLocalDB = value;
+                global::Protes.Properties.Settings.Default.ViewToolbarImpEx = value;
+                Save();
+            }
+        }
+        public bool ViewToolbarSearch
+        {
+            get => global::Protes.Properties.Settings.Default.ViewToolbarSearch;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ViewToolbarSearch = value;
                 Save();
             }
         }

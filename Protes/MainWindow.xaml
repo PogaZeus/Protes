@@ -1,9 +1,12 @@
 ﻿<Window x:Class="Protes.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Mr E Tools - [Protes] Pro Notes Database" 
+        Title="[Protes] Pro Notes Database" 
         WindowState="Maximized"
-        FontFamily="Segoe UI" WindowStartupLocation="CenterScreen">
+        FontFamily="Segoe UI" 
+        WindowStartupLocation="CenterScreen"
+                UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
     <Window.Resources>
         <ContextMenu x:Key="DataGridContextMenu">
             <MenuItem x:Name="ContextNewNoteMenuItem" Header="_New" Click="NewNoteButton_Click">
@@ -48,13 +51,16 @@
                 </MenuItem.Icon>
             </MenuItem>
             <Separator/>
-            <MenuItem x:Name="ContextSwitchDatabaseMenuItem" Header="Switch Database">
+            <MenuItem x:Name="ContextSwitchModeMenuItem" Header="Switch Mode">
                 <MenuItem.Icon>
                     <TextBlock Text="🔄" FontSize="14"/>
                 </MenuItem.Icon>
-                <MenuItem x:Name="ContextLocalDbMenuItem" Header="Local Database" Click="UseLocalDb_Click"/>
-                <MenuItem x:Name="ContextExternalDbMenuItem" Header="External Database" Click="UseExternalDb_Click"/>
+                <MenuItem x:Name="ContextLocalDbMenuItem" Header="Local Database" IsCheckable="True" Click="UseLocalDb_Click"/>
+                <MenuItem x:Name="ContextExternalDbMenuItem" Header="External Database" IsCheckable="True" Click="UseExternalDb_Click"/>
             </MenuItem>
+            <Separator/>
+            <MenuItem x:Name="ContextSwitchLocalMenuItem" Header="Switch Local" Visibility="Collapsed"/>
+            <Separator/>
             <MenuItem x:Name="ContextConnectMenuItem" Header="_Connect" Click="Connect_Click">
                 <MenuItem.Icon>
                     <TextBlock Text="🔌" FontSize="14"/>
@@ -126,7 +132,9 @@
                 <MenuItem x:Name="ToolbarOptionsMenu" Header="Toolbar Options">
                     <MenuItem x:Name="ViewToolbarConnectMenuItem" Header="Connect/Disconnect" IsCheckable="True" Checked="ViewToolbarConnectMenuItem_Checked" Unchecked="ViewToolbarConnectMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarLocalDBMenuItem" Header="Local Databases" IsCheckable="True" Checked="ViewToolbarLocalDBMenuItem_Checked" Unchecked="ViewToolbarLocalDBMenuItem_Checked"/>
-                    <MenuItem x:Name="ViewToolbarACOSMenuItem" Header="AC-OS" IsCheckable="True" Checked="ViewToolbarACOSMenuItem_Checked" Unchecked="ViewToolbarACOSMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarACOSMenuItem" Header="AutoConnectOnSwitch" IsCheckable="True" Checked="ViewToolbarACOSMenuItem_Checked" Unchecked="ViewToolbarACOSMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarImpExMenuItem" Header="Import/Export" IsCheckable="True" Checked="ViewToolbarImpExMenuItem_Checked" Unchecked="ViewToolbarImpExMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarSearchMenuItem" Header="Search Database" IsCheckable="True" Checked="ViewToolbarSearchMenuItem_Checked" Unchecked="ViewToolbarSearchMenuItem_Checked"/>
                 </MenuItem>
             </MenuItem>
 
@@ -170,12 +178,14 @@
             ToolTip="Load Selected Database" Click="LoadSelectedDbButton_Click" Margin="0,0,8,0"/>
             </StackPanel>
             <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
-            <Button x:Name="ImportFilesButton" Content="📁" Padding="6,5"
-        FontSize="16" Click="ImportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Import Files"/>
-            <Button x:Name="ExportFilesButton" Content="📤" Padding="6,5"
-        FontSize="16" Click="ExportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Export Files"/>
-            <!-- Separator -->
-            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
+            <StackPanel x:Name="ImportExportControls" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="ImportFilesButton" Content="📁" Padding="6,5"
+            FontSize="16" Click="ImportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Import Files"/>
+                <Button x:Name="ExportFilesButton" Content="📤" Padding="6,5"
+            FontSize="16" Click="ExportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Export Files"/>
+                <!-- Separator -->
+                <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
+            </StackPanel>
 
             <Button x:Name="NewNoteButton" Content="➕" Padding="6,5"
             FontSize="16" Click="NewNoteButton_Click" Margin="0,0,8,0" ToolTip="New"/>
@@ -192,11 +202,11 @@
         FontSize="16" Click="CopyNoteButton_Click" Margin="0,0,8,0" ToolTip="Copy Note(s)"/>
             <Button x:Name="PasteNoteButton" Content="📄" Padding="6,5"
         FontSize="16" Click="PasteNoteButton_Click" Margin="0,0,8,0" ToolTip="Paste Note(s)"/>
-            <!-- Separator -->
-            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
             
             <!-- 👇 NEW: Search with dropdown -->
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <StackPanel x:Name="SearchDatabase" Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Separator -->
+                <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
                 <TextBlock Text="Search:" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,8,0"/>
                 <ComboBox x:Name="SearchFieldComboBox" SelectedIndex="0" Height="28" Width="100" VerticalContentAlignment="Center" Margin="0,0,8,0">
                     <ComboBoxItem Content="All"/>

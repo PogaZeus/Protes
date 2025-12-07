@@ -56,6 +56,8 @@ namespace Protes.Views
             ViewToolbarConnectMenuItem.IsChecked = _settings.ViewToolbarConnect;
             ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
             ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
+            ViewToolbarImpExMenuItem.IsChecked = _settings.ViewToolbarImpEx;
+            ViewToolbarSearchMenuItem.IsChecked = _settings.ViewToolbarSearch;
 
             //Systray
             MinimizeToSystemTray.IsChecked = _settings.MinimizeToTray;
@@ -195,7 +197,8 @@ namespace Protes.Views
             // 1. Default app folder (now user-configurable)
             if (Directory.Exists(_appDataFolder))
             {
-                var defaultFiles = Directory.GetFiles(_appDataFolder, "*.db");
+                var defaultFiles = Directory.GetFiles(_appDataFolder, "*.db")
+                                           .Concat(Directory.GetFiles(_appDataFolder, "*.prote"));
                 foreach (var file in defaultFiles)
                 {
                     dbFiles.Add(new DbFileInfo
@@ -580,10 +583,22 @@ namespace Protes.Views
         {
             _settings.ViewToolbarConnect = ViewToolbarConnectMenuItem.IsChecked == true;
         }
+        private void ViewToolbarLocalDBMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewToolbarLocalDB = ViewToolbarLocalDBMenuItem.IsChecked == true;
+        }
 
         private void ViewToolbarACOSMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarACOS = ViewToolbarACOSMenuItem.IsChecked == true;
+        }
+        private void ViewToolbarImpExMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewToolbarImpEx = ViewToolbarImpExMenuItem.IsChecked == true;
+        }
+        private void ViewToolbarSearchMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewToolbarSearch = ViewToolbarSearchMenuItem.IsChecked == true;
         }
 
         private void MinimizeToSystemTray_Checked(object sender, RoutedEventArgs e)
@@ -632,11 +647,6 @@ namespace Protes.Views
             {
                 MessageBox.Show($"Failed to remove integration:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
-        }
-
-        private void ViewToolbarLocalDBMenuItem_Checked(object sender, RoutedEventArgs e)
-        {
-            _settings.ViewToolbarLocalDB = ViewToolbarLocalDBMenuItem.IsChecked == true;
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)

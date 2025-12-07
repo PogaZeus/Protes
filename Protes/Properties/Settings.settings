@@ -62,8 +62,8 @@
     <Setting Name="ViewToolbarLocalDB" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
-    <Setting Name="ViewToolbarACOL" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
+    <Setting Name="ViewToolbarSearch" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="ViewToolbarACOS" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
@@ -103,6 +103,9 @@
     </Setting>
     <Setting Name="ShellNewIntegrationEnabled" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="ViewToolbarImpEx" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
     </Setting>
   </Settings>
 </SettingsFile>

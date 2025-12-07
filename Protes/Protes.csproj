@@ -48,7 +48,7 @@
     <OutputPath>bin\x86\Release\</OutputPath>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>MrEProtesTealBevel.ico</ApplicationIcon>
+    <ApplicationIcon>Protes_W_Trans.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup />
   <ItemGroup>
@@ -226,6 +226,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="MrE_Clean.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Protes.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Protes_W_Trans.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

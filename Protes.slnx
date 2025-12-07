@@ -3,6 +3,7 @@
     <Platform Name="Any CPU" />
     <Platform Name="x86" />
   </Configurations>
+  <Folder Name="/Solution Items/" />
   <Project Path="Protes/Protes.csproj" Id="3248f7de-60ec-412d-9d19-63dae808396d">
     <Platform Solution="*|x86" Project="x86" />
   </Project>

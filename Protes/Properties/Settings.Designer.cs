@@ -265,13 +265,13 @@ namespace Protes.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool ViewToolbarACOL {
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ViewToolbarSearch {
             get {
-                return ((bool)(this["ViewToolbarACOL"]));
+                return ((bool)(this["ViewToolbarSearch"]));
             }
             set {
-                this["ViewToolbarACOL"] = value;
+                this["ViewToolbarSearch"] = value;
             }
         }
         
@@ -428,6 +428,18 @@ namespace Protes.Properties {
             }
             set {
                 this["ShellNewIntegrationEnabled"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ViewToolbarImpEx {
+            get {
+                return ((bool)(this["ViewToolbarImpEx"]));
+            }
+            set {
+                this["ViewToolbarImpEx"] = value;
             }
         }
     }
