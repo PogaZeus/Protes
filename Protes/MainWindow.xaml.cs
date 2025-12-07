@@ -78,13 +78,11 @@ namespace Protes
 
             // Load Toolbar Submenu Settings
             ViewToolbarConnectMenuItem.IsChecked = _settings.ViewToolbarConnect;
-            ViewToolbarACOLMenuItem.IsChecked = _settings.ViewToolbarACOL;
             ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
             ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
 
             // Apply initial visibility
             ViewToolbarConnectainer.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
-            AutoConnectOLContainer.Visibility = _settings.ViewToolbarACOL ? Visibility.Visible : Visibility.Collapsed;
             AutoConnectOSContainer.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
             LocalDbControls.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
 
@@ -254,10 +252,6 @@ namespace Protes
         }
 
         // Toolbar options
-        private void AutoConnectCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            _settings.AutoConnect = AutoConnectCheckBox.IsChecked == true;
-        }
 
         private void AutoConnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
         {
@@ -550,13 +544,6 @@ namespace Protes
             ViewToolbarConnectainer.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void ViewToolbarACOLMenuItem_Checked(object sender, RoutedEventArgs e)
-        {
-            bool isVisible = ViewToolbarACOLMenuItem.IsChecked == true;
-            _settings.ViewToolbarACOL = isVisible;
-            AutoConnectOLContainer.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
-        }
-
         private void ViewToolbarACOSMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             bool isVisible = ViewToolbarACOSMenuItem.IsChecked == true;
@@ -593,7 +580,6 @@ namespace Protes
         private void LoadPersistedSettings()
         {
             _currentMode = _settings.GetDatabaseMode();
-            AutoConnectCheckBox.IsChecked = _settings.AutoConnect;
             AutoConnectOnSwitchCheckBox.IsChecked = _settings.AutoConnectOnSwitch;
             UpdateDatabaseModeCheckmarks();
         }
@@ -1018,13 +1004,11 @@ namespace Protes
 
             // 2. Reload submenu item states
             ViewToolbarConnectMenuItem.IsChecked = _settings.ViewToolbarConnect;
-            ViewToolbarACOLMenuItem.IsChecked = _settings.ViewToolbarACOL;
             ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
             ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
 
             // 3. Update visibility of toolbar containers
             ViewToolbarConnectainer.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
-            AutoConnectOLContainer.Visibility = _settings.ViewToolbarACOL ? Visibility.Visible : Visibility.Collapsed;
             AutoConnectOSContainer.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
             LocalDbControls.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
 
@@ -1398,6 +1382,7 @@ namespace Protes
         }
 
         //Opening a .prote file (External file incoming!)
+        //Opening a .prote file (External file incoming!)
         public void HandleIpcMessage(string message)
         {
             Dispatcher.BeginInvoke(new Action(() =>
@@ -1405,10 +1390,12 @@ namespace Protes
                 if (message == "-new")
                 {
                     // User wants to create a new note in the currently connected database
-                    ActivateWindow();
+                    // DON'T activate MainWindow - keep it in tray if minimized
 
                     if (!_isConnected)
                     {
+                        // Only show MainWindow if we need to display error
+                        ActivateWindow();
                         MessageBox.Show(
                             "Please connect to a database first before creating a new note.\n\n" +
                             "Go to Options → Use Local Database or Use External Database, then click Connect.",
@@ -1422,7 +1409,8 @@ namespace Protes
                         noteId: null,
                         onSaveRequested: OnSaveNoteRequested
                     );
-                    editor.Owner = this;
+                    // Don't set Owner so NoteEditor stays independent on taskbar
+                    // when MainWindow is minimized to tray
                     editor.Show();
                 }
                 else if (File.Exists(message) &&
@@ -1439,6 +1427,7 @@ namespace Protes
                 }
             }));
         }
+
 
         public void ActivateWindow()
         {

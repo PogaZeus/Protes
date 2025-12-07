@@ -126,7 +126,6 @@
                 <MenuItem x:Name="ToolbarOptionsMenu" Header="Toolbar Options">
                     <MenuItem x:Name="ViewToolbarConnectMenuItem" Header="Connect/Disconnect" IsCheckable="True" Checked="ViewToolbarConnectMenuItem_Checked" Unchecked="ViewToolbarConnectMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarLocalDBMenuItem" Header="Local Databases" IsCheckable="True" Checked="ViewToolbarLocalDBMenuItem_Checked" Unchecked="ViewToolbarLocalDBMenuItem_Checked"/>
-                    <MenuItem x:Name="ViewToolbarACOLMenuItem" Header="AC-OL" IsCheckable="True" Checked="ViewToolbarACOLMenuItem_Checked" Unchecked="ViewToolbarACOLMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarACOSMenuItem" Header="AC-OS" IsCheckable="True" Checked="ViewToolbarACOSMenuItem_Checked" Unchecked="ViewToolbarACOSMenuItem_Checked"/>
                 </MenuItem>
             </MenuItem>
@@ -150,17 +149,10 @@
 
             <Border x:Name="AutoConnectOSContainer">
                 <CheckBox x:Name="AutoConnectOnSwitchCheckBox" x:Uid="AutoConnectOnSwitchCheckBox"
-  Content="AC-OS" 
+  Content="ACOS" 
   VerticalAlignment="Center"
   Checked="AutoConnectOnSwitchCheckBox_Checked"
   Unchecked="AutoConnectOnSwitchCheckBox_Checked" Margin="0,0,8,0"/>
-            </Border>
-            <Border x:Name="AutoConnectOLContainer">
-                <CheckBox x:Name="AutoConnectCheckBox" x:Uid="AutoConnectCheckBox"
-  Content="AC-OL" 
-  VerticalAlignment="Center"
-  Checked="AutoConnectCheckBox_Checked"
-  Unchecked="AutoConnectCheckBox_Checked" Margin="0,0,8,0"/>
             </Border>
 
             <!-- Separator -->

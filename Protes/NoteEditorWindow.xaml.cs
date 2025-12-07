@@ -206,7 +206,7 @@ namespace Protes.Views
         private void NewNoteMenuItem_Click(object sender, RoutedEventArgs e)
         {
             var newNoteWindow = new NoteEditorWindow(onSaveRequested: _onSaveRequested);
-            newNoteWindow.Owner = this.Owner;
+            //newNoteWindow.Owner = this.Owner;
             newNoteWindow.Show();
         }
 

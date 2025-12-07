@@ -54,7 +54,6 @@ namespace Protes.Views
             ViewToolbarMenuItem.IsChecked = _settings.ViewMainToolbar;
             ViewToolbarOptionsInMenuCheckBox.IsChecked = _settings.ViewToolbarOptionsInMenu;
             ViewToolbarConnectMenuItem.IsChecked = _settings.ViewToolbarConnect;
-            ViewToolbarACOLMenuItem.IsChecked = _settings.ViewToolbarACOL;
             ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
             ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
 
@@ -95,7 +94,7 @@ namespace Protes.Views
             using (var progIdKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{progId}"))
             {
                 progIdKey.SetValue("", "Protes Database");
-                progIdKey.SetValue("FriendlyTypeName", "Pro Notes Database Editor");
+                progIdKey.SetValue("FriendlyTypeName", "Pro Note");
             }
 
             // 3. Associate app with double-click (open/connect to database file)
@@ -518,12 +517,10 @@ namespace Protes.Views
         }
 
         // ===== MORE OPTIONS =====
-
         private void AutoConnectCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             bool isChecked = AutoConnectCheckBox.IsChecked == true;
             _settings.AutoConnect = isChecked;
-            _mainWindow.AutoConnectCheckBox.IsChecked = isChecked;
         }
         private void AutoConnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
         {
@@ -582,11 +579,6 @@ namespace Protes.Views
         private void ViewToolbarConnectMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarConnect = ViewToolbarConnectMenuItem.IsChecked == true;
-        }
-
-        private void ViewToolbarACOLMenuItem_Checked(object sender, RoutedEventArgs e)
-        {
-            _settings.ViewToolbarACOL = ViewToolbarACOLMenuItem.IsChecked == true;
         }
 
         private void ViewToolbarACOSMenuItem_Checked(object sender, RoutedEventArgs e)

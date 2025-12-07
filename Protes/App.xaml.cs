@@ -103,11 +103,16 @@ namespace Protes
                                     {
                                         mainWindow.ActivateWindow();
                                     }
+                                    else if (message == "-new")
+                                    {
+                                        // Don't activate window for new note command
+                                        // Just handle the message directly
+                                        mainWindow.HandleIpcMessage(message);
+                                    }
                                     else
                                     {
-                                        // Bring window to front first
+                                        // For file paths and other commands, activate first
                                         mainWindow.ActivateWindow();
-                                        // Then handle the message (file path or command)
                                         mainWindow.HandleIpcMessage(message);
                                     }
                                 }
@@ -123,5 +128,6 @@ namespace Protes
                 }
             }
         }
+
     }
 }

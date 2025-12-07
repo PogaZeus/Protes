@@ -229,7 +229,7 @@
             <!-- MORE OPTIONS TAB -->
             <TabItem Header="More Options">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Grid Margin="10">
+                    <Grid Margin="5">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -238,16 +238,33 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
+                        <!-- More Options -->
+                        <GroupBox Grid.Row="0" Header="Application Settings" Margin="0,0,0,5">
+                            <StackPanel>
+                                <CheckBox x:Name="MinimizeToSystemTray"
+           Content="Minimize to system tray instead of taskbar"
+           Checked="MinimizeToSystemTray_Checked"
+           Unchecked="MinimizeToSystemTray_Checked"
+           Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Grid.Row="1" Header="File Explorer Integration" Margin="0,0,0,5">
+                            <CheckBox x:Name="ShellNewCheckBox"
+     Content="Add 'Note Editor (Protes)' to Windows 'New' context menu"
+     Checked="ShellNewCheckBox_Checked"
+     Unchecked="ShellNewCheckBox_Unchecked"
+     Margin="0,5,0,0"/>
+                        </GroupBox>
                         <!-- Auto Connect -->
-                        <GroupBox Grid.Row="0" Header="Connection Automation" Margin="0,0,0,10">
+                        <GroupBox Grid.Row="2" Header="Connection Automation" Margin="0,0,0,5">
                             <StackPanel>
                                 <CheckBox x:Name="AutoConnectCheckBox"
-                                          Content="Connect when program launches (AC-OL)"
+                                          Content="Auto-Connect when program launches"
                                           Checked="AutoConnectCheckBox_Checked"
                                           Unchecked="AutoConnectCheckBox_Checked"
                                           Margin="0,5,0,0"/>
                                 <CheckBox x:Name="AutoConnectOnSwitchCheckBox"
-                                          Content="Connect when switching database mode (options menu) (AC-OS)"
+                                          Content="Auto-Connect when switching database mode (options menu) (AC-OS)"
                                           Checked="AutoConnectOnSwitchCheckBox_Checked"
                                           Unchecked="AutoConnectOnSwitchCheckBox_Checked"
                                           Margin="0,5,0,0"/>
@@ -258,11 +275,9 @@
                                           Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
-
-                        <!-- Notifications -->
-                        <GroupBox Grid.Row="1" Header="Notifications" Margin="0,0,0,10">
+         
+                        <GroupBox Grid.Row="3" Header="Notifications" Margin="0,0,0,5">
                             <StackPanel>
-                                <TextBlock Text="• [Off By Default]" Margin="0,5,0,5"/>
                                 <CheckBox x:Name="ShowNotificationsCheckBox"
                   Content="Show connected/disconnected notifications"
                   Checked="ShowNotificationsCheckBox_Changed"
@@ -289,7 +304,7 @@
                         </GroupBox>
 
                         <!-- NEW: Toolbar Settings -->
-                        <GroupBox Grid.Row="2" Header="Toolbar Settings" Margin="0,0,0,10">
+                        <GroupBox Grid.Row="4" Header="Toolbar Settings" Margin="0,0,0,5">
                             <StackPanel>
                                 <CheckBox x:Name="ViewToolbarMenuItem"
                                           Content="Show Toolbar"
@@ -301,7 +316,7 @@
                                           Checked="ViewToolbarOptionsInMenuCheckBox_Checked"
                                           Unchecked="ViewToolbarOptionsInMenuCheckBox_Checked"
                                           Margin="0,5,0,5"/>
-                                <TextBlock Text="• Toolbar Icons:" Margin="0,0"/>
+                                <TextBlock Text="• Toolbar Icons:" Margin="0,2"/>
                                 <CheckBox x:Name="ViewToolbarConnectMenuItem"
                                           Content="Connect/Disconnect"
                                           Checked="ViewToolbarConnectMenuItem_Checked"
@@ -312,35 +327,14 @@
                                           Checked="ViewToolbarLocalDBMenuItem_Checked"
                                           Unchecked="ViewToolbarLocalDBMenuItem_Checked"
                                           Margin="0,5,0,0"/>
-                                <CheckBox x:Name="ViewToolbarACOLMenuItem"
-                                          Content="AC-OL - Auto connect when program starts"
-                                          Checked="ViewToolbarACOLMenuItem_Checked"
-                                          Unchecked="ViewToolbarACOLMenuItem_Checked"
-                                          Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarACOSMenuItem"
-                                          Content="AC-OS - Auto connect when switching database mode"
+                                          Content="ACOS - Auto connect on switch (local/external)"
                                           Checked="ViewToolbarACOSMenuItem_Checked"
                                           Unchecked="ViewToolbarACOSMenuItem_Checked"
                                           Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Grid.Row="3" Header="Application Settings" Margin="0,0,0,10">
-                            <StackPanel>
-                                <CheckBox x:Name="MinimizeToSystemTray"
-           Content="Minimize to system tray instead of taskbar"
-           Checked="MinimizeToSystemTray_Checked"
-           Unchecked="MinimizeToSystemTray_Checked"
-           Margin="0,5,0,0"/>
-                            </StackPanel>
-                            
-                        </GroupBox>
-                        <GroupBox Grid.Row="4" Header="File Explorer Integration" Margin="0,0,0,10">
-                            <CheckBox x:Name="ShellNewCheckBox"
-              Content="Add 'Note Editor (Protes)' to Windows 'New' context menu"
-              Checked="ShellNewCheckBox_Checked"
-              Unchecked="ShellNewCheckBox_Unchecked"
-              Margin="0,5,0,0"/>
-                        </GroupBox>
+
                     </Grid>
                 </ScrollViewer>
             </TabItem>
