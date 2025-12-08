@@ -101,6 +101,7 @@ namespace Protes
             this.AddHandler(KeyDownEvent, new KeyEventHandler(MainWindow_PreviewKeyDown), true);
 
             // Apply initial state
+
             UpdateDataGridColumns();
             UpdateToolbarVisibility();
 
@@ -110,6 +111,11 @@ namespace Protes
             NotesDataGrid.AddHandler(CheckBox.CheckedEvent, new RoutedEventHandler(OnRowCheckboxChanged));
             NotesDataGrid.AddHandler(CheckBox.UncheckedEvent, new RoutedEventHandler(OnRowCheckboxChanged));
             NotesDataGrid.SelectionChanged += (s, e) => UpdateButtonStates();
+            // Share the DataGrid context menu with the whole window area
+            // Get directly from resources — always exists
+            MainContentGrid.ContextMenu = (ContextMenu)FindResource("DataGridContextMenu");
+            NotesDataGrid_ContextMenuOpening(null, null);
+
             var showNotifications = _settings.ShowNotifications;
             SelectCheckBoxColumn.Visibility = Visibility.Collapsed;
 
@@ -900,6 +906,8 @@ namespace Protes
 
         private void Connect_Click(object sender, RoutedEventArgs e)
         {
+            System.Diagnostics.Debug.WriteLine($"=== CONNECT CLICKED === _isConnected = {_isConnected}");
+            System.Diagnostics.Debug.WriteLine($"Stack trace:\n{Environment.StackTrace}");
             if (_currentMode == DatabaseMode.None)
             {
                 MessageBox.Show("Please select a database mode first (Local or External).", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -989,20 +997,28 @@ namespace Protes
 
         private void Disconnect_Click(object sender, RoutedEventArgs e)
         {
+            System.Diagnostics.Debug.WriteLine("=== DISCONNECT CLICKED ===");
+            System.Diagnostics.Debug.WriteLine($"Window hashcode: {this.GetHashCode()}");
+            System.Diagnostics.Debug.WriteLine($"BEFORE: _isConnected = {_isConnected}");
+
             _isConnected = false;
             _connectedMode = DatabaseMode.None;
             _pendingModeSwitch = DatabaseMode.None;
             NotesDataGrid.ItemsSource = null;
             NotesDataGrid.Visibility = Visibility.Collapsed;
             DisconnectedPlaceholder.Visibility = Visibility.Visible;
+            System.Diagnostics.Debug.WriteLine($"AFTER: _isConnected = {_isConnected}");
+
             UpdateStatusBar();
             UpdateButtonStates();
-
+            NotesDataGrid_ContextMenuOpening(null, null);
             // Show notification only if enabled
             if (_settings.ShowNotifications)
             {
                 MessageBox.Show("Disconnected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+
+            System.Diagnostics.Debug.WriteLine("=== DISCONNECT COMPLETE ===");
         }
 
         private void Quit_Click(object sender, RoutedEventArgs e)
@@ -1757,41 +1773,12 @@ namespace Protes
         // Right click menu stuff
         private void NotesDataGrid_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            // Get the context menu
-            var contextMenu = NotesDataGrid.ContextMenu;
+
+            var contextMenu = MainContentGrid.ContextMenu;
             if (contextMenu == null) return;
 
-            // Update all context menu items to match current state
-            bool hasSelection = NotesDataGrid?.SelectedItem != null;
-            int selectedCount = 0;
-
-            if (_isSelectMode)
-            {
-                var items = NotesDataGrid.ItemsSource as List<NoteItem>;
-                selectedCount = items?.Count(n => n.IsSelected) ?? 0;
-            }
-            else
-            {
-                selectedCount = hasSelection ? 1 : 0;
-            }
-
-            // Find the new "Switch Local" menu item
-            var switchLocalItem = FindContextMenuItem(contextMenu, "ContextSwitchLocalMenuItem");
-
-            // Show "Switch Local" only in Local mode and when connected
-            bool showSwitchLocal = (_currentMode == DatabaseMode.Local) && _isConnected;
-            switchLocalItem?.SetCurrentValue(UIElement.VisibilityProperty,
-                showSwitchLocal ? Visibility.Visible : Visibility.Collapsed);
-
-            // Populate it if visible
-            if (showSwitchLocal && switchLocalItem != null)
-            {
-                PopulateSwitchLocalContextMenu(switchLocalItem);
-            }
-
-            bool isConnected = _isConnected;
-
-            // Find menu items by name
+            var connectItem = FindContextMenuItem(contextMenu, "ContextConnectMenuItem");
+            var disconnectItem = FindContextMenuItem(contextMenu, "ContextDisconnectMenuItem");
             var newItem = FindContextMenuItem(contextMenu, "ContextNewNoteMenuItem");
             var editItem = FindContextMenuItem(contextMenu, "ContextEditNoteMenuItem");
             var copyItem = FindContextMenuItem(contextMenu, "ContextCopyNoteMenuItem");
@@ -1800,31 +1787,120 @@ namespace Protes
             var deleteItem = FindContextMenuItem(contextMenu, "ContextDeleteNoteMenuItem");
             var importItem = FindContextMenuItem(contextMenu, "ContextImportFilesMenuItem");
             var exportItem = FindContextMenuItem(contextMenu, "ContextExportFilesMenuItem");
-            var connectItem = FindContextMenuItem(contextMenu, "ContextConnectMenuItem");
-            var disconnectItem = FindContextMenuItem(contextMenu, "ContextDisconnectMenuItem");
-            var switchDbItem = FindContextMenuItem(contextMenu, "ContextSwitchModeMenuItem");
+            var switchModeItem = FindContextMenuItem(contextMenu, "ContextSwitchModeMenuItem");
+            var switchLocalItem = FindContextMenuItem(contextMenu, "ContextSwitchLocalMenuItem");
+            var optionsItem = FindContextMenuItem(contextMenu, "ContextOptionsMenuItem");
             var localDbItem = FindContextMenuItem(contextMenu, "ContextLocalDbMenuItem");
             var externalDbItem = FindContextMenuItem(contextMenu, "ContextExternalDbMenuItem");
 
-            // Apply states
-            if (newItem != null) newItem.IsEnabled = isConnected;
-            if (editItem != null) editItem.IsEnabled = isConnected && selectedCount == 1;
-            if (copyItem != null) copyItem.IsEnabled = isConnected && selectedCount >= 1;
-            if (pasteItem != null) pasteItem.IsEnabled = isConnected && _copiedNotes.Any();
-            if (selectItem != null) selectItem.IsEnabled = isConnected;
-            if (deleteItem != null) deleteItem.IsEnabled = isConnected && selectedCount >= 1;
-            if (importItem != null) importItem.IsEnabled = isConnected;
-            if (exportItem != null) exportItem.IsEnabled = isConnected && (_fullNotesCache?.Any() == true);
-            if (connectItem != null) connectItem.IsEnabled = !isConnected;
-            if (disconnectItem != null) disconnectItem.IsEnabled = isConnected;
-
-            // Update Switch Database submenu checkmarks
-            if (localDbItem != null) localDbItem.IsChecked = (_currentMode == DatabaseMode.Local);
-            if (externalDbItem != null)
+            void SetMenuState(MenuItem item, bool enabled)
             {
-                externalDbItem.IsChecked = (_currentMode == DatabaseMode.External);
-                externalDbItem.IsEnabled = !string.IsNullOrWhiteSpace(_settings.External_Host) &&
-                                            !string.IsNullOrWhiteSpace(_settings.External_Database);
+                if (item != null)
+                {
+                    item.Visibility = Visibility.Visible;
+                    item.IsEnabled = enabled;
+                }
+            }
+
+            if (!_isConnected)
+            {
+                // === DISCONNECTED ===
+                SetMenuState(newItem, false);
+                SetMenuState(editItem, false);
+                SetMenuState(copyItem, false);
+                SetMenuState(pasteItem, false);
+                SetMenuState(selectItem, false);
+                SetMenuState(deleteItem, false);
+                SetMenuState(importItem, false);
+                SetMenuState(exportItem, false);
+
+                // ✅ CRITICAL: Explicitly control Connect/Disconnect visibility
+                if (connectItem != null)
+                {
+                    connectItem.Visibility = Visibility.Visible;
+                    connectItem.IsEnabled = true;
+                }
+                if (disconnectItem != null)
+                {
+                    disconnectItem.Visibility = Visibility.Collapsed;
+                }
+
+                SetMenuState(switchModeItem, true);
+                SetMenuState(optionsItem, true);
+
+                if (switchLocalItem != null)
+                {
+                    bool show = (_currentMode == DatabaseMode.Local);
+                    switchLocalItem.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+                    if (show)
+                    {
+                        PopulateSwitchLocalContextMenu(switchLocalItem);
+                    }
+                }
+
+                if (localDbItem != null) localDbItem.IsChecked = (_currentMode == DatabaseMode.Local);
+                if (externalDbItem != null)
+                {
+                    externalDbItem.IsChecked = (_currentMode == DatabaseMode.External);
+                    externalDbItem.IsEnabled = !string.IsNullOrWhiteSpace(_settings.External_Host) &&
+                                               !string.IsNullOrWhiteSpace(_settings.External_Database);
+                }
+            }
+            else
+            {
+                // === CONNECTED ===
+                bool hasSelection = NotesDataGrid?.SelectedItem != null;
+                int selectedCount = 0;
+                if (_isSelectMode)
+                {
+                    var items = NotesDataGrid.ItemsSource as List<NoteItem>;
+                    selectedCount = items?.Count(n => n.IsSelected) ?? 0;
+                }
+                else
+                {
+                    selectedCount = hasSelection ? 1 : 0;
+                }
+
+                SetMenuState(newItem, true);
+                SetMenuState(editItem, selectedCount == 1);
+                SetMenuState(copyItem, selectedCount >= 1);
+                SetMenuState(pasteItem, _copiedNotes.Any());
+                SetMenuState(selectItem, true);
+                SetMenuState(deleteItem, selectedCount >= 1);
+                SetMenuState(importItem, true);
+                SetMenuState(exportItem, _fullNotesCache?.Any() == true);
+
+                // ✅ CRITICAL: Explicitly control Connect/Disconnect visibility
+                if (connectItem != null)
+                {
+                    connectItem.Visibility = Visibility.Collapsed;
+                }
+                if (disconnectItem != null)
+                {
+                    disconnectItem.Visibility = Visibility.Visible;
+                    disconnectItem.IsEnabled = true;
+                }
+
+                SetMenuState(switchModeItem, true);
+                SetMenuState(optionsItem, true);
+
+                if (switchLocalItem != null)
+                {
+                    bool show = (_currentMode == DatabaseMode.Local);
+                    switchLocalItem.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+                    if (show)
+                    {
+                        PopulateSwitchLocalContextMenu(switchLocalItem);
+                    }
+                }
+
+                if (localDbItem != null) localDbItem.IsChecked = (_currentMode == DatabaseMode.Local);
+                if (externalDbItem != null)
+                {
+                    externalDbItem.IsChecked = (_currentMode == DatabaseMode.External);
+                    externalDbItem.IsEnabled = !string.IsNullOrWhiteSpace(_settings.External_Host) &&
+                                               !string.IsNullOrWhiteSpace(_settings.External_Database);
+                }
             }
         }
 
@@ -1971,13 +2047,22 @@ namespace Protes
         // Close to system tray;
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
-            if (_settings.MinimizeToTray)
+            if (_settings.CloseToTray)
             {
                 e.Cancel = true; // Prevent actual close
-                WindowState = WindowState.Minimized; // This triggers OnStateChanged → hides to tray
+
+                // Hide window immediately (bypass OnStateChanged)
+                Hide();
+
+                // Ensure tray icon is visible
+                if (_notifyIcon != null)
+                {
+                    _notifyIcon.Visible = true;
+                }
             }
             else
             {
+                // Allow normal shutdown (no minimize involved)
                 base.OnClosing(e);
             }
         }

@@ -5,10 +5,12 @@
         WindowState="Maximized"
         FontFamily="Segoe UI" 
         WindowStartupLocation="CenterScreen"
-                UseLayoutRounding="True"
+        UseLayoutRounding="True"
         SnapsToDevicePixels="True">
+
+    <!-- ✅ Window.Resources must remain a direct child of Window -->
     <Window.Resources>
-        <ContextMenu x:Key="DataGridContextMenu">
+        <ContextMenu x:Key="DataGridContextMenu" ContextMenuOpening="NotesDataGrid_ContextMenuOpening">
             <MenuItem x:Name="ContextNewNoteMenuItem" Header="_New" Click="NewNoteButton_Click">
                 <MenuItem.Icon>
                     <TextBlock Text="➕" FontSize="14"/>
@@ -58,7 +60,6 @@
                 <MenuItem x:Name="ContextLocalDbMenuItem" Header="Local Database" IsCheckable="True" Click="UseLocalDb_Click"/>
                 <MenuItem x:Name="ContextExternalDbMenuItem" Header="External Database" IsCheckable="True" Click="UseExternalDb_Click"/>
             </MenuItem>
-            <Separator/>
             <MenuItem x:Name="ContextSwitchLocalMenuItem" Header="Switch Local" Visibility="Collapsed"/>
             <Separator/>
             <MenuItem x:Name="ContextConnectMenuItem" Header="_Connect" Click="Connect_Click">
@@ -79,8 +80,10 @@
             </MenuItem>
         </ContextMenu>
     </Window.Resources>
-    
-    <Grid>
+
+    <!-- ✅ ROOT WRAPPER GRID: captures right-click anywhere -->
+    <Grid x:Name="MainContentGrid" 
+      Background="Transparent">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <!-- Menu -->
@@ -95,7 +98,6 @@
         <!-- === MENU BAR === -->
         <Menu Grid.Row="0" x:Name="MainMenu">
             <MenuItem Header="_File">
-                <!-- NEW: Note actions -->
                 <MenuItem x:Name="NewNoteMenuItem" Header="_New" Click="NewNoteButton_Click"/>
                 <MenuItem x:Name="EditNoteMenuItem" Header="_Edit" Click="EditNoteButton_Click"/>
                 <MenuItem x:Name="DeleteNoteMenuItem" Header="_Delete" Click="DeleteNoteButton_Click"/>
@@ -116,7 +118,6 @@
                 <MenuItem Header="_Settings" Click="OpenSettings_Click"/>
             </MenuItem>
 
-            <!-- NEW: View Menu -->
             <MenuItem Header="_View">
                 <MenuItem x:Name="ViewTitleMenuItem" Header="Title" IsCheckable="True" Checked="ViewTitleMenuItem_Checked" Unchecked="ViewTitleMenuItem_Checked"/>
                 <MenuItem x:Name="ViewTagsMenuItem" Header="Tags" IsCheckable="True" Checked="ViewTagsMenuItem_Checked" Unchecked="ViewTagsMenuItem_Checked"/>
@@ -138,7 +139,6 @@
                 </MenuItem>
             </MenuItem>
 
-            <!-- Info Menu -->
             <MenuItem Header="_Info">
                 <MenuItem Header="_About" Click="AboutMenuItem_Click"/>
             </MenuItem>
@@ -147,65 +147,58 @@
         <!-- === ICON TRAY + NOTE ACTIONS + SEARCH === -->
         <StackPanel x:Name="ToolbarStackPanel" Grid.Row="1" Orientation="Horizontal" Margin="5,5"
             HorizontalAlignment="Left" VerticalAlignment="Top">
-            <!-- Connection & Settings Icons -->
             <StackPanel x:Name="ViewToolbarConnectainer" Orientation="Horizontal" VerticalAlignment="Center">
-            <Button x:Name="ConnectIconBtn" Content="🔌" FontSize="16" Width="32" Height="32"
-        ToolTip="Connect" Click="Connect_Click" Margin="0,0,8,0"/>
-            <Button x:Name="DisconnectIconBtn" Content="🚫" FontSize="16" Width="32" Height="32"
-        ToolTip="Disconnect" Click="Disconnect_Click" Margin="0,0,8,0"/>
+                <Button x:Name="ConnectIconBtn" Content="🔌" FontSize="16" Width="32" Height="32"
+                    ToolTip="Connect" Click="Connect_Click" Margin="0,0,8,0"/>
+                <Button x:Name="DisconnectIconBtn" Content="🚫" FontSize="16" Width="32" Height="32"
+                    ToolTip="Disconnect" Click="Disconnect_Click" Margin="0,0,8,0"/>
             </StackPanel>
 
             <Border x:Name="AutoConnectOSContainer">
                 <CheckBox x:Name="AutoConnectOnSwitchCheckBox" x:Uid="AutoConnectOnSwitchCheckBox"
-  Content="ACOS" 
-  VerticalAlignment="Center"
-  Checked="AutoConnectOnSwitchCheckBox_Checked"
-  Unchecked="AutoConnectOnSwitchCheckBox_Checked" Margin="0,0,8,0"/>
+                    Content="ACOS" 
+                    VerticalAlignment="Center"
+                    Checked="AutoConnectOnSwitchCheckBox_Checked"
+                    Unchecked="AutoConnectOnSwitchCheckBox_Checked" Margin="0,0,8,0"/>
             </Border>
 
-            <!-- Separator -->
             <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
 
             <Button x:Name="SettingsIconBtn" Content="⚙️" FontSize="16" Width="32" Height="32"
-            ToolTip="Settings" Click="OpenSettings_Click" Margin="0,0,8,0"/>
+                ToolTip="Settings" Click="OpenSettings_Click" Margin="0,0,8,0"/>
 
-            <!-- Local Databases Group -->
             <StackPanel x:Name="LocalDbControls" Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="Local:" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <ComboBox x:Name="AvailableDatabasesComboBox" MinWidth="150" Margin="0,0,8,0" VerticalContentAlignment="Center" Height="28"
-              DisplayMemberPath="FileName" SelectedValuePath="FullPath"/>
+                    DisplayMemberPath="FileName" SelectedValuePath="FullPath"/>
                 <Button x:Name="LoadSelectedDbButton" Content="↻" FontSize="16" Width="32" Height="32"
-            ToolTip="Load Selected Database" Click="LoadSelectedDbButton_Click" Margin="0,0,8,0"/>
+                    ToolTip="Load Selected Database" Click="LoadSelectedDbButton_Click" Margin="0,0,8,0"/>
             </StackPanel>
             <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
             <StackPanel x:Name="ImportExportControls" Orientation="Horizontal" VerticalAlignment="Center">
                 <Button x:Name="ImportFilesButton" Content="📁" Padding="6,5"
-            FontSize="16" Click="ImportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Import Files"/>
+                    FontSize="16" Click="ImportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Import Files"/>
                 <Button x:Name="ExportFilesButton" Content="📤" Padding="6,5"
-            FontSize="16" Click="ExportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Export Files"/>
-                <!-- Separator -->
+                    FontSize="16" Click="ExportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Export Files"/>
                 <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
             </StackPanel>
 
             <Button x:Name="NewNoteButton" Content="➕" Padding="6,5"
-            FontSize="16" Click="NewNoteButton_Click" Margin="0,0,8,0" ToolTip="New"/>
+                FontSize="16" Click="NewNoteButton_Click" Margin="0,0,8,0" ToolTip="New"/>
             <Button x:Name="EditNoteButton" Content="🖊️" Padding="6,5"
-            FontSize="16" Click="EditNoteButton_Click" Margin="0,0,8,0" ToolTip="Edit"/>
+                FontSize="16" Click="EditNoteButton_Click" Margin="0,0,8,0" ToolTip="Edit"/>
             <Button x:Name="SelectNotesButton" Content="✅" Padding="6,5"
-            FontSize="16" Click="SelectNotesButton_Click" Margin="0,0,8,0" ToolTip="Select"/>
+                FontSize="16" Click="SelectNotesButton_Click" Margin="0,0,8,0" ToolTip="Select"/>
             <Button x:Name="DeleteNoteButton" Content="🗑️" Padding="6,5"
-            FontSize="16" Click="DeleteNoteButton_Click" Margin="0,0,8,0" ToolTip="Delete"/>
-            <!-- Separator -->
+                FontSize="16" Click="DeleteNoteButton_Click" Margin="0,0,8,0" ToolTip="Delete"/>
             <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
 
             <Button x:Name="CopyNoteButton" Content="📋" Padding="6,5"
-        FontSize="16" Click="CopyNoteButton_Click" Margin="0,0,8,0" ToolTip="Copy Note(s)"/>
+                FontSize="16" Click="CopyNoteButton_Click" Margin="0,0,8,0" ToolTip="Copy Note(s)"/>
             <Button x:Name="PasteNoteButton" Content="📄" Padding="6,5"
-        FontSize="16" Click="PasteNoteButton_Click" Margin="0,0,8,0" ToolTip="Paste Note(s)"/>
-            
-            <!-- 👇 NEW: Search with dropdown -->
+                FontSize="16" Click="PasteNoteButton_Click" Margin="0,0,8,0" ToolTip="Paste Note(s)"/>
+
             <StackPanel x:Name="SearchDatabase" Orientation="Horizontal" VerticalAlignment="Center">
-                <!-- Separator -->
                 <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
                 <TextBlock Text="Search:" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,8,0"/>
                 <ComboBox x:Name="SearchFieldComboBox" SelectedIndex="0" Height="28" Width="100" VerticalContentAlignment="Center" Margin="0,0,8,0">
@@ -216,54 +209,49 @@
                     <ComboBoxItem Content="Modified"/>
                 </ComboBox>
                 <TextBox x:Name="SearchBox" Width="200" Height="28"
-                 VerticalContentAlignment="Center"
-                 TextChanged="SearchBox_TextChanged"
-                 VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    VerticalContentAlignment="Center"
+                    TextChanged="SearchBox_TextChanged"
+                    VerticalAlignment="Center" Margin="0,0,8,0"/>
             </StackPanel>
             <Button x:Name="CatButton" Content="🐾" FontSize="16" Padding="6,5" Margin="0,0,8,0" ToolTip="Open Cat Wisdom" Click="OpenCatWindow_Click"/>
         </StackPanel>
-        
-        
-        <!-- === NOTES TABLE (DATA GRID) === -->
 
+        <!-- === NOTES TABLE (DATA GRID) === -->
         <DataGrid Grid.Row="2" x:Name="NotesDataGrid"
-                  ContextMenu="{StaticResource DataGridContextMenu}"
-          ContextMenuOpening="NotesDataGrid_ContextMenuOpening"
-          PreviewMouseDown="NotesDataGrid_PreviewMouseDown" 
-          Margin="5"
-          AutoGenerateColumns="False"
-          IsReadOnly="False"    
-          CanUserAddRows="False" 
-          SelectionMode="Extended"
-          SelectionUnit="FullRow"
-          Visibility="Collapsed"
-          BeginningEdit="NotesDataGrid_BeginningEdit"
-          CellEditEnding="NotesDataGrid_CellEditEnding"
-          MouseDoubleClick="NotesDataGrid_MouseDoubleClick">
+                  ContextMenuOpening="NotesDataGrid_ContextMenuOpening"
+                  PreviewMouseDown="NotesDataGrid_PreviewMouseDown" 
+                  Margin="5"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="False"    
+                  CanUserAddRows="False" 
+                  SelectionMode="Extended"
+                  SelectionUnit="FullRow"
+                  Visibility="Collapsed"
+                  BeginningEdit="NotesDataGrid_BeginningEdit"
+                  CellEditEnding="NotesDataGrid_CellEditEnding"
+                  MouseDoubleClick="NotesDataGrid_MouseDoubleClick">
             <DataGrid.Columns>
-                
-                <!-- Checkbox Column -->
                 <DataGridTemplateColumn 
-    x:Name="SelectCheckBoxColumn"
-    Width="40"
+                    x:Name="SelectCheckBoxColumn"
+                    Width="40"
                     CanUserResize="False"
-    Visibility="Collapsed">
+                    Visibility="Collapsed">
                     <DataGridTemplateColumn.HeaderTemplate>
                         <DataTemplate>
                             <CheckBox 
-    IsChecked="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}, Path=DataContext.AllItemsAreChecked, Mode=TwoWay}"
-    HorizontalAlignment="Center"
-    VerticalAlignment="Center"
-    Margin="6,0"
-    Focusable="True"
-    IsHitTestVisible="True" />
+                                IsChecked="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}, Path=DataContext.AllItemsAreChecked, Mode=TwoWay}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Margin="6,0"
+                                Focusable="True"
+                                IsHitTestVisible="True" />
                         </DataTemplate>
                     </DataGridTemplateColumn.HeaderTemplate>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
-          HorizontalAlignment="Center"
-          VerticalAlignment="Center"/>
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
@@ -274,7 +262,6 @@
                         <Style TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Top"/>
                             <Setter Property="ToolTip" Value="{Binding Preview}"/>
-                            <!-- Do NOT set TextWrapping="Wrap" <Setter Property="TextWrapping" Value="Wrap"/> preserve line count -->
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
@@ -285,59 +272,35 @@
 
         <!-- Placeholder when disconnected -->
         <TextBlock Grid.Row="2" x:Name="DisconnectedPlaceholder"
-                   Text="Not connected to a database. Choose 'Local' or 'External Database' from Options."
-                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                   FontSize="16" Foreground="Gray" TextWrapping="Wrap" Margin="20"/>
+           Text="Not connected to a database. Choose 'Local' or 'External Database' from Options."
+           HorizontalAlignment="Center" VerticalAlignment="Center"
+           FontSize="16" Foreground="Gray" TextWrapping="Wrap" Margin="20"/>
 
         <!-- === STATUS BAR === -->
         <StatusBar Grid.Row="3">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <!-- Left: fixed content -->
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
-                    <!-- Spacer between mode and switch text -->
-                    <ColumnDefinition Width="Auto"/>
-                    <!-- Switch text (optional message) -->
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
-                    <!-- Spacer before note count -->
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
-                    <!-- Note count -->
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Connection Status -->
                 <TextBlock x:Name="ConnectionStatusText" Text="Disconnected"/>
-
-                <!-- Separator -->
                 <Separator Grid.Column="1" Style="{StaticResource {x:Static StatusBar.SeparatorStyleKey}}" Margin="8,0"/>
-
-                <!-- Database Mode (connected mode) -->
                 <TextBlock x:Name="DatabaseModeText" Grid.Column="2" Text="—"/>
-
-                <!-- Separator -->
                 <Separator Grid.Column="3" Style="{StaticResource {x:Static StatusBar.SeparatorStyleKey}}" Margin="8,0"/>
-
-                <!-- Pending Switch Message -->
                 <TextBlock x:Name="DatabaseSwitchText" Grid.Column="4" Text="—"/>
-
-                <!-- Separator -->
                 <Separator Grid.Column="5" Style="{StaticResource {x:Static StatusBar.SeparatorStyleKey}}" Margin="8,0,8,0"/>
-
-                <!-- Flexible spacer (pushes count to right) -->
                 <Grid Grid.Column="6"/>
-
-                <!-- Note Count -->
                 <TextBlock x:Name="NoteCountText" Grid.Column="7" Text="0 Notes"/>
-
-                <!-- Separator -->
                 <Separator Grid.Column="8" Style="{StaticResource {x:Static StatusBar.SeparatorStyleKey}}" Margin="8,0"/>
-
-                <!-- Empty placeholder (to match visual balance) -->
                 <TextBlock Grid.Column="9" Text="" Visibility="Hidden"/>
             </Grid>
         </StatusBar>

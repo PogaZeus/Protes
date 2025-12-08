@@ -144,6 +144,15 @@ namespace Protes
                 Save();
             }
         }
+        public bool CloseToTray
+        {
+            get => Properties.Settings.Default.CloseToTray;
+            set
+            {
+                Properties.Settings.Default.CloseToTray = value;
+                Save();
+            }
+        }
 
         public bool NotifyCopied
         {

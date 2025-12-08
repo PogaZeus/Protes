@@ -61,6 +61,7 @@ namespace Protes.Views
 
             //Systray
             MinimizeToSystemTray.IsChecked = _settings.MinimizeToTray;
+            CloseToSystemTray.IsChecked = _settings.CloseToTray;
             ShellNewCheckBox.IsChecked = _settings.ShellNewIntegrationEnabled;
 
             CurrentDbPathText.Text = _currentDatabasePath;
@@ -550,6 +551,15 @@ namespace Protes.Views
                 _settings.AutoDisconnectOnSwitch = AutoDisconnectOnSwitchCheckBox.IsChecked == true;
             }
         }
+
+        private void MinimizeToSystemTray_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.MinimizeToTray = MinimizeToSystemTray.IsChecked == true;
+        }
+        private void CloseToSystemTray_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.CloseToTray = CloseToSystemTray.IsChecked == true;
+        }
         private void ShowNotificationsCheckBox_Changed(object sender, RoutedEventArgs e)
         {
             bool isChecked = ShowNotificationsCheckBox.IsChecked == true;
@@ -601,10 +611,6 @@ namespace Protes.Views
             _settings.ViewToolbarSearch = ViewToolbarSearchMenuItem.IsChecked == true;
         }
 
-        private void MinimizeToSystemTray_Checked(object sender, RoutedEventArgs e)
-        {
-            _settings.MinimizeToTray = MinimizeToSystemTray.IsChecked == true;
-        }
         private bool _isInitializing = true;
         private void ShellNewCheckBox_Checked(object sender, RoutedEventArgs e)
         {

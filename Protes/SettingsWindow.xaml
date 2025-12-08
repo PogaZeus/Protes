@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:Protes"
         Title="[Protes] Pro Notes Database - Settings" 
-        Height="610" Width="500"
+        Height="615" Width="500"
         MinWidth="500"
         MinHeight="615"
         FontFamily="Segoe UI" 
@@ -91,14 +91,14 @@
                                             Click="DeleteDatabaseButton_Click"/>
                                 </StackPanel>
                                 <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,5,0,0">
-                                        <TextBlock 
-           Text="Note: Database's stored inside the default folder cannot be removed from the list." 
-           FontStyle="Italic" 
-           Foreground="Gray"/>
+                                    <TextBlock 
+                                        Text="Note: Database's stored inside the default folder cannot be removed from the list." 
+                                        FontStyle="Italic" 
+                                        Foreground="Gray"/>
                                 </StackPanel>
                             </Grid>
                         </GroupBox>
-                        
+
                         <!-- Current Database with buttons inside -->
                         <GroupBox Grid.Row="1" Header="Current Database" Margin="0,0,0,5">
                             <Grid>
@@ -188,7 +188,7 @@
                         </TabControl>
                     </GroupBox>
 
-                    <GroupBox Grid.Row="1" Header="Connection Details" Margin="5,0,5,5">
+                    <GroupBox Grid.Row="1" Header="Connection Details" Margin="5,0,0,5">
                         <Grid Margin="5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -203,31 +203,31 @@
                             </Grid.RowDefinitions>
 
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Host:" Margin="0,5"/>
-                            <TextBox x:Name="HostTextBox" Grid.Row="0" Grid.Column="1" Margin="10,5" Height="26"/>
+                            <TextBox x:Name="HostTextBox" Grid.Row="0" Grid.Column="1" Margin="5,5" Height="26"/>
 
                             <TextBlock Grid.Row="1" Grid.Column="0" Text="Port:" Margin="0,5"/>
-                            <TextBox x:Name="PortTextBox" Grid.Row="1" Grid.Column="1" Margin="10,5" Height="26" Text="3306"/>
+                            <TextBox x:Name="PortTextBox" Grid.Row="1" Grid.Column="1" Margin="5,5" Height="26" Text="3306"/>
 
                             <TextBlock Grid.Row="2" Grid.Column="0" Text="Database:" Margin="0,5"/>
-                            <TextBox x:Name="DatabaseTextBox" Grid.Row="2" Grid.Column="1" Margin="10,5" Height="26"/>
+                            <TextBox x:Name="DatabaseTextBox" Grid.Row="2" Grid.Column="1" Margin="5,5" Height="26"/>
 
                             <TextBlock Grid.Row="3" Grid.Column="0" Text="Username:" Margin="0,5"/>
-                            <TextBox x:Name="UsernameTextBox" Grid.Row="3" Grid.Column="1" Margin="10,5" Height="26"/>
+                            <TextBox x:Name="UsernameTextBox" Grid.Row="3" Grid.Column="1" Margin="5,5" Height="26"/>
 
                             <TextBlock Grid.Row="4" Grid.Column="0" Text="Password:" Margin="0,5"/>
-                            <PasswordBox x:Name="PasswordBox" Grid.Row="4" Grid.Column="1" Margin="10,5" Height="26"/>
+                            <PasswordBox x:Name="PasswordBox" Grid.Row="4" Grid.Column="1" Margin="5,5" Height="26"/>
                         </Grid>
                     </GroupBox>
 
                     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="Save Settings" Padding="12,5" Margin="0,0,10,0" Click="SaveExternalSettings_Click"/>
-                        <Button Content="Connect Now" Padding="12,5" Click="ConnectNowButton_Click"/>
+                        <Button Content="Connect Now" Padding="12,5" Margin="0,0,15,0" Click="ConnectNowButton_Click"/>
                     </StackPanel>
                 </Grid>
             </TabItem>
 
-            <!-- MORE OPTIONS TAB -->
-            <TabItem Header="More Options">
+            <!-- APPLICATION TAB (renamed from "More Options") -->
+            <TabItem Header="Application">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <Grid Margin="5">
                         <Grid.RowDefinitions>
@@ -235,26 +235,33 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <!-- More Options -->
+                        <!-- Application Settings -->
                         <GroupBox Grid.Row="0" Header="Application Settings" Margin="0,0,0,5">
                             <StackPanel>
                                 <CheckBox x:Name="MinimizeToSystemTray"
-           Content="Minimize to system tray instead of taskbar"
-           Checked="MinimizeToSystemTray_Checked"
-           Unchecked="MinimizeToSystemTray_Checked"
-           Margin="0,5,0,0"/>
+                                          Content="Minimize to system tray instead of taskbar"
+                                          Checked="MinimizeToSystemTray_Checked"
+                                          Unchecked="MinimizeToSystemTray_Checked"
+                                          Margin="0,5,0,0"/>
+                                <!-- NEW SETTING -->
+                                <CheckBox x:Name="CloseToSystemTray"
+                                          Content="Close to system tray instead of exiting"
+                                          Checked="CloseToSystemTray_Checked"
+                                          Unchecked="CloseToSystemTray_Checked"
+                                          Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Grid.Row="1" Header="File Explorer Integration" Margin="0,0,0,5">
+
+                        <GroupBox Grid.Row="1" Header="File Explorer &amp; Context Menu Integration" Margin="0,0,0,5">
                             <CheckBox x:Name="ShellNewCheckBox"
-     Content="Add 'Note Editor (Protes)' to Windows 'New' context menu"
-     Checked="ShellNewCheckBox_Checked"
-     Unchecked="ShellNewCheckBox_Unchecked"
-     Margin="0,5,0,0"/>
+                                      Content="Add 'Note Editor (Protes)' to Windows 'New' menu"
+                                      Checked="ShellNewCheckBox_Checked"
+                                      Unchecked="ShellNewCheckBox_Unchecked"
+                                      Margin="0,5,0,0"/>
                         </GroupBox>
+
                         <!-- Auto Connect -->
                         <GroupBox Grid.Row="2" Header="Connection Automation" Margin="0,0,0,5">
                             <StackPanel>
@@ -275,76 +282,88 @@
                                           Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
-         
+
                         <GroupBox Grid.Row="3" Header="Notifications" Margin="0,0,0,5">
                             <StackPanel>
                                 <CheckBox x:Name="ShowNotificationsCheckBox"
-                  Content="Show connected/disconnected notifications"
-                  Checked="ShowNotificationsCheckBox_Changed"
-                  Unchecked="ShowNotificationsCheckBox_Changed"
-                  Margin="0,0,0,0"/>
+                                          Content="Show connected/disconnected notifications"
+                                          Checked="ShowNotificationsCheckBox_Changed"
+                                          Unchecked="ShowNotificationsCheckBox_Changed"
+                                          Margin="0,0,0,0"/>
                                 <CheckBox x:Name="NotifyDeletedCheckBox"
-                  Content="Show File(s) deleted successfully"
-                  Checked="NotifyDeletedCheckBox_Changed"
-                  Unchecked="NotifyDeletedCheckBox_Changed"
-                  Margin="0,5,0,0"/>
-
+                                          Content="Show File(s) deleted successfully"
+                                          Checked="NotifyDeletedCheckBox_Changed"
+                                          Unchecked="NotifyDeletedCheckBox_Changed"
+                                          Margin="0,5,0,0"/>
                                 <CheckBox x:Name="NotifyCopiedCheckBox"
-                  Content="Show File(s) copied successfully"
-                  Checked="NotifyCopiedCheckBox_Changed"
-                  Unchecked="NotifyCopiedCheckBox_Changed"
-                  Margin="0,5,0,0"/>
-
+                                          Content="Show File(s) copied successfully"
+                                          Checked="NotifyCopiedCheckBox_Changed"
+                                          Unchecked="NotifyCopiedCheckBox_Changed"
+                                          Margin="0,5,0,0"/>
                                 <CheckBox x:Name="NotifyPastedCheckBox"
-                  Content="Show File(s) pasted successfully"
-                  Checked="NotifyPastedCheckBox_Changed"
-                  Unchecked="NotifyPastedCheckBox_Changed"
-                  Margin="0,5,0,0"/>
+                                          Content="Show File(s) pasted successfully"
+                                          Checked="NotifyPastedCheckBox_Changed"
+                                          Unchecked="NotifyPastedCheckBox_Changed"
+                                          Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
 
-                        <!-- NEW: Toolbar Settings -->
-                        <GroupBox Grid.Row="4" Header="Toolbar Settings" Margin="0,0,0,5">
+            <!-- NEW TOOLBAR TAB -->
+            <TabItem Header="Toolbar">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <GroupBox Grid.Row="0" Header="Toolbar Visibility" Margin="0,0,0,10">
                             <StackPanel>
                                 <CheckBox x:Name="ViewToolbarMenuItem"
-                                          Content="Show Toolbar"
-                                          Checked="ViewToolbarMenuItem_Checked"
-                                          Unchecked="ViewToolbarMenuItem_Checked"
-                                          Margin="0,5,0,0"/>
+                              Content="Show Toolbar"
+                              Checked="ViewToolbarMenuItem_Checked"
+                              Unchecked="ViewToolbarMenuItem_Checked"
+                              Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarOptionsInMenuCheckBox"
-                                          Content="Show 'Toolbar Options' in Menu"
-                                          Checked="ViewToolbarOptionsInMenuCheckBox_Checked"
-                                          Unchecked="ViewToolbarOptionsInMenuCheckBox_Checked"
-                                          Margin="0,5,0,5"/>
-                                <TextBlock Text="• Toolbar Icons:" Margin="0,2"/>
-                                <CheckBox x:Name="ViewToolbarConnectMenuItem"
-                                          Content="Connect/Disconnect"
-                                          Checked="ViewToolbarConnectMenuItem_Checked"
-                                          Unchecked="ViewToolbarConnectMenuItem_Checked"
-                                          Margin="0,5,0,0"/>
-                                <CheckBox x:Name="ViewToolbarLocalDBMenuItem"
-                                          Content="Local Databases - Dropdown menu and load icon"
-                                          Checked="ViewToolbarLocalDBMenuItem_Checked"
-                                          Unchecked="ViewToolbarLocalDBMenuItem_Checked"
-                                          Margin="0,5,0,0"/>
-                                <CheckBox x:Name="ViewToolbarACOSMenuItem"
-                                          Content="ACOS - Auto connect on switch (local/external)"
-                                          Checked="ViewToolbarACOSMenuItem_Checked"
-                                          Unchecked="ViewToolbarACOSMenuItem_Checked"
-                                          Margin="0,5,0,0"/>
-                                <CheckBox x:Name="ViewToolbarImpExMenuItem"
-                                         Content="Import/Export"
-                                          Checked="ViewToolbarImpExMenuItem_Checked"
-                                          Unchecked="ViewToolbarImpExMenuItem_Checked"
-                                          Margin="0,5,0,0"/>
-                                <CheckBox x:Name="ViewToolbarSearchMenuItem"
-                                           Content="Search Database"
-                                           Checked="ViewToolbarSearchMenuItem_Checked"
-                                           Unchecked="ViewToolbarSearchMenuItem_Checked"
-                                           Margin="0,5,0,0"/>
+                              Content="Show 'Toolbar Options' in Menu"
+                              Checked="ViewToolbarOptionsInMenuCheckBox_Checked"
+                              Unchecked="ViewToolbarOptionsInMenuCheckBox_Checked"
+                              Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
 
+                        <GroupBox Grid.Row="1" Header="Toolbar Icons" Margin="0,0,0,0">
+                            <StackPanel>
+                                <CheckBox x:Name="ViewToolbarConnectMenuItem"
+                              Content="Connect/Disconnect"
+                              Checked="ViewToolbarConnectMenuItem_Checked"
+                              Unchecked="ViewToolbarConnectMenuItem_Checked"
+                              Margin="0,5,0,0"/>
+                                <CheckBox x:Name="ViewToolbarACOSMenuItem"
+                              Content="ACOS - Auto connect on switch (local/external)"
+                              Checked="ViewToolbarACOSMenuItem_Checked"
+                              Unchecked="ViewToolbarACOSMenuItem_Checked"
+                              Margin="0,5,0,0"/>
+                                <CheckBox x:Name="ViewToolbarLocalDBMenuItem"
+                              Content="Local Databases - Dropdown menu and load icon"
+                              Checked="ViewToolbarLocalDBMenuItem_Checked"
+                              Unchecked="ViewToolbarLocalDBMenuItem_Checked"
+                              Margin="0,5,0,0"/>
+                                <CheckBox x:Name="ViewToolbarImpExMenuItem"
+                              Content="Import/Export"
+                              Checked="ViewToolbarImpExMenuItem_Checked"
+                              Unchecked="ViewToolbarImpExMenuItem_Checked"
+                              Margin="0,5,0,0"/>
+                                <CheckBox x:Name="ViewToolbarSearchMenuItem"
+                              Content="Search Database"
+                              Checked="ViewToolbarSearchMenuItem_Checked"
+                              Unchecked="ViewToolbarSearchMenuItem_Checked"
+                              Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
                     </Grid>
                 </ScrollViewer>
             </TabItem>
