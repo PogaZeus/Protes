@@ -32,7 +32,7 @@ namespace Protes
             base.OnStartup(e);
 
             var mainWindow = new MainWindow();
-            mainWindow.Title = "Mr E Tools - [Protes] Pro Notes Database";
+            mainWindow.Title = "[Protes] Pro Notes Database";
             mainWindow.Show();
 
             // 👇 Handle command-line args if .prote file was double-clicked or -new command

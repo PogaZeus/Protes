@@ -126,6 +126,9 @@
     <Compile Include="AboutWindow.xaml.cs">
       <DependentUpon>AboutWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CatWindow.xaml.cs">
+      <DependentUpon>CatWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ExportFromDBWindow.xaml.cs">
       <DependentUpon>ExportFromDBWindow.xaml</DependentUpon>
     </Compile>
@@ -147,6 +150,10 @@
       <DependentUpon>SettingsWindow.xaml</DependentUpon>
     </Compile>
     <Page Include="AboutWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CatWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -232,6 +239,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Protes_W_Trans.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="ProtesBlackBG.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="MrE_Protes.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

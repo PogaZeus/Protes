@@ -1,8 +1,9 @@
 ﻿<Window x:Class="Protes.Views.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Mr E Tools - [Protes] Pro Notes Database - About" 
-        Height="510" Width="650"
+        Title="[Protes] Pro Notes Database - About" 
+        Height="620" 
+        Width="700"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
@@ -10,106 +11,227 @@
         Background="White">
     <Grid Margin="10">
         <Grid.RowDefinitions>
+            <!-- Top Banner -->
             <RowDefinition Height="Auto"/>
+            <!-- Fixed App Title + Tagline -->
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <!-- Scrollable Content (Features + Technical Details) -->
             <RowDefinition Height="*"/>
+            <!-- Footer: Creator Bio -->
+            <RowDefinition Height="Auto"/>
+            <!-- OK Button -->
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Logo -->
-        <Image Grid.Row="0" 
-               Source="MrE_Clean.png" 
-               Width="64" Height="64"
-               HorizontalAlignment="Left"
-               Margin="0,0,0,10"/>
+        <!-- 🔝 Top Banner with Easter Egg (invisible clickable zones) -->
+        <Grid Grid.Row="0" Height="80" Margin="0,0,0,5" Background="Black">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-        <!-- App Name -->
-        <TextBlock Grid.Row="1"
-                   Text="Tools - [Protes] Pro Notes Database"
-                   FontSize="18"
-                   FontWeight="Bold"
-                   HorizontalAlignment="Left"
-                   Margin="0,0,0,5"/>
+            <!-- LEFT: Invisible clickable zone -->
+            <Button Grid.Column="0"
+        Background="Transparent"
+        BorderThickness="0"
+        HorizontalAlignment="Right"
+        Width="40"
+        Click="EasterEgg_Click"
+        Focusable="False"
+        IsTabStop="False"
+        ToolTipService.IsEnabled="False">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" />
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            <!-- Optional: remove tooltip in production -->
 
-        <!-- Tagline -->
-        <TextBlock Grid.Row="2"
-                   Text="A Note-Taking Application with Local &amp; External Database Support"
-                   HorizontalAlignment="Left"
-                   TextAlignment="Left"
-                   Foreground="Gray"
-                   Margin="0,0,0,8"/>
+            <!-- CENTER: Protes logo on black -->
+            <Image Grid.Column="1"
+           Source="ProtesBlackBG.png"
+           Stretch="Uniform"
+           HorizontalAlignment="Center"
+           VerticalAlignment="Center"/>
 
-        <!-- Key Features Section -->
-        <TextBlock Grid.Row="3"
-                   Text="KEY FEATURES"
-                   FontSize="12"
-                   FontWeight="Bold"
-                   FontFamily="Consolas"
-                   Margin="0,0,0,5"/>
+            <!-- RIGHT: Invisible clickable zone -->
+            <Button Grid.Column="2"
+        Background="Transparent"
+        BorderThickness="0"
+        HorizontalAlignment="Left"
+        Width="40"
+        Click="EasterEgg_Click"
+        Focusable="False"
+        IsTabStop="False"
+        ToolTipService.IsEnabled="False">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" />
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            <!-- Optional: remove tooltip in production -->
+        </Grid>
 
-        <!-- Scrollable Content -->
-        <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto">
+        <!-- 🏷️ Fixed App Title + Tagline (NOT in ScrollViewer) -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,15">
+            <TextBlock Text="[Protes]"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,2"/>
+            <TextBlock Text="Pro Notes Database"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,5"/>
+            <TextBlock Text="A Note-Taking Application with Local &amp; External Database Support"
+                       HorizontalAlignment="Center"
+                       Foreground="Gray"/>
+        </StackPanel>
+
+        <!-- 📝 Scrollable Content: Starts at "KEY FEATURES" -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <!-- Features -->
-                <TextBlock TextWrapping="Wrap" FontFamily="Consolas" FontSize="11" Margin="0,0,0,10">
-                    <Run Text="• Store notes in SQLite Locally or connect to external MySQL 8.0+ databases"/>
-                    <LineBreak/>
-                    <Run Text="• Rich Note Management - Create, edit, search, and organize notes with tags and timestamps"/>
-                    <LineBreak/>
-                    <Run Text="• Flexible Import System - Import individual files or entire folder structures (.txt, .md, .csv)"/>
-                    <LineBreak/>
-                    <Run Text="• Advanced Export Options - Export as CSV (RFC 4180 compliant), Text files, or Markdown documents"/>
-                    <LineBreak/>
-                    <Run Text="• CSV Round-Trip Support - Export and re-import notes with full data integrity"/>
-                    <LineBreak/>
-                    <Run Text="• Batch Operations - Select multiple notes for bulk import/export with header checkbox selection"/>
-                    <LineBreak/>
-                    <Run Text="• Smart File Handling - Automatic filename sanitization and folder organization"/>
-                    <LineBreak/>
-                    <Run Text="• Real-time Progress - Status indicators and cancellation support for long-running operations"/>
-                    <LineBreak/>
-                    <Run Text="• Persistent Settings - User preferences retained across sessions"/>
+                <!-- Key Features -->
+                <TextBlock Text="KEY FEATURES"
+           FontSize="12"
+           FontWeight="Bold"
+           FontFamily="Consolas"
+           Margin="0,0,0,5"/>
+
+                <TextBlock TextWrapping="Wrap" FontFamily="Consolas" FontSize="11" Margin="0,0,0,15">
+    <Run Text="• Native .prote file format — your custom SQLite-based note database (.prote = .db with branding)"/><LineBreak/>
+    <Run Text="• Full Local + External MySQL 8.0+ support — switch modes seamlessly with AutoConnectOnSwitch"/><LineBreak/>
+    <Run Text="• Rich Note Management — create, edit, tag, search (by title/content/tags/modified), and batch-delete notes"/><LineBreak/>
+    <Run Text="• Flexible Import — individual files or entire folders (.txt, .md, .csv) with auto-sanitization"/><LineBreak/>
+    <Run Text="• Advanced Export — save as CSV (RFC 4180), Markdown (.md), or plain text (.txt) with UTF-8 encoding"/><LineBreak/>
+    <Run Text="• True Round-Trip CSV — export and re-import without data loss"/><LineBreak/>
+    <Run Text="• Batch Operations — multi-select via checkboxes or Ctrl+Click for bulk copy/paste/delete/export"/><LineBreak/>
+    <Run Text="• Single-Instance App — opening a .prote file switches database in the running instance"/><LineBreak/>
+    <Run Text="• System Tray Integration — minimize to tray (optional), with independent Note Editor window"/><LineBreak/>
+    <Run Text="• Customizable Toolbar — show/hide Connect, Local DBs, Search, Import/Export via View → Toolbar Options"/><LineBreak/>
+    <Run Text="• Persistent Settings — remembers last DB, UI visibility, zoom, notifications, and more across sessions"/><LineBreak/>
+    <Run Text="• File Association — double-click .prote files to open or prompt to switch databases"/>
                 </TextBlock>
 
-                <!-- Technical Details Section -->
+                <!-- Technical Details -->
                 <TextBlock Text="TECHNICAL DETAILS"
-                           FontSize="12"
-                           FontWeight="Bold"
-                           FontFamily="Consolas"
-                           Margin="0,0,0,5"/>
+           FontSize="12"
+           FontWeight="Bold"
+           FontFamily="Consolas"
+           Margin="0,0,0,5"/>
 
                 <TextBlock TextWrapping="Wrap" FontFamily="Consolas" FontSize="11">
-                    <Run Text="• Local Storage: SQLite (v3+) via Entity Framework Core"/>
-                    <LineBreak/>
-                    <Run Text="• External Database: MySQL 8.0+ (connection pooling, SSL support)"/>
-                    <LineBreak/>
-                    <Run Text="• Platform: C# (.NET 8.0)"/>
-                    <LineBreak/>
-                    <Run Text="• UI Framework: Windows Presentation Foundation (WPF)"/>
-                    <LineBreak/>
-                    <Run Text="• Supplementary UI: Windows Forms (for folder/file dialogs)"/>
-                    <LineBreak/>
-                    <Run Text="• Data Access: Entity Framework Core + ADO.NET"/>
-                    <LineBreak/>
-                    <Run Text="• Architecture: MVVM-inspired with structured XAML design"/>
-                    <LineBreak/>
-                    <Run Text="• Export Formats: TXT, Markdown (.md), CSV (RFC 4180, UTF-8)"/>
-                    <LineBreak/>
-                    <Run Text="• CSV Parsing: Custom RFC 4180 compliant parser for reliable import"/>
-                    <LineBreak/>
-                    <Run Text="• Character Encoding: Full Unicode (UTF-8) support"/>
+    <Run Text="• Local Storage: SQLite 3+ (via ADO.NET, not EF Core for performance)"/><LineBreak/>
+    <Run Text="• External Storage: MySQL 8.0+ with SSL, connection pooling, and schema validation"/><LineBreak/>
+    <Run Text="• Primary Format: .prote (custom extension for SQLite databases)"/><LineBreak/>
+    <Run Text="• Platform: C# (.NET 8.0) – Windows-only desktop application"/><LineBreak/>
+    <Run Text="• UI Framework: WPF (XAML-first design) with Windows Forms for folder/file dialogs"/><LineBreak/>
+    <Run Text="• Architecture: MVVM-inspired, with repository pattern and full INotifyPropertyChanged support"/><LineBreak/>
+    <Run Text="• Export Formats: TXT, Markdown (.md), CSV (RFC 4180 compliant, UTF-8)"/><LineBreak/>
+    <Run Text="• Import Parser: Custom CSV reader respecting quotes, commas, and line breaks"/><LineBreak/>
+    <Run Text="• Encoding: Full Unicode (UTF-8) for all file operations"/><LineBreak/>
+    <Run Text="• IPC: Single-instance enforcement via file association and command-line args (-new for blank note)"/><LineBreak/>
+    <Run Text="• Notifications: Optional toast-style alerts for copy/paste/delete operations"/><LineBreak/>
+    <Run Text="• Zoom: Adjustable DataGrid font size (Ctrl+/-/0) with persisted user preference"/>
                 </TextBlock>
             </StackPanel>
         </ScrollViewer>
 
-        <!-- OK Button -->
-        <Button Grid.Row="5"
+        <!-- 👤 Footer: Creator Bio Box -->
+        <Border Grid.Row="3"
+                Background="#F8F8F8"
+                BorderBrush="#DDD"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="5"
+                Margin="0,5,0,5">
+            <StackPanel Orientation="Vertical">
+                <!-- 1. Title -->
+                <TextBlock TextWrapping="Wrap"
+                           FontFamily="Segoe UI"
+                           FontSize="12"
+                           Foreground="#333"
+                           FontWeight="Bold"
+                           TextAlignment="Center"
+                           Margin="0,0,0,5">
+                    About the creator
+                </TextBlock>
+
+                <!-- 2. Personal Intro Paragraph -->
+                <TextBlock TextWrapping="Wrap"
+                           FontFamily="Segoe UI"
+                           FontSize="12"
+                           Foreground="#333"
+                           TextAlignment="Center"
+                           Margin="0,0,0,5">
+                    Lots of coffee was drank to make this app while moaning at AI to understand the issues and help me develop it! I'm self taught with a 'can do' anything attitude (if I try). I've dabbled in web dev (Html, Asp, Php, Databases), game dev (Unity, Unreal, Godot), game server dev (Rust), map dev (CS:GO, Hammer, Source SDK), MySQL (Databases). My first use of the internet was on mIRC (and programming » IRC Scripting!), now I'm making apps!
+                </TextBlock>
+
+                <!-- 3. Grid: Image + Links -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="45*"/>
+                        <ColumnDefinition Width="60*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button x:Name="CreatorImageButton"
+        Grid.Column="0"
+        Background="Transparent"
+        BorderThickness="0"
+        HorizontalAlignment="Right"
+        VerticalAlignment="Top"
+        Width="64"
+        Height="64"
+        Margin="0,0,5,0"
+        Click="CreatorImageButton_Click"
+        IsEnabled="False"
+        Cursor="Hand"
+        Focusable="False"
+        IsTabStop="False">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Grid Background="{TemplateBinding Background}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Grid>
+                            </ControlTemplate>
+                        </Button.Template>
+                        <Image x:Name="CreatorImage" Source="MrE_Protes.png"/>
+                    </Button>
+
+                    <TextBlock Grid.Column="1"
+                               TextWrapping="Wrap"
+                               FontFamily="Segoe UI"
+                               FontSize="12"
+                               Foreground="#333"
+                               VerticalAlignment="Center">
+                        <Run>PogaZeus, zX Gaming community on Steam</Run>
+                        <LineBreak/>
+                        <Run>GitHub:</Run>
+                        <Hyperlink NavigateUri="https://github.com/PogaZeus"
+                                   RequestNavigate="Hyperlink_RequestNavigate">
+                            https://github.com/PogaZeus
+                        </Hyperlink>
+                        <LineBreak/>
+                        <Run>Want to buy me a coffee?</Run><LineBreak/><Run> Paypal: </Run>
+                        <Hyperlink NavigateUri="https://paypal.me/zxgaming"
+                                   RequestNavigate="Hyperlink_RequestNavigate">
+                            https://paypal.me/zxgaming
+                        </Hyperlink>
+                    </TextBlock>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- ✅ OK Button -->
+        <Button Grid.Row="4"
                 Content="Nice One!"
                 Width="80"
                 Height="26"
-                HorizontalAlignment="Right"
+                HorizontalAlignment="Center"
                 Margin="0,5,0,0"
                 Click="OkButton_Click"/>
     </Grid>

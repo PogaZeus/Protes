@@ -8,14 +8,15 @@ using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Windows.Interop;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using SWF = System.Windows.Forms;
 
 namespace Protes
@@ -89,6 +90,7 @@ namespace Protes
             LocalDbControls.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
             ImportExportControls.Visibility = _settings.ViewToolbarImpEx ? Visibility.Visible : Visibility.Collapsed;
             SearchDatabase.Visibility = _settings.ViewToolbarSearch ? Visibility.Visible : Visibility.Collapsed;
+            CatButton.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
 
             // Load zoom level
             double zoom = _settings.DataGridZoom;
@@ -256,7 +258,16 @@ namespace Protes
         }
 
         // Toolbar options
-
+        private void OpenCatWindow_Click(object sender, RoutedEventArgs e)
+        {
+            var catWindow = new CatWindow(() =>
+            {
+                // Update visibility immediately based on the setting
+                CatButton.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
+            });
+            catWindow.Owner = this;
+            catWindow.Show();
+        }
         private void AutoConnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             _settings.AutoConnectOnSwitch = AutoConnectOnSwitchCheckBox.IsChecked == true;
@@ -1031,6 +1042,7 @@ namespace Protes
             LocalDbControls.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
             SearchDatabase.Visibility = _settings.ViewToolbarSearch ? Visibility.Visible : Visibility.Collapsed;
             ImportExportControls.Visibility = _settings.ViewToolbarImpEx ? Visibility.Visible : Visibility.Collapsed;
+            CatButton.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
 
             // Add to RefreshToolbarSettingsFromSettingsManager()
             ViewTitleMenuItem.IsChecked = _settings.ViewMainWindowTitle;

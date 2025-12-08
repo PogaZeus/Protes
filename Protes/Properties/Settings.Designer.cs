@@ -442,5 +442,17 @@ namespace Protes.Properties {
                 this["ViewToolbarImpEx"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ViewToolbarCat {
+            get {
+                return ((bool)(this["ViewToolbarCat"]));
+            }
+            set {
+                this["ViewToolbarCat"] = value;
+            }
+        }
     }
 }

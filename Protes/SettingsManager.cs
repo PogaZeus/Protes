@@ -274,6 +274,15 @@ namespace Protes
                 Save();
             }
         }
+        public bool ViewToolbarCat
+        {
+            get => global::Protes.Properties.Settings.Default.ViewToolbarCat;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ViewToolbarCat = value;
+                Save();
+            }
+        }
 
         // ===== PERSISTENCE =====
         public void Save()
