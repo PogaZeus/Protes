@@ -325,7 +325,7 @@ namespace Protes.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Segoe UI")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Consolas")]
         public string DefaultNoteEditorFontFamily {
             get {
                 return ((string)(this["DefaultNoteEditorFontFamily"]));
@@ -337,7 +337,7 @@ namespace Protes.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("14")]
+        [global::System.Configuration.DefaultSettingValueAttribute("11")]
         public double DefaultNoteEditorFontSize {
             get {
                 return ((double)(this["DefaultNoteEditorFontSize"]));

@@ -3,28 +3,38 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace Protes.Views
 {
     public partial class FontPickerWindow : Window, INotifyPropertyChanged
     {
+        // ===== Helper conversion methods (inline) =====
+        private static double PointsToDip(double points) => points * 96.0 / 72.0;
+        private static double DipToPoints(double dip) => dip * 72.0 / 96.0;
+
         // ===== Instance fields =====
         private FontFamily _selectedFontFamily;
         private double _selectedFontSize;
         private FontStyleItem _selectedFontStyle;
         private string _selectedScript;
-        // ===== Application hard-coded defaults (never change) =====
-        private static readonly string AppDefaultFontFamily = "Segoe UI";
-        private static readonly double AppDefaultFontSize = 14.0;
+        private string _fontInputText;
+        private bool _isUserTyping = false;
+        private DispatcherTimer _typeTimer;
+
+        // ===== Application hard-coded defaults (in POINTS now) =====
+        private static readonly string AppDefaultFontFamily = "Consolas";
+        private static readonly double AppDefaultFontSizeInPoints = 11.0; // matches Notepad feel
         private static readonly FontWeight AppDefaultFontWeight = FontWeights.Normal;
         private static readonly FontStyle AppDefaultFontStyle = System.Windows.FontStyles.Normal;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         // ===== Bindable collections =====
-        public List<FontFamily> FontFamilies { get; }
-        public List<double> FontSizes { get; }
+        public List<FontFamily> FontFamilies { get; private set; } // always full list
+        public List<double> FontSizes { get; } // in POINTS
         public List<FontStyleItem> FontStyles { get; set; }
         public List<string> Scripts { get; }
 
@@ -37,6 +47,12 @@ namespace Protes.Views
                 _selectedFontFamily = value;
                 OnPropertyChanged(nameof(SelectedFontFamily));
                 UpdateFontStyles();
+
+                // Only update input box if user isn't actively typing
+                if (!_isUserTyping)
+                {
+                    FontInputText = value?.Source ?? "";
+                }
             }
         }
 
@@ -63,10 +79,48 @@ namespace Protes.Views
             }
         }
 
+        public string FontInputText
+        {
+            get => _fontInputText;
+            set
+            {
+                if (_fontInputText == value) return;
+                _fontInputText = value;
+                OnPropertyChanged(nameof(FontInputText));
+
+                _isUserTyping = true;
+
+                // Find first font that starts with user input (case-insensitive)
+                if (!string.IsNullOrEmpty(value))
+                {
+                    var match = FontFamilies
+                        .FirstOrDefault(f => f.Source.StartsWith(value, StringComparison.OrdinalIgnoreCase));
+                    if (match != null)
+                    {
+                        SelectedFontFamily = match;
+                        FontListBox?.ScrollIntoView(match);
+                    }
+                }
+
+                // Reset typing state after inactivity
+                _typeTimer?.Stop();
+                _typeTimer?.Start();
+            }
+        }
+
         public string SelectedFontStyleName => _selectedFontStyle?.Name ?? "Regular";
         public FontWeight SelectedFontWeight => _selectedFontStyle?.Weight ?? FontWeights.Normal;
         public FontStyle SelectedFontStyleEnum => _selectedFontStyle?.Style ?? System.Windows.FontStyles.Normal;
-        public double SampleFontSize => _selectedFontSize > 24 ? 24 : _selectedFontSize;
+
+        // Sample text uses DIPs for rendering, but clamped
+        public double SampleFontSize
+        {
+            get
+            {
+                double dip = PointsToDip(_selectedFontSize);
+                return dip > 24 ? 24 : dip;
+            }
+        }
 
         public string SelectedScript
         {
@@ -91,18 +145,18 @@ namespace Protes.Views
         {
 #if DEBUG
             InitializeComponent();
-            // Minimal setup to avoid designer crash
             FontFamilies = new List<FontFamily> { new FontFamily(AppDefaultFontFamily) };
-            FontSizes = new List<double> { AppDefaultFontSize };
+            FontSizes = new List<double> { AppDefaultFontSizeInPoints };
             Scripts = new List<string> { "Western" };
             FontStyles = new List<FontStyleItem>
-{
-    new FontStyleItem("Regular", AppDefaultFontWeight, AppDefaultFontStyle)
-};
+            {
+                new FontStyleItem("Regular", AppDefaultFontWeight, AppDefaultFontStyle)
+            };
             SelectedFontFamily = FontFamilies[0];
-            SelectedFontSize = AppDefaultFontSize;
+            SelectedFontSize = AppDefaultFontSizeInPoints;
             SelectedFontStyle = FontStyles[0];
             SelectedScript = "Western";
+            FontInputText = AppDefaultFontFamily;
             DataContext = this;
 #endif
         }
@@ -110,7 +164,7 @@ namespace Protes.Views
         /// <summary>
         /// Runtime constructor — always use this at runtime.
         /// </summary>
-        public FontPickerWindow(FontFamily currentFont, double currentSize, SettingsManager settings)
+        public FontPickerWindow(FontFamily currentFont, double currentSizeInDip, SettingsManager settings)
         {
             if (settings == null)
                 throw new ArgumentNullException(nameof(settings));
@@ -118,8 +172,12 @@ namespace Protes.Views
             _settings = settings;
             InitializeComponent();
 
+            // Load full system font list
             FontFamilies = Fonts.SystemFontFamilies.OrderBy(f => f.Source).ToList();
-            FontSizes = new List<double> { 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72 };
+
+            // Font sizes in POINTS (user-friendly values)
+            FontSizes = new List<double> { 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72 };
+
             Scripts = new List<string>
             {
                 "Western", "Arabic", "Baltic", "Central European", "Chinese Simplified",
@@ -127,25 +185,51 @@ namespace Protes.Views
                 "Korean", "Thai", "Turkish", "Vietnamese"
             };
 
+            // Select initial font
             SelectedFontFamily = FontFamilies.FirstOrDefault(f => f.Source == currentFont?.Source)
                 ?? new FontFamily(_settings.DefaultNoteEditorFontFamily ?? AppDefaultFontFamily);
 
-            SelectedFontSize = FontSizes.Contains(currentSize) ? currentSize : _settings.DefaultNoteEditorFontSize;
-            SelectedScript = "Western";
+            // Convert size from DIPs → POINTS
+            double currentSizeInPoints = DipToPoints(currentSizeInDip);
+            currentSizeInPoints = Math.Round(currentSizeInPoints * 2) / 2.0;
+            SelectedFontSize = FontSizes.Contains(currentSizeInPoints)
+                ? currentSizeInPoints
+                : DipToPoints(_settings.DefaultNoteEditorFontSize);
 
+            SelectedScript = "Western";
             UpdateFontStyles();
 
-            // Restore saved default style
+            // Restore saved font style
             FontWeight savedWeight = ParseFontWeight(_settings.DefaultNoteEditorFontWeight);
             FontStyle savedStyle = ParseFontStyle(_settings.DefaultNoteEditorFontStyle);
-
             SelectedFontStyle = FontStyles.FirstOrDefault(s =>
-                s.Weight.Equals(savedWeight) && s.Style.Equals(savedStyle));
+                s.Weight.Equals(savedWeight) && s.Style.Equals(savedStyle)) ?? FontStyles.FirstOrDefault();
 
-            if (SelectedFontStyle == null)
-                SelectedFontStyle = FontStyles.FirstOrDefault();
+            // Set up typing timer
+            _typeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
+            _typeTimer.Tick += (s, e) =>
+            {
+                _isUserTyping = false;
+                _typeTimer.Stop();
+            };
+
+            // Initialize input box with current font name
+            FontInputText = SelectedFontFamily?.Source ?? AppDefaultFontFamily;
 
             DataContext = this;
+        }
+
+        // ===== Key handler for Escape key =====
+        private void FontInputBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                // Revert to currently selected font
+                FontInputText = SelectedFontFamily?.Source ?? "";
+                _isUserTyping = false;
+                _typeTimer?.Stop();
+                e.Handled = true;
+            }
         }
 
         // ===== Logic =====
@@ -203,7 +287,7 @@ namespace Protes.Views
             if (SetAsDefault)
             {
                 _settings.DefaultNoteEditorFontFamily = SelectedFontFamily.Source;
-                _settings.DefaultNoteEditorFontSize = SelectedFontSize;
+                _settings.DefaultNoteEditorFontSize = SelectedFontSize; // stored as POINTS
                 _settings.DefaultNoteEditorFontWeight = SelectedFontWeight.ToString();
                 _settings.DefaultNoteEditorFontStyle = SelectedFontStyleEnum.ToString();
             }
@@ -220,23 +304,28 @@ namespace Protes.Views
 
         private void RestoreDefaultButton_Click(object sender, RoutedEventArgs e)
         {
-            // Reset to APP DEFAULT (not user's saved default)
+            // Reset to app default
             SelectedFontFamily = new FontFamily(AppDefaultFontFamily);
-            SelectedFontSize = AppDefaultFontSize;
+            SelectedFontSize = AppDefaultFontSizeInPoints;
 
-            // Rebuild styles for Segoe UI (or fallback)
             UpdateFontStyles();
 
-            // Select "Regular"
             SelectedFontStyle = FontStyles.FirstOrDefault(s =>
                 s.Weight == AppDefaultFontWeight && s.Style == AppDefaultFontStyle)
                 ?? FontStyles.FirstOrDefault();
 
-            // ALSO reset the saved setting to app default
+            // Update input box
+            FontInputText = AppDefaultFontFamily;
+
+            // Clear typing state
+            _isUserTyping = false;
+            _typeTimer?.Stop();
+
+            // Save defaults
             _settings.DefaultNoteEditorFontFamily = AppDefaultFontFamily;
-            _settings.DefaultNoteEditorFontSize = AppDefaultFontSize;
+            _settings.DefaultNoteEditorFontSize = AppDefaultFontSizeInPoints;
             _settings.DefaultNoteEditorFontWeight = AppDefaultFontWeight.ToString();
-            _settings.DefaultNoteEditorFontStyle = AppDefaultFontStyle.ToString();        
+            _settings.DefaultNoteEditorFontStyle = AppDefaultFontStyle.ToString();
         }
 
         // ===== INotifyPropertyChanged =====

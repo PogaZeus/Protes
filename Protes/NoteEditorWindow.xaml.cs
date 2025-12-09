@@ -26,6 +26,8 @@ namespace Protes.Views
         public string NoteTitle { get; private set; }
         public string NoteContent { get; private set; }
         public string NoteTags { get; private set; }
+        private static double PointsToDip(double points) => points * 96.0 / 72.0;
+        private static double DipToPoints(double dip) => dip * 72.0 / 96.0;
         private void UpdateWindowTitle()
         {
             string baseTitle = string.IsNullOrWhiteSpace(TitleBox.Text)
@@ -54,17 +56,28 @@ namespace Protes.Views
             try
             {
                 ContentBox.FontFamily = new FontFamily(settings.DefaultNoteEditorFontFamily);
-                ContentBox.FontSize = settings.DefaultNoteEditorFontSize;
+                // Convert SAVED POINT SIZE → WPF DIPs
+                ContentBox.FontSize = PointsToDip(settings.DefaultNoteEditorFontSize);
                 ContentBox.FontWeight = ParseFontWeight(settings.DefaultNoteEditorFontWeight);
                 ContentBox.FontStyle = ParseFontStyle(settings.DefaultNoteEditorFontStyle);
+
+                TitleBox.FontFamily = ContentBox.FontFamily;
+                //TitleBox.FontSize = ContentBox.FontSize;
+                //TitleBox.FontWeight = ContentBox.FontWeight;
+                //TitleBox.FontStyle = ContentBox.FontStyle;
             }
             catch (Exception ex)
             {
                 // Fallback to safe defaults if settings are corrupted
                 ContentBox.FontFamily = SystemFonts.MessageFontFamily;
-                ContentBox.FontSize = 12.0;
+                ContentBox.FontSize = PointsToDip(11.0);
                 ContentBox.FontWeight = FontWeights.Normal;
                 ContentBox.FontStyle = FontStyles.Normal;
+
+                TitleBox.FontFamily = ContentBox.FontFamily;
+                //TitleBox.FontSize = ContentBox.FontSize;
+                //TitleBox.FontWeight = ContentBox.FontWeight;
+                //TitleBox.FontStyle = ContentBox.FontStyle;
 #if DEBUG
                 System.Diagnostics.Debug.WriteLine($"Font settings load error: {ex.Message}");
 #endif
@@ -176,6 +189,23 @@ namespace Protes.Views
                     e.Handled = true;
                     return;
                 }
+
+                // 👇 Handle remaining shortcuts (e.g., Zoom) only when NOT in a TextBox
+                if ((e.Key == Key.OemPlus || e.Key == Key.Add) && modifiers == ModifierKeys.Control)
+                {
+                    ZoomInMenuItem_Click(this, new RoutedEventArgs());
+                    e.Handled = true;
+                }
+                else if ((e.Key == Key.OemMinus || e.Key == Key.Subtract) && modifiers == ModifierKeys.Control)
+                {
+                    ZoomOutMenuItem_Click(this, new RoutedEventArgs());
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.D0 && modifiers == ModifierKeys.Control)
+                {
+                    RestoreZoomMenuItem_Click(this, new RoutedEventArgs());
+                    e.Handled = true;
+                }
             }
 
             // ❌ Block other shortcuts if in ANY TextBox (to avoid typing interference)
@@ -184,22 +214,6 @@ namespace Protes.Views
                 return;
             }
 
-            // 👇 Handle remaining shortcuts (e.g., Zoom) only when NOT in a TextBox
-            if ((e.Key == Key.OemPlus || e.Key == Key.Add) && modifiers == ModifierKeys.Control)
-            {
-                ZoomInMenuItem_Click(this, new RoutedEventArgs());
-                e.Handled = true;
-            }
-            else if ((e.Key == Key.OemMinus || e.Key == Key.Subtract) && modifiers == ModifierKeys.Control)
-            {
-                ZoomOutMenuItem_Click(this, new RoutedEventArgs());
-                e.Handled = true;
-            }
-            else if (e.Key == Key.D0 && modifiers == ModifierKeys.Control)
-            {
-                RestoreZoomMenuItem_Click(this, new RoutedEventArgs());
-                e.Handled = true;
-            }
         }
 
         // ===== NEW NOTE (from menu) =====
@@ -590,20 +604,27 @@ namespace Protes.Views
             try
             {
                 var settings = new SettingsManager();
-                var currentFont = ContentBox.FontFamily ?? System.Windows.SystemFonts.MessageFontFamily;
-                var currentSize = double.IsNaN(ContentBox.FontSize) ? 12.0 : ContentBox.FontSize;
-
-                var fontPicker = new FontPickerWindow(currentFont, currentSize, settings) { Owner = this };
+                var currentFont = ContentBox.FontFamily ?? SystemFonts.MessageFontFamily;
+                var currentSizeInDip = double.IsNaN(ContentBox.FontSize) ? PointsToDip(11.0) : ContentBox.FontSize;
+                var fontPicker = new FontPickerWindow(currentFont, currentSizeInDip, settings) { Owner = this };
 
                 if (fontPicker.ShowDialog() == true)
                 {
                     ContentBox.FontFamily = fontPicker.SelectedFontFamily;
-                    ContentBox.FontSize = fontPicker.SelectedFontSize;
+                    // ✅ Convert from POINTS (picker) to DIPs (WPF)
+                    ContentBox.FontSize = PointsToDip(fontPicker.SelectedFontSize);
                     ContentBox.FontWeight = fontPicker.SelectedFontWeight;
                     ContentBox.FontStyle = fontPicker.SelectedFontStyleEnum;
 
-                    _originalFontSize = ContentBox.FontSize; // if you still use this
+                    // ✅ Apply SAME to TitleBox
+                    TitleBox.FontFamily = fontPicker.SelectedFontFamily;
+                    //TitleBox.FontSize = fontSizeInDip;
+                    //TitleBox.FontWeight = fontPicker.SelectedFontWeight;
+                    //TitleBox.FontStyle = fontPicker.SelectedFontStyleEnum;
+
+                    _originalFontSize = ContentBox.FontSize;
                     _currentZoomLevel = 1.0;
+                    UpdateZoomDisplay(); // Good practice!
                 }
             }
             catch (Exception ex)

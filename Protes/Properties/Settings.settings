@@ -78,10 +78,10 @@
       <Value Profile="(Default)">13</Value>
     </Setting>
     <Setting Name="DefaultNoteEditorFontFamily" Type="System.String" Scope="User">
-      <Value Profile="(Default)">Segoe UI</Value>
+      <Value Profile="(Default)">Consolas</Value>
     </Setting>
     <Setting Name="DefaultNoteEditorFontSize" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">14</Value>
+      <Value Profile="(Default)">11</Value>
     </Setting>
     <Setting Name="DefaultNoteEditorFontWeight" Type="System.String" Scope="User">
       <Value Profile="(Default)">Normal</Value>

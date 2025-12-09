@@ -255,9 +255,9 @@ namespace Protes.Views
                 // "Load Selected" → hidden if current
                 LoadSelectedButton.Visibility = isCurrent ? Visibility.Collapsed : Visibility.Visible;
 
-                // "Remove from List" → hidden if in default folder OR if current
+                // "Remove from List & Delete" → hidden if in default folder OR if current
                 RemoveFromListButton.Visibility = (!isInDefaultFolder && !isCurrent) ? Visibility.Visible : Visibility.Collapsed;
-
+                DeleteDatabaseButton.Visibility = (!isInDefaultFolder && !isCurrent) ? Visibility.Visible : Visibility.Collapsed;
             }
             else
             {
