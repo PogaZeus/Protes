@@ -1618,21 +1618,17 @@ namespace Protes
                 var uri = new Uri("pack://application:,,,/Protes_W_Trans.ico");
                 var resource = Application.GetResourceStream(uri);
                 iconStream = resource?.Stream;
-
                 if (iconStream == null)
                 {
                     System.Diagnostics.Debug.WriteLine("Tray icon 'Protes_W_Trans.ico' not found as resource.");
                     return;
                 }
-
                 var icon = new System.Drawing.Icon(iconStream);
-
                 _notifyIcon = new SWF.NotifyIcon();
                 _notifyIcon.Icon = icon;
                 _notifyIcon.Visible = false;
                 _notifyIcon.Text = "Protes - Note Editor";
 
-                // Double-click to restore
                 _notifyIcon.DoubleClick += (s, e) =>
                 {
                     Show();
@@ -1640,19 +1636,49 @@ namespace Protes
                     Activate();
                 };
 
-                // Context menu
+                // ✅ Enhanced context menu
                 var contextMenu = new SWF.ContextMenu();
-                contextMenu.MenuItems.Add("Open", (s, e) =>
+
+                contextMenu.MenuItems.Add("Pro Notes Database", (s, e) =>
                 {
                     Show();
                     WindowState = WindowState.Normal;
                     Activate();
                 });
+
+                contextMenu.MenuItems.Add("-"); // separator
+
+                contextMenu.MenuItems.Add("New Note", (s, e) =>
+                {
+                    if (!_isConnected)
+                    {
+                        Show();
+                        WindowState = WindowState.Normal;
+                        Activate();
+                        MessageBox.Show(
+                            "Please connect to a database first before creating a new note.",
+                            "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    var editor = new NoteEditorWindow(noteId: null, onSaveRequested: OnSaveNoteRequested);
+                    editor.Show();
+                });
+
+                contextMenu.MenuItems.Add("Settings", (s, e) =>
+                {
+                    var settingsWindow = new SettingsWindow(_databasePath, this);
+                    settingsWindow.Show();
+                });
+
+                contextMenu.MenuItems.Add("-"); // separator
+
                 contextMenu.MenuItems.Add("Exit", (s, e) =>
                 {
                     _notifyIcon.Visible = false;
+                    _notifyIcon.Dispose();
                     Application.Current.Shutdown();
                 });
+
                 _notifyIcon.ContextMenu = contextMenu;
             }
             catch (Exception ex)
@@ -2064,6 +2090,17 @@ namespace Protes
             {
                 // Allow normal shutdown (no minimize involved)
                 base.OnClosing(e);
+            }
+        }
+        // Expose current DB path for SettingsWindow access
+        public string CurrentDbPathForSettings
+        {
+            get
+            {
+                // Return last local DB path if in Local mode, or fallback
+                return _settings.LastLocalDatabasePath
+                    ?? _databasePath
+                    ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Protes", "notes.db");
             }
         }
     }

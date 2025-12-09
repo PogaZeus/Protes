@@ -76,7 +76,7 @@
         </StatusBar>
 
         <!-- Main content -->
-        <Grid Margin="3">
+        <Grid Margin="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <!-- Title -->
@@ -89,7 +89,7 @@
             <!-- Title -->
             <Grid x:Name="TitleBar" Grid.Row="0" Margin="0,3,0,0">
                 <TextBox x:Name="TitleBox" FontSize="16" FontWeight="Bold"
-                     Padding="1" Margin="0,3,0,3" Text="Untitled" IsUndoEnabled="True" IsReadOnly="False" Focusable="True"/>
+                     Padding="1" Margin="0,0,0,3" Text="Untitled" IsUndoEnabled="True" IsReadOnly="False" Focusable="True"/>
             </Grid>
             <!-- Content -->
             <TextBox x:Name="ContentBox" Grid.Row="1" AcceptsReturn="True"
@@ -102,8 +102,8 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="Tags:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                <TextBox x:Name="TagsBox" Grid.Column="1" IsUndoEnabled="True" IsReadOnly="False" Focusable="True"/>
+                <TextBlock Text="Tags:" VerticalAlignment="Center" Margin="2,0,0,3"/>
+                <TextBox x:Name="TagsBox" Margin="0,0,0,3" Grid.Column="1" IsUndoEnabled="True" IsReadOnly="False" Focusable="True"/>
             </Grid>
         </Grid>
     </DockPanel>

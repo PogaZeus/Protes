@@ -197,7 +197,6 @@ namespace Protes.Views
 
             File.WriteAllText(fullPath, csv.ToString());
         }
-
         private void ExportAsTextFiles(List<ExportNoteItem> items, bool isMarkdown)
         {
             var ext = isMarkdown ? ".md" : ".txt";
@@ -205,12 +204,30 @@ namespace Protes.Views
             {
                 var note = _notes.First(n => n.Id == item.Id);
                 var safeTitle = string.Join("_", note.Title.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries)).Trim('_');
-                var filename = Path.Combine(_selectedFolder, $"{safeTitle}{ext}");
+                var filename = GetUniqueFilename(_selectedFolder, safeTitle, ext);
                 File.WriteAllText(filename, note.Content);
             }
         }
-
         // ===== HELPERS =====
+        private string GetUniqueFilename(string folder, string baseFilename, string extension)
+        {
+            var fullPath = Path.Combine(folder, $"{baseFilename}{extension}");
+
+            // If file doesn't exist, return the original name
+            if (!File.Exists(fullPath))
+                return fullPath;
+
+            // Otherwise, find a unique numbered variant
+            int counter = 1;
+            while (true)
+            {
+                fullPath = Path.Combine(folder, $"{baseFilename}({counter}){extension}");
+                if (!File.Exists(fullPath))
+                    return fullPath;
+                counter++;
+            }
+        }
+
         private string EscapeCsv(string input)
         {
             if (string.IsNullOrEmpty(input)) return "";
