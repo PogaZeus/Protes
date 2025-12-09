@@ -39,9 +39,9 @@ namespace Protes
         private List<FullNote> _copiedNotes = new List<FullNote>();
         private SWF.NotifyIcon _notifyIcon;
         // Zoom settings
-        private const double DEFAULT_ZOOM = 13.0;
-        private const double MIN_ZOOM = 10.0;
-        private const double MAX_ZOOM = 20.0;
+        private const double DEFAULT_ZOOM_POINTS = 11.0;
+        private const double MIN_ZOOM_POINTS = 8.0;
+        private const double MAX_ZOOM_POINTS = 24.0;
 
         public MainWindow()
         {
@@ -93,15 +93,15 @@ namespace Protes
             CatButton.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
 
             // Load zoom level
-            double zoom = _settings.DataGridZoom;
-            if (zoom < MIN_ZOOM) zoom = DEFAULT_ZOOM;
-            if (zoom > MAX_ZOOM) zoom = DEFAULT_ZOOM;
-            NotesDataGrid.FontSize = zoom;
+            double zoomPoints = _settings.DataGridZoomPoints;
+            if (zoomPoints < MIN_ZOOM_POINTS) zoomPoints = DEFAULT_ZOOM_POINTS;
+            if (zoomPoints > MAX_ZOOM_POINTS) zoomPoints = DEFAULT_ZOOM_POINTS;
+            NotesDataGrid.FontSize = zoomPoints * 96.0 / 72.0;
             // Use AddHandler to capture even if inner controls handled it
             this.AddHandler(KeyDownEvent, new KeyEventHandler(MainWindow_PreviewKeyDown), true);
 
             // Apply initial state
-
+            ApplyMainFontToDataGrid();
             UpdateDataGridColumns();
             UpdateToolbarVisibility();
 
@@ -212,28 +212,30 @@ namespace Protes
         }
         private void ZoomInMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            double newZoom = NotesDataGrid.FontSize + 1.0;
-            if (newZoom <= MAX_ZOOM)
+            double currentPoints = NotesDataGrid.FontSize * 72.0 / 96.0;
+            double newPoints = currentPoints + 1.0;
+            if (newPoints <= MAX_ZOOM_POINTS)
             {
-                NotesDataGrid.FontSize = newZoom;
-                _settings.DataGridZoom = newZoom;
+                NotesDataGrid.FontSize = newPoints * 96.0 / 72.0;
+                _settings.DataGridZoomPoints = newPoints; // Save as points
             }
         }
 
         private void ZoomOutMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            double newZoom = NotesDataGrid.FontSize - 1.0;
-            if (newZoom >= MIN_ZOOM)
+            double currentPoints = NotesDataGrid.FontSize * 72.0 / 96.0;
+            double newPoints = currentPoints - 1.0;
+            if (newPoints >= MIN_ZOOM_POINTS)
             {
-                NotesDataGrid.FontSize = newZoom;
-                _settings.DataGridZoom = newZoom;
+                NotesDataGrid.FontSize = newPoints * 96.0 / 72.0;
+                _settings.DataGridZoomPoints = newPoints;
             }
         }
 
         private void RestoreZoomMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            NotesDataGrid.FontSize = DEFAULT_ZOOM;
-            _settings.DataGridZoom = DEFAULT_ZOOM;
+            NotesDataGrid.FontSize = DEFAULT_ZOOM_POINTS * 96.0 / 72.0;
+            _settings.DataGridZoomPoints = DEFAULT_ZOOM_POINTS;
         }
 
         private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -1045,6 +1047,9 @@ namespace Protes
             ViewToolbarMenuItem.IsChecked = _isToolbarVisible;
             UpdateToolbarVisibility();
 
+            // Toolbar Options Menu
+            ToolbarOptionsMenu.Visibility = _settings.ViewToolbarOptionsInMenu ? Visibility.Visible : Visibility.Collapsed;
+
             // 2. Reload submenu item states
             ViewToolbarConnectMenuItem.IsChecked = _settings.ViewToolbarConnect;
             ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
@@ -1065,22 +1070,6 @@ namespace Protes
             ViewTagsMenuItem.IsChecked = _settings.ViewMainWindowTags;
             ViewModifiedMenuItem.IsChecked = _settings.ViewMainWindowMod;
             UpdateDataGridColumns(); // This already uses the settings
-
-            var viewMenu = (MenuItem)MainMenu.Items[2]; // Assuming "_View" is the 3rd top-level menu item
-            var toolbarOptionsMenu = ToolbarOptionsMenu;
-
-            bool shouldShow = _settings.ViewToolbarOptionsInMenu;
-
-            if (shouldShow && !viewMenu.Items.Contains(toolbarOptionsMenu))
-            {
-                // Insert it after "Toolbar" (which is the item before it)
-                int toolbarIndex = viewMenu.Items.IndexOf(ViewToolbarMenuItem);
-                viewMenu.Items.Insert(toolbarIndex + 1, toolbarOptionsMenu);
-            }
-            else if (!shouldShow && viewMenu.Items.Contains(toolbarOptionsMenu))
-            {
-                viewMenu.Items.Remove(toolbarOptionsMenu);
-            }
         }
 
         // ===== NOTE ACTIONS =====
@@ -1487,6 +1476,45 @@ namespace Protes
             Activate();
         }
 
+        // font main window
+        private void ApplyMainFontToDataGrid()
+        {
+            var settings = new SettingsManager();
+            try
+            {
+                NotesDataGrid.FontFamily = new FontFamily(settings.DefaultMainFontFamily);
+                NotesDataGrid.FontWeight = ParseFontWeight(settings.DefaultMainFontWeight);
+                NotesDataGrid.FontStyle = ParseFontStyle(settings.DefaultMainFontStyle);
+                // ✅ DO NOT set FontSize — zoom controls it!
+            }
+            catch
+            {
+                NotesDataGrid.FontFamily = SystemFonts.MessageFontFamily;
+                NotesDataGrid.FontWeight = FontWeights.Normal;
+                NotesDataGrid.FontStyle = FontStyles.Normal;
+            }
+        }
+
+        // Reuse your existing helpers or add these:
+        private static FontWeight ParseFontWeight(string weightStr)
+        {
+            if (weightStr == "Bold") return FontWeights.Bold;
+            if (weightStr == "Black") return FontWeights.Black;
+            if (weightStr == "ExtraBold") return FontWeights.ExtraBold;
+            if (weightStr == "DemiBold") return FontWeights.DemiBold;
+            if (weightStr == "Light") return FontWeights.Light;
+            if (weightStr == "ExtraLight") return FontWeights.ExtraLight;
+            if (weightStr == "Thin") return FontWeights.Thin;
+            return FontWeights.Normal;
+        }
+
+        private static FontStyle ParseFontStyle(string styleStr)
+        {
+            if (styleStr == "Italic") return FontStyles.Italic;
+            if (styleStr == "Oblique") return FontStyles.Oblique;
+            return FontStyles.Normal;
+        }
+
         // ===== DATABASE IMPORT HELPERS =====
         // Add these methods to your MainWindow.xaml.cs class
 
@@ -1796,6 +1824,39 @@ namespace Protes
             }
         }
 
+        //font
+        // Replace your existing MainWindowFontMenuItem_Click method with this:
+        private void MainWindowFontMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            var settings = new SettingsManager();
+            var fontPicker = new FontMainWindow(
+                NotesDataGrid.FontFamily,
+                NotesDataGrid.FontWeight,
+                NotesDataGrid.FontStyle,
+                settings
+            )
+            {
+                Owner = this
+            };
+
+            if (fontPicker.ShowDialog() == true)
+            {
+                // ✅ Apply selected font directly (bypass settings reload)
+                NotesDataGrid.FontFamily = fontPicker.SelectedFontFamily;
+                NotesDataGrid.FontWeight = fontPicker.SelectedFontWeight;
+                NotesDataGrid.FontStyle = fontPicker.SelectedFontStyleEnum;
+
+                // ✅ Save to settings only if "Set as default" is checked
+                if (fontPicker.SetAsDefault)
+                {
+                    settings.DefaultMainFontFamily = fontPicker.SelectedFontFamily.Source;
+                    settings.DefaultMainFontWeight = fontPicker.SelectedFontWeight.ToString();
+                    settings.DefaultMainFontStyle = fontPicker.SelectedFontStyleEnum.ToString();
+                    settings.Save(); // 👈 Ensure Save() is called!
+                }
+            }
+        }
+
         // Right click menu stuff
         private void NotesDataGrid_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
@@ -1960,6 +2021,7 @@ namespace Protes
 
 
         // ===== HELPERS =====
+
         internal string BuildExternalConnectionString()
         {
             var host = _settings.External_Host;

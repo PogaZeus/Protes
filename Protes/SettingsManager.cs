@@ -317,6 +317,46 @@ namespace Protes
         {
             DatabaseModeSetting = mode == DatabaseMode.Local ? "Local" : "External";
         }
+        // ===== DEFAULT MAIN WINDOW FONT =====
+        public string DefaultMainFontFamily
+        {
+            get => global::Protes.Properties.Settings.Default.DefaultMainFontFamily;
+            set
+            {
+                global::Protes.Properties.Settings.Default.DefaultMainFontFamily = value;
+                Save();
+            }
+        }
+
+        public double DataGridZoomPoints
+        {
+            get => global::Protes.Properties.Settings.Default.DataGridZoomPoints;
+            set
+            {
+                global::Protes.Properties.Settings.Default.DataGridZoomPoints = value;
+                Save();
+            }
+        }
+
+        public string DefaultMainFontWeight
+        {
+            get => global::Protes.Properties.Settings.Default.DefaultMainFontWeight;
+            set
+            {
+                global::Protes.Properties.Settings.Default.DefaultMainFontWeight = value;
+                Save();
+            }
+        }
+
+        public string DefaultMainFontStyle
+        {
+            get => global::Protes.Properties.Settings.Default.DefaultMainFontStyle;
+            set
+            {
+                global::Protes.Properties.Settings.Default.DefaultMainFontStyle = value;
+                Save();
+            }
+        }
 
         // ===== DEFAULT NOTE EDITOR FONT =====
         public string DefaultNoteEditorFontFamily
@@ -358,6 +398,8 @@ namespace Protes
                 Save();
             }
         }
+
+
         // ===== MISCELLANEOUS =====
         public string DefaultDatabaseFolder
         {

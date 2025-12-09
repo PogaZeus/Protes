@@ -313,7 +313,7 @@ namespace Protes.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("13")]
+        [global::System.Configuration.DefaultSettingValueAttribute("11")]
         public double DataGridZoom {
             get {
                 return ((double)(this["DataGridZoom"]));
@@ -464,6 +464,54 @@ namespace Protes.Properties {
             }
             set {
                 this["CloseToTray"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Segoe UI")]
+        public string DefaultMainFontFamily {
+            get {
+                return ((string)(this["DefaultMainFontFamily"]));
+            }
+            set {
+                this["DefaultMainFontFamily"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Normal")]
+        public string DefaultMainFontWeight {
+            get {
+                return ((string)(this["DefaultMainFontWeight"]));
+            }
+            set {
+                this["DefaultMainFontWeight"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Normal")]
+        public string DefaultMainFontStyle {
+            get {
+                return ((string)(this["DefaultMainFontStyle"]));
+            }
+            set {
+                this["DefaultMainFontStyle"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("11")]
+        public double DataGridZoomPoints {
+            get {
+                return ((double)(this["DataGridZoomPoints"]));
+            }
+            set {
+                this["DataGridZoomPoints"] = value;
             }
         }
     }

@@ -75,7 +75,7 @@
       <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="DataGridZoom" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">13</Value>
+      <Value Profile="(Default)">11</Value>
     </Setting>
     <Setting Name="DefaultNoteEditorFontFamily" Type="System.String" Scope="User">
       <Value Profile="(Default)">Consolas</Value>
@@ -112,6 +112,18 @@
     </Setting>
     <Setting Name="CloseToTray" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="DefaultMainFontFamily" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Segoe UI</Value>
+    </Setting>
+    <Setting Name="DefaultMainFontWeight" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Normal</Value>
+    </Setting>
+    <Setting Name="DefaultMainFontStyle" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Normal</Value>
+    </Setting>
+    <Setting Name="DataGridZoomPoints" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">11</Value>
     </Setting>
   </Settings>
 </SettingsFile>

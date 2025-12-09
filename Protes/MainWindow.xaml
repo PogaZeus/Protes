@@ -117,8 +117,10 @@
                 <Separator/>
                 <MenuItem Header="_Settings" Click="OpenSettings_Click"/>
             </MenuItem>
-
-            <MenuItem Header="_View">
+            <MenuItem Header="_Format">
+                <MenuItem Header="Font" Click="MainWindowFontMenuItem_Click"/>
+            </MenuItem>
+                    <MenuItem Header="_View">
                 <MenuItem x:Name="ViewTitleMenuItem" Header="Title" IsCheckable="True" Checked="ViewTitleMenuItem_Checked" Unchecked="ViewTitleMenuItem_Checked"/>
                 <MenuItem x:Name="ViewTagsMenuItem" Header="Tags" IsCheckable="True" Checked="ViewTagsMenuItem_Checked" Unchecked="ViewTagsMenuItem_Checked"/>
                 <MenuItem x:Name="ViewModifiedMenuItem" Header="Modified" IsCheckable="True" Checked="ViewModifiedMenuItem_Checked" Unchecked="ViewModifiedMenuItem_Checked"/>
