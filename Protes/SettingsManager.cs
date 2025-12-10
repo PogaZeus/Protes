@@ -135,7 +135,15 @@ namespace Protes
                 Save();
             }
         }
-
+        public bool LaunchOnStartup
+        {
+            get => Properties.Settings.Default.LaunchOnStartup;
+            set
+            {
+                Properties.Settings.Default.LaunchOnStartup = value;
+                Save();
+            }
+        }
         public bool SendToIntegrationEnabled
         {
             get => Properties.Settings.Default.SendToIntegrationEnabled;

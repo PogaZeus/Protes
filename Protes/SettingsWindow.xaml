@@ -240,6 +240,11 @@
                         <!-- Application Settings -->
                         <GroupBox Grid.Row="0" Header="Application Settings" Margin="0,0,0,5">
                             <StackPanel>
+                                <CheckBox x:Name="LaunchOnStartupCheckBox"
+                                  Content="Launch Protes on Windows startup"
+                                  Checked="LaunchOnStartupCheckBox_Checked"
+                                  Unchecked="LaunchOnStartupCheckBox_Unchecked"
+                                  Margin="0,5,0,0"/>
                                 <CheckBox x:Name="MinimizeToSystemTray"
                                           Content="Minimize to system tray instead of taskbar"
                                           Checked="MinimizeToSystemTray_Checked"
@@ -256,6 +261,7 @@
 
                         <GroupBox Grid.Row="1" Header="File Explorer &amp; Context Menu Integration" Margin="0,0,0,5">
                             <StackPanel>
+
                                 <CheckBox x:Name="ShellNewCheckBox"
                   Content="Add to Windows 'New' menu: 'Pro Note'"
                   Checked="ShellNewCheckBox_Checked"

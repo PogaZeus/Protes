@@ -62,6 +62,7 @@ namespace Protes.Views
             ViewToolbarSearchMenuItem.IsChecked = _settings.ViewToolbarSearch;
 
             //Systray
+            LaunchOnStartupCheckBox.IsChecked = _settings.LaunchOnStartup;
             MinimizeToSystemTray.IsChecked = _settings.MinimizeToTray;
             CloseToSystemTray.IsChecked = _settings.CloseToTray;
             ShellNewCheckBox.IsChecked = _settings.ShellNewIntegrationEnabled;
@@ -73,7 +74,61 @@ namespace Protes.Views
 
             _isInitializing = false;
         }
+        private void LaunchOnStartupCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
 
+            try
+            {
+                SetStartupRegistryKey(enable: true);
+                _settings.LaunchOnStartup = true;
+                _settings.Save();
+                // Optional: quiet success
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to enable startup launch:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                LaunchOnStartupCheckBox.IsChecked = false;
+            }
+        }
+
+        private void LaunchOnStartupCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            try
+            {
+                SetStartupRegistryKey(enable: false);
+                _settings.LaunchOnStartup = false;
+                _settings.Save();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to disable startup launch:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                LaunchOnStartupCheckBox.IsChecked = true;
+            }
+        }
+        private void SetStartupRegistryKey(bool enable)
+        {
+            using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
+                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", writable: true))
+            {
+                if (key == null)
+                    throw new InvalidOperationException("Unable to access startup registry key.");
+
+                string appName = "Protes";
+                if (enable)
+                {
+                    // Get the path to the current executable
+                    string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                    key.SetValue(appName, $"\"{exePath}\"");
+                }
+                else
+                {
+                    key.DeleteValue(appName, throwOnMissingValue: false);
+                }
+            }
+        }
         private void RegisterShellNew()
         {
             const string extension = ".prote";
