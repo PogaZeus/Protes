@@ -28,16 +28,24 @@ namespace Protes.Views
         private readonly object _progressLock = new object();
         private readonly Action _onImportCompleted;
         private bool _isBulkUpdating = false;
-        public ImportToDBWindow(string databasePath, DatabaseMode databaseMode, string externalConnectionString, INoteRepository noteRepository, Action onImportCompleted)
+
+        public ImportToDBWindow(
+            string databasePath,
+            DatabaseMode databaseMode,
+            string externalConnectionString,
+            INoteRepository noteRepository,
+            Action onImportCompleted,
+            string preselectedFilePath = null) // ✅ Optional parameter
         {
             InitializeComponent();
             DataContext = this;
+
             _databasePath = databasePath;
             _databaseMode = databaseMode;
             _externalConnectionString = externalConnectionString;
             _noteRepository = noteRepository;
             _onImportCompleted = onImportCompleted;
-            _fileItems = new ObservableCollection<ImportFileItem>();
+
             FileListDataGrid.ItemsSource = _fileItems;
             UpdateClearListButtonState();
             UpdateDatabaseInfo();
@@ -46,11 +54,35 @@ namespace Protes.Views
             _fileItems.CollectionChanged += (s, e) => UpdateImportButtonState();
             FileListDataGrid.AddHandler(CheckBox.CheckedEvent, new RoutedEventHandler(OnItemChecked));
             FileListDataGrid.AddHandler(CheckBox.UncheckedEvent, new RoutedEventHandler(OnItemChecked));
+
+            // ✅ Handle preselected file (e.g., from "Send to")
+            if (!string.IsNullOrEmpty(preselectedFilePath) && File.Exists(preselectedFilePath))
+            {
+                AddFileToImportList(preselectedFilePath);
+            }
         }
+
+        // ✅ Helper to add a single file (used by constructor and future "Add Files" logic)
+        private void AddFileToImportList(string filePath)
+        {
+            if (!_fileItems.Any(f => f.FullPath.Equals(filePath, StringComparison.OrdinalIgnoreCase)))
+            {
+                var fileInfo = new FileInfo(filePath);
+                _fileItems.Add(new ImportFileItem
+                {
+                    FullPath = filePath,
+                    FileName = fileInfo.Name,
+                    FileSize = $"{fileInfo.Length / 1024} KB",
+                    IsSelected = true // Auto-select since user explicitly sent it
+                });
+            }
+        }
+
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
         private void UpdateDatabaseInfo()
         {
             if (_databaseMode == DatabaseMode.Local)
@@ -74,13 +106,10 @@ namespace Protes.Views
             {
                 foreach (var file in dialog.FileNames)
                 {
-                    if (!_fileItems.Any(f => f.FullPath == file))
-                    {
-                        _fileItems.Add(new ImportFileItem { FullPath = file });
-                    }
+                    AddFileToImportList(file);
                 }
                 UpdateImportButtonState();
-                UpdateClearListButtonState(); 
+                UpdateClearListButtonState();
             }
         }
 
@@ -90,13 +119,10 @@ namespace Protes.Views
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 return;
 
-            // Cancel any ongoing scan
             _scanCancellationTokenSource?.Cancel();
             _scanCancellationTokenSource = new CancellationTokenSource();
 
             string rootFolder = dialog.SelectedPath;
-
-            // Reset counters
             _filesScanned = 0;
             _totalFilesToScan = 0;
 
@@ -111,18 +137,14 @@ namespace Protes.Views
                     return files;
                 }, _scanCancellationTokenSource.Token);
 
-                // Filter by extension
                 var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".txt", ".md", ".csv" };
                 var validFiles = scannedFiles.Where(f => allowedExtensions.Contains(Path.GetExtension(f))).ToList();
 
-                // Add to list (avoid duplicates)
                 foreach (var file in validFiles)
                 {
-                    if (!_fileItems.Any(f => f.FullPath == file))
-                    {
-                        _fileItems.Add(new ImportFileItem { FullPath = file });
-                    }
+                    AddFileToImportList(file);
                 }
+
                 UpdateClearListButtonState();
                 if (validFiles.Count == 0)
                 {
@@ -163,7 +185,6 @@ namespace Protes.Views
                     fileList.AddRange(files);
                     _filesScanned += files.Length;
 
-                    // Update status text on UI thread
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         string msg = $"Scanning {_filesScanned:N0} of {_totalFilesToScan:N0} files...";
@@ -183,7 +204,7 @@ namespace Protes.Views
             catch (IOException) { /* Skip */ }
         }
 
-        // === HEADER CHECKBOX (FIXED) ===
+        // === HEADER CHECKBOX ===
         private bool _allItemsAreChecked;
         public bool AllItemsAreChecked
         {
@@ -195,7 +216,7 @@ namespace Protes.Views
                     _allItemsAreChecked = value;
                     OnPropertyChanged(nameof(AllItemsAreChecked));
 
-                    _isBulkUpdating = true; // 👈 START BULK
+                    _isBulkUpdating = true;
                     try
                     {
                         foreach (var item in _fileItems)
@@ -205,7 +226,7 @@ namespace Protes.Views
                     }
                     finally
                     {
-                        _isBulkUpdating = false; // 👈 END BULK
+                        _isBulkUpdating = false;
                     }
                     UpdateImportButtonState();
                 }
@@ -216,9 +237,7 @@ namespace Protes.Views
         {
             if (_isBulkUpdating) return;
             var allChecked = _fileItems.All(f => f.IsSelected);
-            var anyChecked = _fileItems.Any(f => f.IsSelected);
-
-            AllItemsAreChecked = allChecked; // This updates the header via binding
+            AllItemsAreChecked = allChecked;
             UpdateImportButtonState();
         }
 
@@ -259,12 +278,9 @@ namespace Protes.Views
                 }
             }
 
-            // Show appropriate message based on results
             if (failCount == 0)
             {
                 MessageBox.Show($"{successCount} file(s) imported successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                // Clear list after successful import
                 _fileItems.Clear();
                 UpdateClearListButtonState();
                 UpdateStatus("");
@@ -283,7 +299,6 @@ namespace Protes.Views
                 MessageBox.Show($"Partial import: {successCount} succeeded, {failCount} failed.\n\nErrors:\n" + string.Join("\n", errors),
                     "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
 
-                // Remove successfully imported files
                 var failedPaths = errors.Select(err => err.Split(':')[0]).ToList();
                 var itemsToRemove = _fileItems.Where(f => !failedPaths.Contains(Path.GetFileName(f.FullPath))).ToList();
                 foreach (var item in itemsToRemove)
@@ -300,17 +315,16 @@ namespace Protes.Views
         private void ImportTextFile(string filePath)
         {
             var title = Path.GetFileNameWithoutExtension(filePath);
-            var content = File.ReadAllText(filePath);
+            var content = File.ReadAllText(filePath, Encoding.UTF8);
             var tags = Path.GetDirectoryName(filePath).Split(Path.DirectorySeparatorChar).LastOrDefault() ?? "Imported";
             _noteRepository.SaveNote(title, content, tags);
         }
 
         private void ImportCsvFile(string filePath)
         {
-            var lines = File.ReadAllLines(filePath);
+            var lines = File.ReadAllLines(filePath, Encoding.UTF8);
             if (lines.Length == 0) return;
 
-            // Parse the header row
             var headers = ParseCsvLine(lines[0]);
             int titleCol = -1, contentCol = -1, tagsCol = -1, modifiedCol = -1;
 
@@ -328,11 +342,9 @@ namespace Protes.Views
                 throw new InvalidOperationException($"CSV file '{Path.GetFileName(filePath)}' is missing required columns 'Title' and 'Content'.");
             }
 
-            // Parse each data row (handling multi-line fields)
-            string fullText = File.ReadAllText(filePath);
+            string fullText = File.ReadAllText(filePath, Encoding.UTF8);
             var records = ParseCsvFile(fullText);
 
-            // Skip header row
             for (int i = 1; i < records.Count; i++)
             {
                 var fields = records[i];
@@ -364,19 +376,14 @@ namespace Protes.Views
 
                 if (inQuotes)
                 {
-                    if (c == '"')
+                    if (c == '"' && nextChar == '"')
                     {
-                        if (nextChar == '"')
-                        {
-                            // Escaped quote - add single quote to field
-                            currentField.Append('"');
-                            i++; // Skip next quote
-                        }
-                        else
-                        {
-                            // End of quoted field
-                            inQuotes = false;
-                        }
+                        currentField.Append('"');
+                        i++;
+                    }
+                    else if (c == '"')
+                    {
+                        inQuotes = false;
                     }
                     else
                     {
@@ -387,18 +394,15 @@ namespace Protes.Views
                 {
                     if (c == '"')
                     {
-                        // Start of quoted field
                         inQuotes = true;
                     }
                     else if (c == ',')
                     {
-                        // End of field
                         currentRecord.Add(currentField.ToString());
                         currentField.Clear();
                     }
                     else if (c == '\r' || c == '\n')
                     {
-                        // End of record
                         if (currentField.Length > 0 || currentRecord.Count > 0)
                         {
                             currentRecord.Add(currentField.ToString());
@@ -406,7 +410,6 @@ namespace Protes.Views
                             currentRecord = new List<string>();
                             currentField.Clear();
                         }
-                        // Skip \r\n pairs
                         if (c == '\r' && nextChar == '\n')
                             i++;
                     }
@@ -417,7 +420,6 @@ namespace Protes.Views
                 }
             }
 
-            // Add final field and record if any
             if (currentField.Length > 0 || currentRecord.Count > 0)
             {
                 currentRecord.Add(currentField.ToString());
@@ -476,12 +478,11 @@ namespace Protes.Views
             return fields;
         }
 
-        // === CANCELLATION & STATUS ===
-
         private void UpdateClearListButtonState()
         {
             ClearListButton.IsEnabled = _fileItems.Count > 0;
         }
+
         private void UpdateStatus(string message, bool isScanning = false)
         {
             if (isScanning)
@@ -502,7 +503,7 @@ namespace Protes.Views
         private void ClearListButton_Click(object sender, RoutedEventArgs e)
         {
             _fileItems.Clear();
-            UpdateStatus(""); // Hides progress + status
+            UpdateStatus("");
             ImportButton.IsEnabled = false;
             UpdateClearListButtonState();
         }
@@ -523,6 +524,9 @@ namespace Protes.Views
         {
             private bool _isSelected;
             public string FullPath { get; set; }
+            public string FileName { get; set; } // ✅ Added for UI display
+            public string FileSize { get; set; } // ✅ Added for UI display
+
             public bool IsSelected
             {
                 get => _isSelected;

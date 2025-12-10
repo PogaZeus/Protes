@@ -135,6 +135,16 @@ namespace Protes
                 Save();
             }
         }
+
+        public bool SendToIntegrationEnabled
+        {
+            get => Properties.Settings.Default.SendToIntegrationEnabled;
+            set
+            {
+                Properties.Settings.Default.SendToIntegrationEnabled = value;
+                Save();
+            }
+        }
         public bool MinimizeToTray
         {
             get => Properties.Settings.Default.MinimizeToTray;

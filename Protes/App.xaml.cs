@@ -27,16 +27,32 @@ namespace Protes
 
             ThreadPool.QueueUserWorkItem(_ => ListenForRequests());
 
-            base.OnStartup(e);
-
             var mainWindow = new MainWindow();
+            Current.MainWindow = mainWindow;
             mainWindow.Title = "[Protes] Pro Notes Database";
             mainWindow.Show();
 
+            // Handle startup args AFTER window is ready
             if (e.Args.Length > 0)
             {
-                mainWindow.HandleIpcMessage(e.Args[0]);
+                string arg = e.Args[0];
+                if (File.Exists(arg))
+                {
+                    mainWindow.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        mainWindow.HandleIpcMessage(arg);
+                    }));
+                }
+                else if (arg == "-new")
+                {
+                    mainWindow.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        mainWindow.HandleIpcMessage(arg);
+                    }));
+                }
             }
+
+            base.OnStartup(e);
         }
 
         protected override void OnExit(ExitEventArgs e)
@@ -91,13 +107,9 @@ namespace Protes
                                     {
                                         mainWindow.ActivateWindow();
                                     }
-                                    else if (message == "-new")
-                                    {
-                                        mainWindow.HandleIpcMessage(message);
-                                    }
                                     else
                                     {
-                                        mainWindow.ActivateWindow();
+                                        // 👇 THIS IS THE KEY: route ALL messages through HandleIpcMessage
                                         mainWindow.HandleIpcMessage(message);
                                     }
                                 }

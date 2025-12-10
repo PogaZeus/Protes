@@ -255,11 +255,19 @@
                         </GroupBox>
 
                         <GroupBox Grid.Row="1" Header="File Explorer &amp; Context Menu Integration" Margin="0,0,0,5">
-                            <CheckBox x:Name="ShellNewCheckBox"
-                                      Content="Add 'Note Editor (Protes)' to Windows 'New' menu"
-                                      Checked="ShellNewCheckBox_Checked"
-                                      Unchecked="ShellNewCheckBox_Unchecked"
-                                      Margin="0,5,0,0"/>
+                            <StackPanel>
+                                <CheckBox x:Name="ShellNewCheckBox"
+                  Content="Add to Windows 'New' menu: 'Pro Note'"
+                  Checked="ShellNewCheckBox_Checked"
+                  Unchecked="ShellNewCheckBox_Unchecked"
+                  Margin="0,5,0,0"/>
+
+                                <CheckBox x:Name="SendToCheckBox"
+                  Content="Add to Windows 'Send to' menu: 'Protes (Import)'"
+                  Checked="SendToCheckBox_Checked"
+                  Unchecked="SendToCheckBox_Unchecked"
+                  Margin="0,5,0,5"/>
+                            </StackPanel>
                         </GroupBox>
 
                         <!-- Auto Connect -->

@@ -65,7 +65,7 @@ namespace Protes.Views
             MinimizeToSystemTray.IsChecked = _settings.MinimizeToTray;
             CloseToSystemTray.IsChecked = _settings.CloseToTray;
             ShellNewCheckBox.IsChecked = _settings.ShellNewIntegrationEnabled;
-
+            SendToCheckBox.IsChecked = _settings.SendToIntegrationEnabled;
             CurrentDbPathText.Text = _currentDatabasePath;
             LoadLocalDatabases();
             LoadExternalSettings();
@@ -148,6 +148,98 @@ namespace Protes.Views
             try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{progId}"); } catch { }
         }
 
+        private void SendToCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            if (MessageBox.Show(
+                "This will add 'Protes (Import)' to the Windows 'Send to' context menu.\n\n" +
+                "When you right-click a file in File Explorer and choose 'Send to → Protes (Import)',\n" +
+                "the file will be imported into your current Protes database.\n\n" +
+                "Allow this?",
+                "Protes", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    RegisterSendToShortcut();
+                    _settings.SendToIntegrationEnabled = true;
+                    _settings.Save();
+                    MessageBox.Show("Send to integration enabled successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to enable Send to integration:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                    SendToCheckBox.IsChecked = false;
+                }
+            }
+            else
+            {
+                SendToCheckBox.IsChecked = false;
+            }
+        }
+
+        private void SendToCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            if (MessageBox.Show(
+                "Remove 'Protes (Import)' from the Windows 'Send to' menu?",
+                "Protes", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    UnregisterSendToShortcut();
+                    _settings.SendToIntegrationEnabled = false;
+                    _settings.Save();
+                    MessageBox.Show("Send to integration removed.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to remove integration:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                    SendToCheckBox.IsChecked = true; // revert
+                }
+            }
+            else
+            {
+                SendToCheckBox.IsChecked = true;
+            }
+        }
+        private void RegisterSendToShortcut()
+        {
+            string sendToFolder = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Microsoft", "Windows", "SendTo"
+            );
+
+            string shortcutPath = Path.Combine(sendToFolder, "Protes (Import).lnk");
+            string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+
+            Type shellType = Type.GetTypeFromProgID("WScript.Shell");
+            dynamic shell = Activator.CreateInstance(shellType);
+            dynamic shortcut = shell.CreateShortcut(shortcutPath);
+
+            shortcut.TargetPath = exePath;
+            shortcut.Arguments = "";
+            shortcut.WindowStyle = 1;
+            shortcut.Description = "Import file into Protes";
+            shortcut.IconLocation = exePath + ",0";
+            shortcut.Save();
+        }
+
+        private void UnregisterSendToShortcut()
+        {
+            string sendToFolder = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Microsoft", "Windows", "SendTo"
+            );
+            string shortcutPath = Path.Combine(sendToFolder, "Protes (Import).lnk");
+
+            if (File.Exists(shortcutPath))
+            {
+                File.Delete(shortcutPath);
+            }
+        }
+  
         // Change Default Database Folder
         private void ChangeDefaultFolderButton_Click(object sender, RoutedEventArgs e)
         {

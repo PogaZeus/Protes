@@ -111,6 +111,10 @@ namespace Protes
             MainContentGrid.ContextMenu = (ContextMenu)FindResource("DataGridContextMenu");
             NotesDataGrid_ContextMenuOpening(null, null);
 
+            // For WM_COPYDATA to find reliably
+            var helper = new WindowInteropHelper(this);
+            helper.EnsureHandle();
+
             var showNotifications = _settings.ShowNotifications;
             SelectCheckBoxColumn.Visibility = Visibility.Collapsed;
             Loaded += MainWindow_Loaded;
@@ -192,6 +196,30 @@ namespace Protes
                     MessageBox.Show($"Failed to create database:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
+        }
+
+        // Import Via Send To
+        public void ImportFileViaSendTo(string filePath)
+        {
+            System.Diagnostics.Debug.WriteLine($"[IMPORT] Attempting to import: {filePath}");
+            System.Diagnostics.Debug.WriteLine($"[IMPORT] IsConnected: {_isConnected}");
+
+            if (!_isConnected)
+            {
+                ActivateWindow();
+                MessageBox.Show("Please connect to a database before importing.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+                var importWindow = new ImportToDBWindow(
+                _databasePath,
+                _currentMode,
+                _externalConnectionString,
+                _noteRepository,
+                () => LoadNotesFromDatabase(),
+                preselectedFilePath: filePath
+            );
+            importWindow.Show(); // or ShowDialog()
         }
 
         // Checkbox selection
@@ -1473,44 +1501,55 @@ namespace Protes
         //Opening a .prote file (External file incoming!)
         public void HandleIpcMessage(string message)
         {
+            System.Diagnostics.Debug.WriteLine($"[IPC] Received: '{message}' | Exists: {File.Exists(message)}");
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 if (message == "-new")
                 {
-                    // User wants to create a new note in the currently connected database
-                    // DON'T activate MainWindow - keep it in tray if minimized
-
+                    // Create new note
                     if (!_isConnected)
                     {
-                        // Only show MainWindow if we need to display error
                         ActivateWindow();
-                        MessageBox.Show(
-                            "Please connect to a database first before creating a new note.\n\n" +
-                            "Go to Options → Use Local Database or Use External Database, then click Connect.",
-                            "Protes",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Warning);
+                        MessageBox.Show("Please connect to a database first...", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    var editor = new NoteEditorWindow(noteId: null, onSaveRequested: OnSaveNoteRequested);
+                    editor.Show();
+                }
+                else if (File.Exists(message) &&
+                         (message.EndsWith(".txt", StringComparison.OrdinalIgnoreCase) ||
+                          message.EndsWith(".md", StringComparison.OrdinalIgnoreCase) ||
+                          message.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)))
+                {
+                    // 🟢 IMPORT TEXT/MD/CSV FILE via Send To
+                    if (!_isConnected)
+                    {
+                        ActivateWindow();
+                        MessageBox.Show("Please connect to a database before importing.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
 
-                    var editor = new NoteEditorWindow(
-                        noteId: null,
-                        onSaveRequested: OnSaveNoteRequested
+                    // Open Import window with preselected file
+                    var importWindow = new ImportToDBWindow(
+                        _databasePath,
+                        _currentMode,
+                        _externalConnectionString,
+                        _noteRepository,
+                        () => LoadNotesFromDatabase(),
+                        preselectedFilePath: message
                     );
-                    // Don't set Owner so NoteEditor stays independent on taskbar
-                    // when MainWindow is minimized to tray
-                    editor.Show();
+                    importWindow.Show(); // or ShowDialog() if preferred
                 }
                 else if (File.Exists(message) &&
                          (message.EndsWith(".db", StringComparison.OrdinalIgnoreCase) ||
                           message.EndsWith(".prote", StringComparison.OrdinalIgnoreCase)))
                 {
-                    // User double-clicked a .prote/.db file - check if imported and switch
+                    // Handle .db/.prote file open (existing logic)
                     PromptAndSwitchDatabase(message);
                 }
                 else
                 {
-                    // Unknown message or file doesn't exist - just activate
+                    // Unknown — just activate
                     ActivateWindow();
                 }
             }));
@@ -2068,7 +2107,44 @@ namespace Protes
 
 
         // ===== HELPERS =====
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            HwndSource source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
+            if (source != null)
+            {
+                source.AddHook(WndProc);
+            }
+        }
 
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (msg == 0x004A) // WM_COPYDATA
+            {
+                try
+                {
+                    var cds = Marshal.PtrToStructure<COPYDATASTRUCT>(lParam);
+                    if (cds.cbData > 0 && cds.lpData != IntPtr.Zero)
+                    {
+                        byte[] buffer = new byte[cds.cbData];
+                        Marshal.Copy(cds.lpData, buffer, 0, cds.cbData);
+                        string message = System.Text.Encoding.UTF8.GetString(buffer).TrimEnd('\0');
+
+                        // Handle in UI thread
+                        this.Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            HandleIpcMessage(message);
+                        }));
+                    }
+                    handled = true;
+                }
+                catch
+                {
+                    // Ignore malformed messages
+                }
+            }
+            return IntPtr.Zero;
+        }
         internal string BuildExternalConnectionString()
         {
             var host = _settings.External_Host;
