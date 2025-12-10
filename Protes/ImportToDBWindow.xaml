@@ -12,6 +12,8 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <!-- Instructional text -->
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -19,14 +21,23 @@
         <!-- Database Info -->
         <TextBlock x:Name="DatabaseInfoText" Text="Database: ..." FontSize="14" FontWeight="Bold" Margin="0,5,0,5"/>
 
+        <!-- Import Support Info -->
+        <TextBlock Grid.Row="1"
+                   Text="Import supports *.txt, *.md, and *.csv files. CSV files must meet the Protes CSV Export format."
+                   FontSize="12"
+                   FontStyle="Italic"
+                   Foreground="Gray"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,8"/>
+
         <!-- Add Buttons -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,5">
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,5">
             <Button Content="Add Files…" Padding="10,5" Click="AddFilesButton_Click" Margin="0,0,5,0"/>
             <Button Content="Add Folder…" Padding="10,5" Click="AddFolderButton_Click"/>
         </StackPanel>
 
         <!-- File List -->
-        <DataGrid Grid.Row="2" x:Name="FileListDataGrid"
+        <DataGrid Grid.Row="3" x:Name="FileListDataGrid"
                   AutoGenerateColumns="False"
                   CanUserAddRows="False"
                   CanUserSortColumns="True"
@@ -53,7 +64,7 @@
         </DataGrid>
 
         <!-- Bottom Controls: Progress, Cancel, Clear, Import, Close -->
-        <Grid Grid.Row="3" Margin="0,5,0,5">
+        <Grid Grid.Row="4" Margin="0,5,0,5">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>

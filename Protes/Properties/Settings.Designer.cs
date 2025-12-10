@@ -502,17 +502,5 @@ namespace Protes.Properties {
                 this["DefaultMainFontStyle"] = value;
             }
         }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("11")]
-        public double DataGridZoomPoints {
-            get {
-                return ((double)(this["DataGridZoomPoints"]));
-            }
-            set {
-                this["DataGridZoomPoints"] = value;
-            }
-        }
     }
 }

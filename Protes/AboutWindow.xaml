@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Protes.Views.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="[Protes] Pro Notes Database - About" 
+        Title="[Protes] About" 
         Height="620" 
         Width="700"
         WindowStartupLocation="CenterOwner"

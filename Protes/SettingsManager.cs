@@ -328,16 +328,6 @@ namespace Protes
             }
         }
 
-        public double DataGridZoomPoints
-        {
-            get => global::Protes.Properties.Settings.Default.DataGridZoomPoints;
-            set
-            {
-                global::Protes.Properties.Settings.Default.DataGridZoomPoints = value;
-                Save();
-            }
-        }
-
         public string DefaultMainFontWeight
         {
             get => global::Protes.Properties.Settings.Default.DefaultMainFontWeight;

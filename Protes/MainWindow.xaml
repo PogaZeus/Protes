@@ -115,6 +115,13 @@
                 <MenuItem Header="Local Database" Click="UseLocalDb_Click" IsCheckable="True"/>
                 <MenuItem Header="External Database" Click="UseExternalDb_Click" IsCheckable="True"/>
                 <Separator/>
+                <MenuItem x:Name="ToolbarOptionsMenu" Header="Toolbar Options">
+                    <MenuItem x:Name="ViewToolbarConnectMenuItem" Header="Connect/Disconnect" IsCheckable="True" Checked="ViewToolbarConnectMenuItem_Checked" Unchecked="ViewToolbarConnectMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarACOSMenuItem" Header="AutoConnectOnSwitch" IsCheckable="True" Checked="ViewToolbarACOSMenuItem_Checked" Unchecked="ViewToolbarACOSMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarLocalDBMenuItem" Header="Local Databases" IsCheckable="True" Checked="ViewToolbarLocalDBMenuItem_Checked" Unchecked="ViewToolbarLocalDBMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarImpExMenuItem" Header="Import/Export" IsCheckable="True" Checked="ViewToolbarImpExMenuItem_Checked" Unchecked="ViewToolbarImpExMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarSearchMenuItem" Header="Search Database" IsCheckable="True" Checked="ViewToolbarSearchMenuItem_Checked" Unchecked="ViewToolbarSearchMenuItem_Checked"/>
+                </MenuItem>
                 <MenuItem Header="_Settings" Click="OpenSettings_Click"/>
             </MenuItem>
             <MenuItem Header="_Format">
@@ -132,13 +139,6 @@
                 </MenuItem>
                 <Separator/>
                 <MenuItem x:Name="ViewToolbarMenuItem" Header="Toolbar" IsCheckable="True" Checked="ViewToolbarMenuItem_Checked" Unchecked="ViewToolbarMenuItem_Checked"/>
-                <MenuItem x:Name="ToolbarOptionsMenu" Header="Toolbar Options">
-                    <MenuItem x:Name="ViewToolbarConnectMenuItem" Header="Connect/Disconnect" IsCheckable="True" Checked="ViewToolbarConnectMenuItem_Checked" Unchecked="ViewToolbarConnectMenuItem_Checked"/>
-                    <MenuItem x:Name="ViewToolbarLocalDBMenuItem" Header="Local Databases" IsCheckable="True" Checked="ViewToolbarLocalDBMenuItem_Checked" Unchecked="ViewToolbarLocalDBMenuItem_Checked"/>
-                    <MenuItem x:Name="ViewToolbarACOSMenuItem" Header="AutoConnectOnSwitch" IsCheckable="True" Checked="ViewToolbarACOSMenuItem_Checked" Unchecked="ViewToolbarACOSMenuItem_Checked"/>
-                    <MenuItem x:Name="ViewToolbarImpExMenuItem" Header="Import/Export" IsCheckable="True" Checked="ViewToolbarImpExMenuItem_Checked" Unchecked="ViewToolbarImpExMenuItem_Checked"/>
-                    <MenuItem x:Name="ViewToolbarSearchMenuItem" Header="Search Database" IsCheckable="True" Checked="ViewToolbarSearchMenuItem_Checked" Unchecked="ViewToolbarSearchMenuItem_Checked"/>
-                </MenuItem>
             </MenuItem>
 
             <MenuItem Header="_Info">
@@ -220,6 +220,7 @@
 
         <!-- === NOTES TABLE (DATA GRID) === -->
         <DataGrid Grid.Row="2" x:Name="NotesDataGrid"
+                  FontSize="11"
                   ContextMenuOpening="NotesDataGrid_ContextMenuOpening"
                   PreviewMouseDown="NotesDataGrid_PreviewMouseDown" 
                   Margin="5"

@@ -99,8 +99,8 @@
         <StackPanel Grid.Row="3" Margin="0,10,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
             <CheckBox x:Name="SetAsDefaultCheckBox" Content="Set as default" 
                       VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <Button x:Name="RestoreDefaultButton" Content="Restore default" 
-                    Click="RestoreDefaultButton_Click" Width="100" Height="23"/>
+            <Button x:Name="RestoreDefaultButton" Content="Restore app default" 
+                    Click="RestoreDefaultButton_Click" Width="150" Height="23"/>
         </StackPanel>
 
         <!-- OK and Cancel -->

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime;
 using System.Windows;
 using System.Windows.Controls;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace Protes.Views
 {
@@ -592,23 +593,36 @@ namespace Protes.Views
         private void ViewToolbarConnectMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarConnect = ViewToolbarConnectMenuItem.IsChecked == true;
+            _settings.Save();
+            _mainWindow?.RefreshToolbarVisibility(); // 👈 notify MainWindow
         }
+
         private void ViewToolbarLocalDBMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarLocalDB = ViewToolbarLocalDBMenuItem.IsChecked == true;
+            _settings.Save();
+            _mainWindow?.RefreshToolbarVisibility();
         }
 
         private void ViewToolbarACOSMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarACOS = ViewToolbarACOSMenuItem.IsChecked == true;
+            _settings.Save();
+            _mainWindow?.RefreshToolbarVisibility();
         }
+
         private void ViewToolbarImpExMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarImpEx = ViewToolbarImpExMenuItem.IsChecked == true;
+            _settings.Save();
+            _mainWindow?.RefreshToolbarVisibility();
         }
+
         private void ViewToolbarSearchMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarSearch = ViewToolbarSearchMenuItem.IsChecked == true;
+            _settings.Save();
+            _mainWindow?.RefreshToolbarVisibility();
         }
 
         private bool _isInitializing = true;

@@ -240,13 +240,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="MrEProtesTealBevel.ico" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="MrE_Clean.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Protes.ico" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Protes_W_Trans.ico" />

@@ -68,22 +68,23 @@ namespace Protes
             UpdateStatusBar();
             UpdateButtonStates();
             SetupNotifyIcon();
+            ApplyMainFontToDataGrid();
+            UpdateDataGridColumns();
+            UpdateToolbarVisibility();
 
             // Load View settings
+            _isToolbarVisible = _settings.ViewMainToolbar;
+            NotesDataGrid.DataContext = this;
             ViewTitleMenuItem.IsChecked = _settings.ViewMainWindowTitle;
             ViewTagsMenuItem.IsChecked = _settings.ViewMainWindowTags;
             ViewModifiedMenuItem.IsChecked = _settings.ViewMainWindowMod;
             ViewToolbarMenuItem.IsChecked = _settings.ViewMainToolbar;
-            _isToolbarVisible = _settings.ViewMainToolbar;
-            NotesDataGrid.DataContext = this;
-
             // Load Toolbar Submenu Settings
             ViewToolbarConnectMenuItem.IsChecked = _settings.ViewToolbarConnect;
             ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
             ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
             ViewToolbarImpExMenuItem.IsChecked = _settings.ViewToolbarImpEx;
             ViewToolbarSearchMenuItem.IsChecked = _settings.ViewToolbarSearch;
-
             // Apply initial visibility
             ViewToolbarConnectainer.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
             AutoConnectOSContainer.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
@@ -93,26 +94,18 @@ namespace Protes
             CatButton.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
 
             // Load zoom level
-            double zoomPoints = _settings.DataGridZoomPoints;
+            double zoomPoints = _settings.DataGridZoom;
             if (zoomPoints < MIN_ZOOM_POINTS) zoomPoints = DEFAULT_ZOOM_POINTS;
             if (zoomPoints > MAX_ZOOM_POINTS) zoomPoints = DEFAULT_ZOOM_POINTS;
             NotesDataGrid.FontSize = zoomPoints * 96.0 / 72.0;
             // Use AddHandler to capture even if inner controls handled it
             this.AddHandler(KeyDownEvent, new KeyEventHandler(MainWindow_PreviewKeyDown), true);
-
-            // Apply initial state
-            ApplyMainFontToDataGrid();
-            UpdateDataGridColumns();
-            UpdateToolbarVisibility();
-
-            Loaded += MainWindow_Loaded;
     
             // Hook up row checkbox events to detect individual changes
             NotesDataGrid.AddHandler(CheckBox.CheckedEvent, new RoutedEventHandler(OnRowCheckboxChanged));
             NotesDataGrid.AddHandler(CheckBox.UncheckedEvent, new RoutedEventHandler(OnRowCheckboxChanged));
             NotesDataGrid.SelectionChanged += (s, e) => UpdateButtonStates();
-            // Share the DataGrid context menu with the whole window area
-            // Get directly from resources — always exists
+            // Right Click Menu
             MainContentGrid.ContextMenu = (ContextMenu)FindResource("DataGridContextMenu");
             NotesDataGrid_ContextMenuOpening(null, null);
 
@@ -127,20 +120,18 @@ namespace Protes
                     viewMenu.Items.Remove(ToolbarOptionsMenu);
                 }
             }
+            Loaded += MainWindow_Loaded;
         }
-
+        // Checkbox selection
         private void OnRowCheckboxChanged(object sender, RoutedEventArgs e)
         {
-            // Prevent infinite loop during bulk updates
             if (_isBulkUpdating) return;
 
-            // Check if all items are now checked or unchecked
             var items = NotesDataGrid.ItemsSource as List<NoteItem>;
             if (items != null)
             {
                 bool allChecked = items.All(n => n.IsSelected);
 
-                // Update header checkbox without triggering bulk update
                 if (_allItemsAreChecked != allChecked)
                 {
                     _allItemsAreChecked = allChecked;
@@ -217,7 +208,7 @@ namespace Protes
             if (newPoints <= MAX_ZOOM_POINTS)
             {
                 NotesDataGrid.FontSize = newPoints * 96.0 / 72.0;
-                _settings.DataGridZoomPoints = newPoints; // Save as points
+                _settings.DataGridZoom = newPoints; // Save as points
             }
         }
 
@@ -228,14 +219,14 @@ namespace Protes
             if (newPoints >= MIN_ZOOM_POINTS)
             {
                 NotesDataGrid.FontSize = newPoints * 96.0 / 72.0;
-                _settings.DataGridZoomPoints = newPoints;
+                _settings.DataGridZoom = newPoints;
             }
         }
 
         private void RestoreZoomMenuItem_Click(object sender, RoutedEventArgs e)
         {
             NotesDataGrid.FontSize = DEFAULT_ZOOM_POINTS * 96.0 / 72.0;
-            _settings.DataGridZoomPoints = DEFAULT_ZOOM_POINTS;
+            _settings.DataGridZoom = DEFAULT_ZOOM_POINTS;
         }
 
         private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -266,16 +257,6 @@ namespace Protes
         }
 
         // Toolbar options
-        private void OpenCatWindow_Click(object sender, RoutedEventArgs e)
-        {
-            var catWindow = new CatWindow(() =>
-            {
-                // Update visibility immediately based on the setting
-                CatButton.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
-            });
-            catWindow.Owner = this;
-            catWindow.Show();
-        }
         private void AutoConnectOnSwitchCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             _settings.AutoConnectOnSwitch = AutoConnectOnSwitchCheckBox.IsChecked == true;
@@ -301,6 +282,15 @@ namespace Protes
                 }
                 UpdateButtonStates();
             }
+        }
+        private void OpenCatWindow_Click(object sender, RoutedEventArgs e)
+        {
+            var catWindow = new CatWindow(_settings, () =>
+            {
+                CatButton.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
+            });
+            catWindow.Owner = this;
+            catWindow.Show();
         }
 
         // helper methods
@@ -343,7 +333,7 @@ namespace Protes
             ConnectMenuItem.IsEnabled = !isConnected;
             DisconnectMenuItem.IsEnabled = isConnected;
 
-            // 🔥 CRITICAL FIX: Disable local DB switcher unless in Local mode
+            // Disable local DB switcher unless in Local mode
             bool isLocalMode = (_currentMode == DatabaseMode.Local);
             AvailableDatabasesComboBox.IsEnabled = isLocalMode;
             LoadSelectedDbButton.IsEnabled = isLocalMode;
@@ -564,12 +554,14 @@ namespace Protes
         {
             bool isVisible = ViewToolbarConnectMenuItem.IsChecked == true;
             _settings.ViewToolbarConnect = isVisible;
+            _settings.Save();
             ViewToolbarConnectainer.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         }
         private void ViewToolbarLocalDBMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             bool isVisible = ViewToolbarLocalDBMenuItem.IsChecked == true;
             _settings.ViewToolbarLocalDB = isVisible;
+            _settings.Save();
             LocalDbControls.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -577,12 +569,14 @@ namespace Protes
         {
             bool isVisible = ViewToolbarACOSMenuItem.IsChecked == true;
             _settings.ViewToolbarACOS = isVisible;
+            _settings.Save();
             AutoConnectOSContainer.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         }
         private void ViewToolbarImpExMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             bool isVisible = ViewToolbarImpExMenuItem.IsChecked == true;
             _settings.ViewToolbarImpEx = isVisible;
+            _settings.Save();
             ImportExportControls.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -590,7 +584,18 @@ namespace Protes
         {
             bool isVisible = ViewToolbarSearchMenuItem.IsChecked == true;
             _settings.ViewToolbarSearch = isVisible;
+            _settings.Save();
             SearchDatabase.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+         public void RefreshToolbarVisibility()
+        {
+            ViewToolbarConnectainer.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
+            LocalDbControls.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
+            AutoConnectOSContainer.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
+            ImportExportControls.Visibility = _settings.ViewToolbarImpEx ? Visibility.Visible : Visibility.Collapsed;
+            SearchDatabase.Visibility = _settings.ViewToolbarSearch ? Visibility.Visible : Visibility.Collapsed;
+            CatButton.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
         }
 
         // Toolbar Visibility
@@ -1098,7 +1103,7 @@ namespace Protes
                 noteId: fullNote.Id,
                 onSaveRequested: OnSaveNoteRequested
             );
-            editor.Owner = this;
+            //editor.Owner = this;
             editor.Show();
         }
 
@@ -1121,7 +1126,7 @@ namespace Protes
                     noteId: newNote.Id,
                     onSaveRequested: OnSaveNoteRequested
                 );
-                editor.Owner = this;
+                //editor.Owner = this;
                 editor.Show();
             }
             else
@@ -1165,7 +1170,7 @@ namespace Protes
                 noteId: null,
                 onSaveRequested: OnSaveNoteRequested
             );
-            editor.Owner = this;
+            //editor.Owner = this;
             editor.Show();
         }
 
@@ -2127,7 +2132,10 @@ namespace Protes
 
         private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var aboutWindow = new Protes.Views.AboutWindow();
+            var aboutWindow = new Protes.Views.AboutWindow(_settings, () =>
+            {
+                CatButton.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
+            });
             aboutWindow.Owner = this;
             aboutWindow.ShowDialog();
         }

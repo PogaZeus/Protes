@@ -31,12 +31,12 @@ namespace Protes.Views
         private void UpdateWindowTitle()
         {
             string baseTitle = string.IsNullOrWhiteSpace(TitleBox.Text)
-                ? "Untitled"
+                ? "Pro Note"
                 : TitleBox.Text;
 
             string displayTitle = HasUnsavedChanges()
-                ? $"Note: {baseTitle}*"
-                : $"Note: {baseTitle}";
+                ? $"{baseTitle}*"
+                : $"{baseTitle}";
 
             Title = displayTitle;
         }
