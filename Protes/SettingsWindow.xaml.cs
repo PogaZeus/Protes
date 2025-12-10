@@ -50,7 +50,8 @@ namespace Protes.Views
             NotifyCopiedCheckBox.IsChecked = _settings.NotifyCopied;
             NotifyPastedCheckBox.IsChecked = _settings.NotifyPasted;
             DefaultDbFolderText.Text = _appDataFolder;
-           
+            SyncAutoSwitchUiState(); // 👈 ensures correct IsEnabled + enforced value
+
             // Toolbar visibility
             ViewToolbarMenuItem.IsChecked = _settings.ViewMainToolbar;
             ViewToolbarOptionsInMenuCheckBox.IsChecked = _settings.ViewToolbarOptionsInMenu;
@@ -70,14 +71,6 @@ namespace Protes.Views
             LoadExternalSettings();
             var importedRaw = _settings.ImportedDatabasePaths;
 
-            if (_settings.AutoConnectOnSwitch)
-            {
-                AutoDisconnectOnSwitchCheckBox.IsEnabled = false;
-            }
-            else
-            {
-                AutoDisconnectOnSwitchCheckBox.IsEnabled = true;
-            }
             _isInitializing = false;
         }
 
@@ -149,13 +142,13 @@ namespace Protes.Views
         private void UnregisterShellNew()
         {
             const string extension = ".prote";
-            const string progId = "Protes.DatabaseFile"; // ✅ Match RegisterShellNew
+            const string progId = "Protes.DatabaseFile"; // Match RegisterShellNew
 
             try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{extension}"); } catch { }
             try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{progId}"); } catch { }
         }
 
-        // ✅ NEW: Change Default Database Folder
+        // Change Default Database Folder
         private void ChangeDefaultFolderButton_Click(object sender, RoutedEventArgs e)
         {
             var folderDialog = new System.Windows.Forms.FolderBrowserDialog
@@ -165,7 +158,7 @@ namespace Protes.Views
                 ShowNewFolderButton = true
             };
 
-            // Must reference System.Windows.Forms for FolderBrowserDialog
+            // System.Windows.Forms for FolderBrowserDialog
             if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string newFolder = folderDialog.SelectedPath;
@@ -255,10 +248,11 @@ namespace Protes.Views
 
                 // "Load Selected" → hidden if current
                 LoadSelectedButton.Visibility = isCurrent ? Visibility.Collapsed : Visibility.Visible;
+                DeleteDatabaseButton.Visibility = !isCurrent ? Visibility.Visible : Visibility.Collapsed;
 
                 // "Remove from List & Delete" → hidden if in default folder OR if current
                 RemoveFromListButton.Visibility = (!isInDefaultFolder && !isCurrent) ? Visibility.Visible : Visibility.Collapsed;
-                DeleteDatabaseButton.Visibility = (!isInDefaultFolder && !isCurrent) ? Visibility.Visible : Visibility.Collapsed;
+                
             }
             else
             {
@@ -345,7 +339,7 @@ namespace Protes.Views
                     }
 
                     SwitchToDatabase(saveDialog.FileName);
-                    LoadLocalDatabases(); // ✅ ADD THIS LINE
+                    LoadLocalDatabases(); 
                     MessageBox.Show("New database created successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
@@ -623,6 +617,21 @@ namespace Protes.Views
             _settings.ViewToolbarSearch = ViewToolbarSearchMenuItem.IsChecked == true;
             _settings.Save();
             _mainWindow?.RefreshToolbarVisibility();
+        }
+
+        private void SyncAutoSwitchUiState()
+        {
+            bool autoConnectOnSwitch = _settings.AutoConnectOnSwitch;
+
+            // Disable AutoDisconnect checkbox when AutoConnectOnSwitch is ON
+            AutoDisconnectOnSwitchCheckBox.IsEnabled = !autoConnectOnSwitch;
+
+            // Enforce AutoDisconnect = true when AutoConnectOnSwitch is enabled
+            if (autoConnectOnSwitch && !_settings.AutoDisconnectOnSwitch)
+            {
+                _settings.AutoDisconnectOnSwitch = true;
+                AutoDisconnectOnSwitchCheckBox.IsChecked = true;
+            }
         }
 
         private bool _isInitializing = true;

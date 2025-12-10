@@ -98,7 +98,8 @@
         <!-- === MENU BAR === -->
         <Menu Grid.Row="0" x:Name="MainMenu">
             <MenuItem Header="_File">
-                <MenuItem x:Name="NewNoteMenuItem" Header="_New" Click="NewNoteButton_Click"/>
+                <MenuItem x:Name="NewDatabaseMenuItem" Header="New _Database" Click="NewDatabaseMenuItem_Click"/>
+                <MenuItem x:Name="NewNoteMenuItem" Header="_New Note" Click="NewNoteButton_Click"/>
                 <MenuItem x:Name="EditNoteMenuItem" Header="_Edit" Click="EditNoteButton_Click"/>
                 <MenuItem x:Name="DeleteNoteMenuItem" Header="_Delete" Click="DeleteNoteButton_Click"/>
                 <Separator/>
@@ -112,10 +113,10 @@
             </MenuItem>
 
             <MenuItem Header="_Options" Name="OptionsMenu">
-                <MenuItem Header="Local Database" Click="UseLocalDb_Click" IsCheckable="True"/>
-                <MenuItem Header="External Database" Click="UseExternalDb_Click" IsCheckable="True"/>
+                <MenuItem Header="_Local Database" Click="UseLocalDb_Click" IsCheckable="True"/>
+                <MenuItem Header="_External Database" Click="UseExternalDb_Click" IsCheckable="True"/>
                 <Separator/>
-                <MenuItem x:Name="ToolbarOptionsMenu" Header="Toolbar Options">
+                <MenuItem x:Name="ToolbarOptionsMenu" Header="Toolbar">
                     <MenuItem x:Name="ViewToolbarConnectMenuItem" Header="Connect/Disconnect" IsCheckable="True" Checked="ViewToolbarConnectMenuItem_Checked" Unchecked="ViewToolbarConnectMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarACOSMenuItem" Header="AutoConnectOnSwitch" IsCheckable="True" Checked="ViewToolbarACOSMenuItem_Checked" Unchecked="ViewToolbarACOSMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarLocalDBMenuItem" Header="Local Databases" IsCheckable="True" Checked="ViewToolbarLocalDBMenuItem_Checked" Unchecked="ViewToolbarLocalDBMenuItem_Checked"/>

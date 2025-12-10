@@ -24,20 +24,22 @@ namespace Protes
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private string _databasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Protes", "notes.db");
+        private string _originalTitle;
+        private string _externalConnectionString = "";
         private DatabaseMode _currentMode = DatabaseMode.None;
         private DatabaseMode _pendingModeSwitch = DatabaseMode.None;
         private DatabaseMode _connectedMode = DatabaseMode.None;
-        private bool _isConnected = false;
         private INoteRepository _noteRepository;
         private readonly SettingsManager _settings = new SettingsManager();
         private List<FullNote> _fullNotesCache = new List<FullNote>();
         private NoteItem _editingItem;
-        private string _originalTitle;
-        private string _externalConnectionString = "";
-        private bool _isToolbarVisible = true;
-        private bool _isSelectMode = false;
         private List<FullNote> _copiedNotes = new List<FullNote>();
         private SWF.NotifyIcon _notifyIcon;
+        private bool _isToolbarVisible = true;
+        private bool _isSelectMode = false;
+        private bool _isConnected = false;
+        private bool _isExplicitlyExiting = false;
+        private bool _isDisposed = false;
         // Zoom settings
         private const double DEFAULT_ZOOM_POINTS = 11.0;
         private const double MIN_ZOOM_POINTS = 8.0;
@@ -111,35 +113,7 @@ namespace Protes
 
             var showNotifications = _settings.ShowNotifications;
             SelectCheckBoxColumn.Visibility = Visibility.Collapsed;
-
-            // Hide/show "Toolbar Options" menu based on settings
-            {
-                var viewMenu = (MenuItem)MainMenu.Items[2];
-                if (!_settings.ViewToolbarOptionsInMenu)
-                {
-                    viewMenu.Items.Remove(ToolbarOptionsMenu);
-                }
-            }
             Loaded += MainWindow_Loaded;
-        }
-        // Checkbox selection
-        private void OnRowCheckboxChanged(object sender, RoutedEventArgs e)
-        {
-            if (_isBulkUpdating) return;
-
-            var items = NotesDataGrid.ItemsSource as List<NoteItem>;
-            if (items != null)
-            {
-                bool allChecked = items.All(n => n.IsSelected);
-
-                if (_allItemsAreChecked != allChecked)
-                {
-                    _allItemsAreChecked = allChecked;
-                    OnPropertyChanged(nameof(AllItemsAreChecked));
-                }
-
-                UpdateButtonStates();
-            }
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -169,6 +143,74 @@ namespace Protes
                             "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 }
+            }
+        }
+
+        // File Menu NewDatabase
+        private void NewDatabaseMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            var saveDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "Protes Database (*.prote)|*.prote|SQLite Database (*.db)|*.db",
+                FileName = $"notes_{DateTime.Now:yyyyMMdd_HHmm}.prote",
+                InitialDirectory = _settings.DefaultDatabaseFolder
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                string filePath = saveDialog.FileName;
+
+                try
+                {
+                    // 🔧 Create the new empty database file with Notes table
+                    using (var conn = new SQLiteConnection($"Data Source={filePath};Version=3;"))
+                    {
+                        conn.Open();
+                        using (var cmd = new SQLiteCommand(@"
+                    CREATE TABLE IF NOT EXISTS Notes (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        Title TEXT NOT NULL,
+                        Content TEXT,
+                        Tags TEXT,
+                        LastModified TEXT
+                    )", conn))
+                        {
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    // ✅ Switch to it immediately (reuses your existing logic)
+                    SwitchToLocalDatabase(filePath);
+
+                    // ✅ Ensure the AvailableDatabasesComboBox and related UI are refreshed
+                    LoadAvailableDatabases();
+
+                    MessageBox.Show("New database created successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to create database:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        // Checkbox selection
+        private void OnRowCheckboxChanged(object sender, RoutedEventArgs e)
+        {
+            if (_isBulkUpdating) return;
+
+            var items = NotesDataGrid.ItemsSource as List<NoteItem>;
+            if (items != null)
+            {
+                bool allChecked = items.All(n => n.IsSelected);
+
+                if (_allItemsAreChecked != allChecked)
+                {
+                    _allItemsAreChecked = allChecked;
+                    OnPropertyChanged(nameof(AllItemsAreChecked));
+                }
+
+                UpdateButtonStates();
             }
         }
 
@@ -1030,6 +1072,7 @@ namespace Protes
 
         private void Quit_Click(object sender, RoutedEventArgs e)
         {
+            _isExplicitlyExiting = true;
             Close();
         }
 
@@ -1707,9 +1750,8 @@ namespace Protes
 
                 contextMenu.MenuItems.Add("Exit", (s, e) =>
                 {
-                    _notifyIcon.Visible = false;
-                    _notifyIcon.Dispose();
-                    Application.Current.Shutdown();
+                    _isExplicitlyExiting = true;
+                    Close();
                 });
 
                 _notifyIcon.ContextMenu = contextMenu;
@@ -1829,8 +1871,8 @@ namespace Protes
             }
         }
 
-        //font
-        // Replace your existing MainWindowFontMenuItem_Click method with this:
+
+        // font
         private void MainWindowFontMenuItem_Click(object sender, RoutedEventArgs e)
         {
             var settings = new SettingsManager();
@@ -2141,27 +2183,47 @@ namespace Protes
         }
 
         // Close to system tray;
+
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
+            if (_isExplicitlyExiting)
+            {
+                // User clicked "Exit" in tray — fully shut down
+                if (!_isDisposed)
+                {
+                    _notifyIcon?.Dispose();
+                    _notifyIcon = null;
+                    _isDisposed = true;
+                }
+                base.OnClosing(e);
+                return;
+            }
+
+            // Otherwise: normal close (e.g. clicked [X])
             if (_settings.CloseToTray)
             {
-                e.Cancel = true; // Prevent actual close
+                e.Cancel = true;  // Prevent actual close
+                Hide();           // Hide window
 
-                // Hide window immediately (bypass OnStateChanged)
-                Hide();
-
-                // Ensure tray icon is visible
-                if (_notifyIcon != null)
+                // Make sure tray icon is visible
+                if (_notifyIcon != null && !_isDisposed)
                 {
                     _notifyIcon.Visible = true;
                 }
             }
             else
             {
-                // Allow normal shutdown (no minimize involved)
+                // Close fully (user chose not to close to tray)
+                if (!_isDisposed)
+                {
+                    _notifyIcon?.Dispose();
+                    _notifyIcon = null;
+                    _isDisposed = true;
+                }
                 base.OnClosing(e);
             }
         }
+
         // Expose current DB path for SettingsWindow access
         public string CurrentDbPathForSettings
         {

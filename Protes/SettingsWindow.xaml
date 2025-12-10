@@ -52,7 +52,7 @@
                         </Grid.RowDefinitions>
 
                         <!-- Available Databases (now fills space and includes buttons inside) -->
-                        <GroupBox Grid.Row="0" Header="Available Databases" Margin="0,2,0,5">
+                        <GroupBox Grid.Row="0" Header="Available Databases" Margin="0,0,0,5">
                             <Grid Margin="0,5,0,0">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*"/>
@@ -289,7 +289,7 @@
                                           Content="Show connected/disconnected notifications"
                                           Checked="ShowNotificationsCheckBox_Changed"
                                           Unchecked="ShowNotificationsCheckBox_Changed"
-                                          Margin="0,0,0,0"/>
+                                          Margin="0,5,0,0"/>
                                 <CheckBox x:Name="NotifyDeletedCheckBox"
                                           Content="Show File(s) deleted successfully"
                                           Checked="NotifyDeletedCheckBox_Changed"
@@ -328,7 +328,7 @@
                               Unchecked="ViewToolbarMenuItem_Checked"
                               Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarOptionsInMenuCheckBox"
-                              Content="Show 'Toolbar Options' in Menu"
+                              Content="Toolbar Options Menu Shortcuts"
                               Checked="ViewToolbarOptionsInMenuCheckBox_Checked"
                               Unchecked="ViewToolbarOptionsInMenuCheckBox_Checked"
                               Margin="0,5,0,0"/>
@@ -343,7 +343,7 @@
                               Unchecked="ViewToolbarConnectMenuItem_Checked"
                               Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarACOSMenuItem"
-                              Content="ACOS - Auto connect on switch (local/external)"
+                              Content="ACOS - Auto Connect on Switch (local/external)"
                               Checked="ViewToolbarACOSMenuItem_Checked"
                               Unchecked="ViewToolbarACOSMenuItem_Checked"
                               Margin="0,5,0,0"/>
