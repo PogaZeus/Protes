@@ -61,6 +61,7 @@
                 <MenuItem x:Name="ContextExternalDbMenuItem" Header="External Database" IsCheckable="True" Click="UseExternalDb_Click"/>
             </MenuItem>
             <MenuItem x:Name="ContextSwitchLocalMenuItem" Header="Switch Local" Visibility="Collapsed"/>
+            <MenuItem x:Name="ContextSwitchExternalMenuItem" Header="Switch External" Visibility="Collapsed"/>
             <Separator/>
             <MenuItem x:Name="ContextConnectMenuItem" Header="_Connect" Click="Connect_Click">
                 <MenuItem.Icon>
@@ -113,9 +114,7 @@
             </MenuItem>
 
             <MenuItem Header="_Options" Name="OptionsMenu">
-                <MenuItem Header="_Local Database" Click="UseLocalDb_Click" IsCheckable="True"/>
-                <MenuItem Header="_External Database" Click="UseExternalDb_Click" IsCheckable="True"/>
-                <Separator/>
+                <MenuItem Header="Font" Click="MainWindowFontMenuItem_Click"/>
                 <MenuItem x:Name="ToolbarOptionsMenu" Header="Toolbar">
                     <MenuItem x:Name="ViewToolbarConnectMenuItem" Header="Connect/Disconnect" IsCheckable="True" Checked="ViewToolbarConnectMenuItem_Checked" Unchecked="ViewToolbarConnectMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarACOSMenuItem" Header="AutoConnectOnSwitch" IsCheckable="True" Checked="ViewToolbarACOSMenuItem_Checked" Unchecked="ViewToolbarACOSMenuItem_Checked"/>
@@ -125,10 +124,13 @@
                 </MenuItem>
                 <MenuItem Header="_Settings" Click="OpenSettings_Click"/>
             </MenuItem>
-            <MenuItem Header="_Format">
-                <MenuItem Header="Font" Click="MainWindowFontMenuItem_Click"/>
+
+            <MenuItem Header="_Mode" Name="ModeMenu">
+                <MenuItem x:Name="LocalDbMenuItem" Header="_Local Database" Click="UseLocalDb_Click" IsCheckable="True"/>
+                <MenuItem x:Name="ExternalDbMenuItem" Header="_External Database" Click="UseExternalDb_Click" IsCheckable="True"/>
             </MenuItem>
-                    <MenuItem Header="_View">
+
+            <MenuItem Header="_View">
                 <MenuItem x:Name="ViewTitleMenuItem" Header="Title" IsCheckable="True" Checked="ViewTitleMenuItem_Checked" Unchecked="ViewTitleMenuItem_Checked"/>
                 <MenuItem x:Name="ViewTagsMenuItem" Header="Tags" IsCheckable="True" Checked="ViewTagsMenuItem_Checked" Unchecked="ViewTagsMenuItem_Checked"/>
                 <MenuItem x:Name="ViewModifiedMenuItem" Header="Modified" IsCheckable="True" Checked="ViewModifiedMenuItem_Checked" Unchecked="ViewModifiedMenuItem_Checked"/>
@@ -171,11 +173,10 @@
                 ToolTip="Settings" Click="OpenSettings_Click" Margin="0,0,8,0"/>
 
             <StackPanel x:Name="LocalDbControls" Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="Local:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <ComboBox x:Name="AvailableDatabasesComboBox" MinWidth="150" Margin="0,0,8,0" VerticalContentAlignment="Center" Height="28"
-                    DisplayMemberPath="FileName" SelectedValuePath="FullPath"/>
+                <TextBlock x:Name="DatabaseModeLabel" Text="Local:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox x:Name="DatabaseOrConnectionComboBox" MinWidth="150" Margin="0,0,8,0" VerticalContentAlignment="Center" Height="28"/>
                 <Button x:Name="LoadSelectedDbButton" Content="↻" FontSize="16" Width="32" Height="32"
-                    ToolTip="Load Selected Database" Click="LoadSelectedDbButton_Click" Margin="0,0,8,0"/>
+            ToolTip="Load Selected Database or Connection" Click="LoadSelectedDbButton_Click" Margin="0,0,8,0"/>
             </StackPanel>
             <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
             <StackPanel x:Name="ImportExportControls" Orientation="Horizontal" VerticalAlignment="Center">

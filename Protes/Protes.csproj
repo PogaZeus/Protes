@@ -132,6 +132,13 @@
     <Compile Include="ExportFromDBWindow.xaml.cs">
       <DependentUpon>ExportFromDBWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ExtConSettingsWindow.xaml.cs">
+      <DependentUpon>ExtConSettingsWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ExternalDBProfile.cs" />
+    <Compile Include="ExternalRequirementsWindow.xaml.cs">
+      <DependentUpon>ExternalRequirementsWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="FindDialog.xaml.cs">
       <DependentUpon>FindDialog.xaml</DependentUpon>
     </Compile>
@@ -161,6 +168,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="ExportFromDBWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ExtConSettingsWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ExternalRequirementsWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -232,6 +247,9 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
+    <PackageReference Include="System.Text.Json">
+      <Version>7.0.3</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

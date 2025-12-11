@@ -143,94 +143,105 @@
                 </ScrollViewer>
             </TabItem>
 
-            <!-- EXTERNAL DATABASE TAB (unchanged) -->
+            <!-- EXTERNAL DATABASE TAB -->
             <TabItem Header="External Database">
-                <Grid Margin="0,5,0,0">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                    <GroupBox Grid.Row="0" Header="Required Table Schema" Margin="5,0,5,5">
-                        <TabControl Margin="0,5,0,0">
-                            <TabItem Header="Requirements">
-                                <StackPanel Margin="5">
-                                    <TextBlock Text="Your external database must contain a TABLE named:" FontWeight="Bold"/>
-                                    <TextBlock Text="→ Notes" Margin="10,0" Foreground="Red"/>
-                                    <TextBlock Text="With the following columns:" Margin="0,0,0,0" FontWeight="Bold"/>
-                                    <TextBlock Text="• Id (INTEGER PRIMARY KEY)" Margin="10,0"/>
-                                    <TextBlock Text="• Title (TEXT, NOT NULL)" Margin="10,0"/>
-                                    <TextBlock Text="• Content (TEXT)" Margin="10,0"/>
-                                    <TextBlock Text="• Tags (TEXT)" Margin="10,0"/>
-                                    <TextBlock Text="• LastModified (TEXT in 'yyyy-MM-dd HH:mm' format)" Margin="10,0"/>
+                        <!-- External Connections List -->
+                        <GroupBox Grid.Row="0" Header="External Connections" Margin="0,0,0,5">
+                            <Grid Margin="0,5,0,0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <ListBox x:Name="ExternalConnectionsList"
+                             SelectionChanged="ExternalConnectionsList_SelectionChanged"
+                             VerticalContentAlignment="Stretch">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding DisplayName}" FontWeight="Bold"/>
+                                                <TextBlock Text="{Binding DisplaySubtitle}" FontSize="10" Foreground="Gray"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+
+                                <!-- Action Buttons -->
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,0">
+                                    <Button x:Name="AddConnectionButton"
+                                Content="Add..."
+                                Style="{StaticResource ConsistentButtonStyle}"
+                                Margin="0,0,5,0"
+                                Click="AddConnectionButton_Click"/>
+                                    <Button x:Name="EditConnectionButton"
+                                Content="Edit..."
+                                Style="{StaticResource ConsistentButtonStyle}"
+                                Margin="0,0,5,0"
+                                Click="EditConnectionButton_Click"
+                                IsEnabled="False"/>
+                                    <Button x:Name="RemoveConnectionButton"
+                                Content="Remove..."
+                                Style="{StaticResource ConsistentButtonStyle}"
+                                Margin="0,0,5,0"
+                                Click="RemoveConnectionButton_Click"
+                                IsEnabled="False"/>
+                                    <Button x:Name="ConnectNowButton"
+                                Content="Connect..."
+                                Style="{StaticResource ConsistentButtonStyle}"
+                                Margin="0,0,5,0"
+                                Click="ConnectNowButton_Click"
+                                IsEnabled="False"/>
+                                    <Button x:Name="SetDefaultButton"
+                                Content="Set Default"
+                                Style="{StaticResource ConsistentButtonStyle}"
+                                Margin="0,0,5,0"
+                                Click="SetDefaultButton_Click"
+                                IsEnabled="False"/>
                                 </StackPanel>
-                            </TabItem>
-                            <TabItem Header="Create Table (MySQL)">
-                                <Grid Margin="5">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    <TextBox x:Name="CreateTableSqlBox"
-                                             Text="CREATE TABLE Notes (&#x0a;    Id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,&#x0a;    Title VARCHAR(255) NOT NULL,&#x0a;    Content TEXT,&#x0a;    Tags VARCHAR(255),&#x0a;    LastModified DATETIME&#x0a;);"
-                                             TextWrapping="NoWrap"
-                                             AcceptsReturn="True"
-                                             IsReadOnly="True"
-                                             VerticalScrollBarVisibility="Auto"
-                                             FontFamily="Consolas"
-                                             FontSize="12"
-                                             MinHeight="100"/>
-                                    <Button Grid.Row="1" Content="Copy SQL" Width="80" Height="26" HorizontalAlignment="Left" Margin="0,5,0,0" Click="CopySqlButton_Click"/>
-                                </Grid>
-                            </TabItem>
-                        </TabControl>
-                    </GroupBox>
+                            </Grid>
+                        </GroupBox>
 
-                    <GroupBox Grid.Row="1" Header="Connection Details" Margin="5,0,0,5">
-                        <Grid Margin="5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
+                        <!-- ✅ Current Default External Connection -->
+                        <GroupBox Grid.Row="1" Header="Current External Default Database" Margin="0,0,0,5">
+                            <TextBlock x:Name="CurrentDefaultExternalText"
+               Text="(No external connection configured)"
+               FontStyle="Italic"
+               TextWrapping="Wrap"
+               Margin="0,5,0,5"/>
+                        </GroupBox>
 
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Host:" Margin="0,5"/>
-                            <TextBox x:Name="HostTextBox" Grid.Row="0" Grid.Column="1" Margin="5,5" Height="26"/>
-
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Port:" Margin="0,5"/>
-                            <TextBox x:Name="PortTextBox" Grid.Row="1" Grid.Column="1" Margin="5,5" Height="26" Text="3306"/>
-
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Database:" Margin="0,5"/>
-                            <TextBox x:Name="DatabaseTextBox" Grid.Row="2" Grid.Column="1" Margin="5,5" Height="26"/>
-
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Username:" Margin="0,5"/>
-                            <TextBox x:Name="UsernameTextBox" Grid.Row="3" Grid.Column="1" Margin="5,5" Height="26"/>
-
-                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Password:" Margin="0,5"/>
-                            <PasswordBox x:Name="PasswordBox" Grid.Row="4" Grid.Column="1" Margin="5,5" Height="26"/>
-                        </Grid>
-                    </GroupBox>
-
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="Save Settings" Padding="12,5" Margin="0,0,10,0" Click="SaveExternalSettings_Click"/>
-                        <Button Content="Connect Now" Padding="12,5" Margin="0,0,15,0" Click="ConnectNowButton_Click"/>
-                    </StackPanel>
-                </Grid>
+                        <GroupBox Grid.Row="2" Header="Database Table Requirements" Margin="0,0,0,0">
+                            <StackPanel>
+                                <TextBlock Text="External databases need to be setup with a Notes table before connecting."
+                   FontStyle="Italic"
+                   Foreground="Gray"
+                   Margin="0,5,0,0"/>
+                                <Button x:Name="RequirementsButton"
+                Content="Info..."
+                HorizontalAlignment="Left"
+                Margin="0,5,0,0"
+                Padding="10,5"
+                Click="RequirementsButton_Click"/>
+                            </StackPanel>
+                        </GroupBox>
+                    </Grid>
+                </ScrollViewer>
             </TabItem>
 
-            <!-- APPLICATION TAB (renamed from "More Options") -->
+            <!-- APPLICATION TAB -->
             <TabItem Header="Application">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <Grid Margin="5">
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -241,10 +252,10 @@
                         <GroupBox Grid.Row="0" Header="Application Settings" Margin="0,0,0,5">
                             <StackPanel>
                                 <CheckBox x:Name="LaunchOnStartupCheckBox"
-                                  Content="Launch Protes on Windows startup"
-                                  Checked="LaunchOnStartupCheckBox_Checked"
-                                  Unchecked="LaunchOnStartupCheckBox_Unchecked"
-                                  Margin="0,5,0,0"/>
+                                          Content="Launch Protes on Windows startup"
+                                          Checked="LaunchOnStartupCheckBox_Checked"
+                                          Unchecked="LaunchOnStartupCheckBox_Unchecked"
+                                          Margin="0,5,0,0"/>
                                 <CheckBox x:Name="MinimizeToSystemTray"
                                           Content="Minimize to system tray instead of taskbar"
                                           Checked="MinimizeToSystemTray_Checked"
@@ -261,18 +272,16 @@
 
                         <GroupBox Grid.Row="1" Header="File Explorer &amp; Context Menu Integration" Margin="0,0,0,5">
                             <StackPanel>
-
                                 <CheckBox x:Name="ShellNewCheckBox"
-                  Content="Add to Windows 'New' menu: 'Pro Note'"
-                  Checked="ShellNewCheckBox_Checked"
-                  Unchecked="ShellNewCheckBox_Unchecked"
-                  Margin="0,5,0,0"/>
-
+                                          Content="Add to Windows 'New' menu: 'Pro Note'"
+                                          Checked="ShellNewCheckBox_Checked"
+                                          Unchecked="ShellNewCheckBox_Unchecked"
+                                          Margin="0,5,0,0"/>
                                 <CheckBox x:Name="SendToCheckBox"
-                  Content="Add to Windows 'Send to' menu: 'Protes (Import)'"
-                  Checked="SendToCheckBox_Checked"
-                  Unchecked="SendToCheckBox_Unchecked"
-                  Margin="0,5,0,5"/>
+                                          Content="Add to Windows 'Send to' menu: 'Protes (Import)'"
+                                          Checked="SendToCheckBox_Checked"
+                                          Unchecked="SendToCheckBox_Unchecked"
+                                          Margin="0,5,0,5"/>
                             </StackPanel>
                         </GroupBox>
 
@@ -321,6 +330,15 @@
                                           Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
+
+                        <!-- ✅ MOVED HERE: Font group at the bottom of Application tab -->
+                        <GroupBox Grid.Row="4" Header="Main Window Font" Margin="0,0,0,5">
+                            <Button x:Name="MainWindowFontButton"
+                                    Content="Datagrid Font..."
+                                    HorizontalAlignment="Left"
+                                    Style="{StaticResource ConsistentButtonStyle}"
+                                    Click="MainWindowFontButton_Click"/>
+                        </GroupBox>
                     </Grid>
                 </ScrollViewer>
             </TabItem>
@@ -337,45 +355,45 @@
                         <GroupBox Grid.Row="0" Header="Toolbar Visibility" Margin="0,0,0,10">
                             <StackPanel>
                                 <CheckBox x:Name="ViewToolbarMenuItem"
-                              Content="Show Toolbar"
-                              Checked="ViewToolbarMenuItem_Checked"
-                              Unchecked="ViewToolbarMenuItem_Checked"
-                              Margin="0,5,0,0"/>
+                                          Content="Show Toolbar"
+                                          Checked="ViewToolbarMenuItem_Checked"
+                                          Unchecked="ViewToolbarMenuItem_Checked"
+                                          Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarOptionsInMenuCheckBox"
-                              Content="Toolbar Options Menu Shortcuts"
-                              Checked="ViewToolbarOptionsInMenuCheckBox_Checked"
-                              Unchecked="ViewToolbarOptionsInMenuCheckBox_Checked"
-                              Margin="0,5,0,0"/>
+                                          Content="Toolbar Options Menu Shortcuts"
+                                          Checked="ViewToolbarOptionsInMenuCheckBox_Checked"
+                                          Unchecked="ViewToolbarOptionsInMenuCheckBox_Checked"
+                                          Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
 
                         <GroupBox Grid.Row="1" Header="Toolbar Icons" Margin="0,0,0,0">
                             <StackPanel>
                                 <CheckBox x:Name="ViewToolbarConnectMenuItem"
-                              Content="Connect/Disconnect"
-                              Checked="ViewToolbarConnectMenuItem_Checked"
-                              Unchecked="ViewToolbarConnectMenuItem_Checked"
-                              Margin="0,5,0,0"/>
+                                          Content="Connect/Disconnect"
+                                          Checked="ViewToolbarConnectMenuItem_Checked"
+                                          Unchecked="ViewToolbarConnectMenuItem_Checked"
+                                          Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarACOSMenuItem"
-                              Content="ACOS - Auto Connect on Switch (local/external)"
-                              Checked="ViewToolbarACOSMenuItem_Checked"
-                              Unchecked="ViewToolbarACOSMenuItem_Checked"
-                              Margin="0,5,0,0"/>
+                                          Content="ACOS - Auto Connect on Switch (local/external)"
+                                          Checked="ViewToolbarACOSMenuItem_Checked"
+                                          Unchecked="ViewToolbarACOSMenuItem_Checked"
+                                          Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarLocalDBMenuItem"
-                              Content="Local Databases - Dropdown menu and load icon"
-                              Checked="ViewToolbarLocalDBMenuItem_Checked"
-                              Unchecked="ViewToolbarLocalDBMenuItem_Checked"
-                              Margin="0,5,0,0"/>
+                                          Content="Local Databases - Dropdown menu and load icon"
+                                          Checked="ViewToolbarLocalDBMenuItem_Checked"
+                                          Unchecked="ViewToolbarLocalDBMenuItem_Checked"
+                                          Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarImpExMenuItem"
-                              Content="Import/Export"
-                              Checked="ViewToolbarImpExMenuItem_Checked"
-                              Unchecked="ViewToolbarImpExMenuItem_Checked"
-                              Margin="0,5,0,0"/>
+                                          Content="Import/Export"
+                                          Checked="ViewToolbarImpExMenuItem_Checked"
+                                          Unchecked="ViewToolbarImpExMenuItem_Checked"
+                                          Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarSearchMenuItem"
-                              Content="Search Database"
-                              Checked="ViewToolbarSearchMenuItem_Checked"
-                              Unchecked="ViewToolbarSearchMenuItem_Checked"
-                              Margin="0,5,0,0"/>
+                                          Content="Search Database"
+                                          Checked="ViewToolbarSearchMenuItem_Checked"
+                                          Unchecked="ViewToolbarSearchMenuItem_Checked"
+                                          Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
                     </Grid>

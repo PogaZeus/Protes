@@ -8,6 +8,7 @@ using System.Runtime;
 using System.Windows;
 using System.Windows.Controls;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
+using System.Windows.Media;
 
 namespace Protes.Views
 {
@@ -18,13 +19,16 @@ namespace Protes.Views
         private MainWindow _mainWindow;
         private List<string> _importedDbPaths = new List<string>();
         private readonly SettingsManager _settings = new SettingsManager();
+        private ExternalDbProfile _selectedExternalProfile;
         public string CurrentDbPath => _currentDatabasePath;
 
         #region Constructor and Initialization
         public SettingsWindow(string currentDatabasePath, MainWindow mainWindow)
         {
             InitializeComponent();
+            LoadExternalConnectionsList();
             _currentDatabasePath = currentDatabasePath;
+
             _mainWindow = mainWindow;
             DataContext = this;
 
@@ -71,7 +75,6 @@ namespace Protes.Views
             SendToCheckBox.IsChecked = _settings.SendToIntegrationEnabled;
             CurrentDbPathText.Text = _currentDatabasePath;
             LoadLocalDatabases();
-            LoadExternalSettings();
             var importedRaw = _settings.ImportedDatabasePaths;
 
             _isInitializing = false;
@@ -122,15 +125,6 @@ namespace Protes.Views
 
             var uniqueFiles = dbFiles.GroupBy(f => f.FullPath).Select(g => g.First()).ToList();
             LocalDbList.ItemsSource = uniqueFiles;
-        }
-
-        private void LoadExternalSettings()
-        {
-            HostTextBox.Text = _settings.External_Host ?? "";
-            PortTextBox.Text = _settings.External_Port?.ToString() ?? "3306";
-            DatabaseTextBox.Text = _settings.External_Database ?? "";
-            UsernameTextBox.Text = _settings.External_Username ?? "";
-            // Password not loaded
         }
 
         private void LocalDbList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -392,51 +386,197 @@ namespace Protes.Views
         #endregion
 
         #region External Database
-        private void CopySqlButton_Click(object sender, RoutedEventArgs e)
+        private void LoadExternalConnectionsList()
         {
-            string sql = CreateTableSqlBox.Text;
-            Clipboard.SetText(sql);
-            MessageBox.Show("SQL script copied to clipboard!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            var profiles = _settings.GetExternalDbProfiles(); // from JSON list
+            ExternalConnectionsList.ItemsSource = profiles;
+
+            // 🔹 Show current DEFAULT connection (from single settings)
+            if (!string.IsNullOrWhiteSpace(_settings.External_Host) &&
+                !string.IsNullOrWhiteSpace(_settings.External_Database))
+            {
+                CurrentDefaultExternalText.Text =
+                    $"{_settings.External_Host}:{_settings.External_Port ?? "3306"}/{_settings.External_Database} (User: {_settings.External_Username})";
+            }
+            else
+            {
+                CurrentDefaultExternalText.Text = "(No external connection configured)";
+            }
+
+            _selectedExternalProfile = null;
+            EditConnectionButton.IsEnabled = false;
+            RemoveConnectionButton.IsEnabled = false;
+            ConnectNowButton.IsEnabled = false;
+            SetDefaultButton.IsEnabled = false;
+        }
+        private void SetDefaultButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedExternalProfile == null) return;
+
+            // ✅ Overwrite the current default external settings
+            _settings.External_Host = _selectedExternalProfile.Host;
+            _settings.External_Port = _selectedExternalProfile.Port.ToString();
+            _settings.External_Database = _selectedExternalProfile.Database;
+            _settings.External_Username = _selectedExternalProfile.Username;
+            _settings.External_Password = _selectedExternalProfile.Password;
+            _settings.Save();
+
+            // Refresh UI
+            LoadExternalConnectionsList();
+            MessageBox.Show("Default external connection updated.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private void SaveExternalSettings_Click(object sender, RoutedEventArgs e)
+        private void ExternalConnectionsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            SaveExternalSettings();
-            MessageBox.Show("External database settings saved.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            _selectedExternalProfile = ExternalConnectionsList.SelectedItem as ExternalDbProfile;
+            bool enabled = _selectedExternalProfile != null;
+            EditConnectionButton.IsEnabled = enabled;
+            RemoveConnectionButton.IsEnabled = enabled;
+            ConnectNowButton.IsEnabled = enabled;
+            SetDefaultButton.IsEnabled = enabled;
+        }
+
+        private void AddConnectionButton_Click(object sender, RoutedEventArgs e)
+        {
+            var editor = new ExtConSettingsWindow();
+            if (editor.ShowDialog() == true)
+            {
+                var profiles = _settings.GetExternalDbProfiles();
+                profiles.Add(editor.Profile);
+                _settings.SaveExternalDbProfiles(profiles);
+                LoadExternalConnectionsList();
+            }
+        }
+
+        private void EditConnectionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedExternalProfile == null) return;
+
+            // Deep copy to avoid reference mutation
+            var profileCopy = new ExternalDbProfile
+            {
+                Name = _selectedExternalProfile.Name,
+                Host = _selectedExternalProfile.Host,
+                Port = _selectedExternalProfile.Port,
+                Database = _selectedExternalProfile.Database,
+                Username = _selectedExternalProfile.Username,
+                Password = _selectedExternalProfile.Password
+            };
+
+            var editor = new ExtConSettingsWindow(profileCopy);
+            if (editor.ShowDialog() == true)
+            {
+                var profiles = _settings.GetExternalDbProfiles();
+                int index = profiles.IndexOf(_selectedExternalProfile);
+                if (index >= 0)
+                {
+                    profiles[index] = editor.Profile;
+                    _settings.SaveExternalDbProfiles(profiles);
+                    LoadExternalConnectionsList();
+                    ExternalConnectionsList.SelectedIndex = index;
+                }
+            }
+        }
+
+        private void RemoveConnectionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedExternalProfile == null) return;
+
+            if (MessageBox.Show(
+                $"Remove connection:\n{_selectedExternalProfile.DisplayName}?",
+                "Confirm Remove",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                var profiles = _settings.GetExternalDbProfiles();
+                profiles.Remove(_selectedExternalProfile);
+                _settings.SaveExternalDbProfiles(profiles);
+                LoadExternalConnectionsList();
+            }
         }
 
         private void ConnectNowButton_Click(object sender, RoutedEventArgs e)
         {
-            SaveExternalSettings();
+            if (_selectedExternalProfile == null) return;
 
+            // Save to current external settings (used by MainWindow)
+            _settings.External_Host = _selectedExternalProfile.Host;
+            _settings.External_Port = _selectedExternalProfile.Port.ToString();
+            _settings.External_Database = _selectedExternalProfile.Database;
+            _settings.External_Username = _selectedExternalProfile.Username;
+            _settings.External_Password = _selectedExternalProfile.Password;
+            _settings.Save();
+
+            // Trigger connect in MainWindow
             _mainWindow.Dispatcher.Invoke(() =>
             {
                 try
                 {
                     _mainWindow.SetDatabaseMode(DatabaseMode.External);
-                    var connString = _mainWindow.BuildExternalConnectionString();
-                    if (string.IsNullOrEmpty(connString))
+                    var connStr = _mainWindow.BuildExternalConnectionString();
+                    if (string.IsNullOrEmpty(connStr))
                     {
-                        MessageBox.Show("Configuration incomplete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show("Incomplete connection details.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
-
-                    _mainWindow.SetExternalConnectionString(connString);
+                    _mainWindow.SetExternalConnectionString(connStr);
                     _mainWindow.TriggerConnect();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Connection failed:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Failed to connect:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             });
         }
-        private void SaveExternalSettings()
+        #endregion
+
+        #region Font
+        private void MainWindowFontButton_Click(object sender, RoutedEventArgs e)
         {
-            _settings.External_Host = HostTextBox.Text;
-            _settings.External_Port = PortTextBox.Text;
-            _settings.External_Database = DatabaseTextBox.Text;
-            _settings.External_Username = UsernameTextBox.Text;
-            _settings.External_Password = PasswordBox.Password;
+            var settings = new SettingsManager();
+            // Use the SAVED font settings (not MainWindow's live UI)
+            var fontPicker = new FontMainWindow(
+                new FontFamily(settings.DefaultMainFontFamily),
+                ParseFontWeight(settings.DefaultMainFontWeight),
+                ParseFontStyle(settings.DefaultMainFontStyle),
+                settings
+            )
+            {
+                Owner = this
+            };
+
+            fontPicker.ShowDialog();
+        }
+
+        // Reuse these helpers (copy from MainWindow if needed)
+        private static FontWeight ParseFontWeight(string weightStr)
+        {
+            switch (weightStr)
+            {
+                case "Bold": return FontWeights.Bold;
+                case "Black": return FontWeights.Black;
+                case "ExtraBold": return FontWeights.ExtraBold;
+                case "DemiBold": return FontWeights.DemiBold;
+                case "Light": return FontWeights.Light;
+                case "ExtraLight": return FontWeights.ExtraLight;
+                case "Thin": return FontWeights.Thin;
+                default: return FontWeights.Normal;
+            }
+        }
+
+        private static FontStyle ParseFontStyle(string styleStr)
+        {
+            switch (styleStr)
+            {
+                case "Italic": return FontStyles.Italic;
+                case "Oblique": return FontStyles.Oblique;
+                default: return FontStyles.Normal;
+            }
+        }
+        private void RequirementsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var reqWindow = new ExternalRequirementsWindow();
+            reqWindow.Show(); // No Owner = independent window
         }
         #endregion
 

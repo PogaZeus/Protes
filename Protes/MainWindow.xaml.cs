@@ -2,21 +2,18 @@
 using Protes.Views;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using SWF = System.Windows.Forms;
 
 namespace Protes
@@ -75,6 +72,7 @@ namespace Protes
             UpdateDataGridColumns();
             UpdateToolbarVisibility();
             UpdateToolbarIconVisibility();
+            RefreshLocalDbControls();
 
             // Load View settings
             _isToolbarVisible = _settings.ViewMainToolbar;
@@ -274,6 +272,7 @@ namespace Protes
 
             // Full switch logic
             _currentMode = DatabaseMode.Local;
+            RefreshLocalDbControls();
             _settings.SetDatabaseMode(DatabaseMode.Local);
             UpdateDatabaseModeCheckmarks();
 
@@ -404,6 +403,7 @@ namespace Protes
                     _settings.SetDatabaseMode(DatabaseMode.External);
                     UpdateDatabaseModeCheckmarks();
                     UpdateStatusBar();
+                    RefreshLocalDbControls();
                     return;
                 }
 
@@ -415,6 +415,7 @@ namespace Protes
                     _settings.SetDatabaseMode(DatabaseMode.External);
                     UpdateDatabaseModeCheckmarks();
                     UpdateStatusBar();
+                    RefreshLocalDbControls();
                     return;
                 }
             }
@@ -423,7 +424,7 @@ namespace Protes
             _currentMode = DatabaseMode.External;
             _settings.SetDatabaseMode(DatabaseMode.External);
             UpdateDatabaseModeCheckmarks();
-
+            RefreshLocalDbControls();
             if (_settings.AutoConnectOnSwitch)
             {
                 var connString = BuildExternalConnectionString();
@@ -452,6 +453,7 @@ namespace Protes
                 DisconnectedPlaceholder.Visibility = Visibility.Visible;
                 UpdateButtonStates();
                 UpdateStatusBar();
+                RefreshLocalDbControls();
             }
         }
 
@@ -1050,9 +1052,8 @@ namespace Protes
             DisconnectMenuItem.IsEnabled = isConnected;
 
             // Disable local DB switcher unless in Local mode
-            bool isLocalMode = (_currentMode == DatabaseMode.Local);
-            AvailableDatabasesComboBox.IsEnabled = isLocalMode;
-            LoadSelectedDbButton.IsEnabled = isLocalMode;
+            DatabaseOrConnectionComboBox.IsEnabled = true;
+            LoadSelectedDbButton.IsEnabled = true;
         }
         public void UpdateStatusBar()
         {
@@ -1098,8 +1099,8 @@ namespace Protes
         public void UpdateDatabaseModeCheckmarks()
         {
             // Main Options Menu (existing)
-            var localItem = (MenuItem)OptionsMenu.Items[0];
-            var externalItem = (MenuItem)OptionsMenu.Items[1];
+            var localItem = LocalDbMenuItem;
+            var externalItem = ExternalDbMenuItem;
             localItem.IsChecked = (_currentMode == DatabaseMode.Local);
             externalItem.IsChecked = (_currentMode == DatabaseMode.External);
             externalItem.IsEnabled = !string.IsNullOrWhiteSpace(_settings.External_Host) &&
@@ -1388,28 +1389,29 @@ namespace Protes
 
             // Imported paths (already support any extension, including .prote)
             var importedRaw = _settings.ImportedDatabasePaths;
-            var importedPaths = new List<string>();
             if (!string.IsNullOrWhiteSpace(importedRaw))
             {
-                importedPaths = importedRaw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
-                                           .Where(p => File.Exists(p)).ToList();
-            }
-
-            foreach (var path in importedPaths)
-            {
-                dbFiles.Add(new DbFileInfo
+                var importedPaths = importedRaw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                               .Where(p => File.Exists(p))
+                                               .ToList();
+                foreach (var path in importedPaths)
                 {
-                    FileName = Path.GetFileName(path) + " (imported)",
-                    FullPath = path,
-                    IsImported = true
-                });
+                    dbFiles.Add(new DbFileInfo
+                    {
+                        FileName = Path.GetFileName(path) + " (imported)",
+                        FullPath = path,
+                        IsImported = true
+                    });
+                }
             }
 
             // Remove duplicates by path
             var uniqueFiles = dbFiles.GroupBy(f => f.FullPath).Select(g => g.First()).ToList();
 
-            // Set to ComboBox
-            AvailableDatabasesComboBox.ItemsSource = uniqueFiles;
+            // 👇 Use the SHARED ComboBox (renamed from AvailableDatabasesComboBox)
+            DatabaseOrConnectionComboBox.ItemsSource = uniqueFiles;
+            DatabaseOrConnectionComboBox.DisplayMemberPath = "FileName";
+            DatabaseOrConnectionComboBox.SelectedValuePath = "FullPath";
 
             // Select LastLocalDatabasePath if available
             string lastPath = _settings.LastLocalDatabasePath;
@@ -1419,21 +1421,100 @@ namespace Protes
                 {
                     if (item.FullPath.Equals(lastPath, StringComparison.OrdinalIgnoreCase))
                     {
-                        AvailableDatabasesComboBox.SelectedItem = item;
+                        DatabaseOrConnectionComboBox.SelectedItem = item;
                         break;
                     }
                 }
             }
         }
+
+        private void LoadExternalConnectionsIntoComboBox()
+        {
+            var profiles = _settings.GetExternalDbProfiles();
+            DatabaseOrConnectionComboBox.ItemsSource = profiles;
+            DatabaseOrConnectionComboBox.DisplayMemberPath = "DisplayName";
+
+            // Select current default (match by Host+Port+Database)
+            string currentHost = _settings.External_Host ?? "";
+            string currentPort = _settings.External_Port ?? "3306";
+            string currentDb = _settings.External_Database ?? "";
+
+            foreach (var profile in profiles)
+            {
+                if (profile.Host == currentHost &&
+                    profile.Port.ToString() == currentPort &&
+                    profile.Database == currentDb)
+                {
+                    DatabaseOrConnectionComboBox.SelectedItem = profile;
+                    break;
+                }
+            }
+        }
+        private void RefreshLocalDbControls()
+        {
+            if (_currentMode == DatabaseMode.Local)
+            {
+                DatabaseModeLabel.Text = "Local:";
+                LoadAvailableDatabases(); // Reuse your existing method
+            }
+            else if (_currentMode == DatabaseMode.External)
+            {
+                DatabaseModeLabel.Text = "External:";
+                LoadExternalConnectionsIntoComboBox();
+            }
+            else
+            {
+                DatabaseModeLabel.Text = "—";
+                DatabaseOrConnectionComboBox.ItemsSource = null;
+            }
+        }
+
         private void LoadSelectedDbButton_Click(object sender, RoutedEventArgs e)
         {
-            var selectedItem = AvailableDatabasesComboBox.SelectedItem as DbFileInfo;
-            if (selectedItem != null)
+            if (_currentMode == DatabaseMode.Local)
             {
-                _settings.LastLocalDatabasePath = selectedItem.FullPath;
+                var selectedItem = DatabaseOrConnectionComboBox.SelectedItem as DbFileInfo;
+                if (selectedItem != null)
+                {
+                    _settings.LastLocalDatabasePath = selectedItem.FullPath;
+                    SwitchToLocalDatabase(selectedItem.FullPath);
+                }
+            }
+            else if (_currentMode == DatabaseMode.External)
+            {
+                var selectedProfile = DatabaseOrConnectionComboBox.SelectedItem as ExternalDbProfile;
+                if (selectedProfile != null)
+                {
+                    // Set as default
+                    _settings.External_Host = selectedProfile.Host;
+                    _settings.External_Port = selectedProfile.Port.ToString();
+                    _settings.External_Database = selectedProfile.Database;
+                    _settings.External_Username = selectedProfile.Username;
+                    _settings.External_Password = selectedProfile.Password;
+                    _settings.Save();
 
-                // Switch to it
-                SwitchToLocalDatabase(selectedItem.FullPath);
+                    // Always attempt to connect — even if already connected
+                    var connStr = BuildExternalConnectionString();
+                    if (!string.IsNullOrEmpty(connStr))
+                    {
+                        // If already connected, disconnect first
+                        if (_isConnected)
+                        {
+                            // auto-disconnect first
+                            if (_settings.AutoDisconnectOnSwitch)
+                            {
+                                Disconnect_Click(this, new RoutedEventArgs());
+                            }
+                            // Or just reconnect — MySQL connector handles it
+                        }
+                        ConnectToExternalDatabase(connStr);
+                        UpdateStatusBar();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Incomplete connection details.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
             }
         }
         private void PromptAndSwitchDatabase(string databasePath)
@@ -1739,6 +1820,17 @@ namespace Protes
                         PopulateSwitchLocalContextMenu(switchLocalItem);
                     }
                 }
+                
+                var switchExternalItem = FindContextMenuItem(contextMenu, "ContextSwitchExternalMenuItem");
+                if (switchExternalItem != null)
+                {
+                    bool show = (_currentMode == DatabaseMode.External);
+                    switchExternalItem.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+                    if (show)
+                    {
+                        PopulateSwitchExternalContextMenu(switchExternalItem);
+                    }
+                }
 
                 if (localDbItem != null) localDbItem.IsChecked = (_currentMode == DatabaseMode.Local);
                 if (externalDbItem != null)
@@ -1892,6 +1984,50 @@ namespace Protes
                 switchLocalMenuItem.Items.Add(menuItem);
             }
         }
+
+        private void PopulateSwitchExternalContextMenu(MenuItem switchExternalMenuItem)
+        {
+            // Clear existing items
+            switchExternalMenuItem.Items.Clear();
+
+            // Get saved external connections
+            var profiles = _settings.GetExternalDbProfiles();
+            if (!profiles.Any())
+            {
+                // Optionally show "No connections saved"
+                var emptyItem = new MenuItem
+                {
+                    Header = "(No external connections saved)",
+                    IsEnabled = false
+                };
+                switchExternalMenuItem.Items.Add(emptyItem);
+                return;
+            }
+
+            // Get current default connection values
+            string currentHost = _settings.External_Host ?? "";
+            string currentPort = _settings.External_Port ?? "3306";
+            string currentDb = _settings.External_Database ?? "";
+
+            foreach (var profile in profiles)
+            {
+                // Check if this profile matches the current default settings
+                bool isActive = (profile.Host == currentHost) &&
+                                (profile.Port.ToString() == currentPort) &&
+                                (profile.Database == currentDb);
+
+                var menuItem = new MenuItem
+                {
+                    Header = $"{profile.Name}: {profile.Host}:{profile.Port}/{profile.Database}",
+                    IsCheckable = true,
+                    IsChecked = isActive,
+                    Tag = profile // Store the full profile for click handler
+                };
+                menuItem.Click += SwitchExternalDbContextMenuItem_Click;
+                switchExternalMenuItem.Items.Add(menuItem);
+            }
+        }
+
         // Right click Sub Menu Local DB list - switch
         private void SwitchLocalDbContextMenuItem_Click(object sender, RoutedEventArgs e)
         {
@@ -1901,7 +2037,39 @@ namespace Protes
                 SwitchToLocalDatabase(dbPath);
             }
         }
+        private void SwitchExternalDbContextMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is ExternalDbProfile profile)
+            {
+                // Set as default external connection
+                _settings.External_Host = profile.Host;
+                _settings.External_Port = profile.Port.ToString();
+                _settings.External_Database = profile.Database;
+                _settings.External_Username = profile.Username;
+                _settings.External_Password = profile.Password;
+                _settings.Save();
 
+                // If already in External mode, connect immediately
+                if (_currentMode == DatabaseMode.External)
+                {
+                    var connString = BuildExternalConnectionString();
+                    if (!string.IsNullOrEmpty(connString))
+                    {
+                        ConnectToExternalDatabase(connString);
+                        UpdateStatusBar(); // Refresh status bar to show new DB
+                    }
+                    else
+                    {
+                        MessageBox.Show("Incomplete connection details.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
+                else
+                {
+                    // Just save — user will switch mode separately
+                    MessageBox.Show($"Default external connection set to:\n{profile.Name}", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+        }
         #endregion
 
         #region Settings and Configuration

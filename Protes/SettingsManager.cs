@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Windows;
+using System.Text.Json;
 
 namespace Protes
 {
@@ -49,7 +52,15 @@ namespace Protes
         #endregion
 
         #region External Database
-
+        public string ExternalConnectionsSerialized
+        {
+            get => global::Protes.Properties.Settings.Default.ExternalConnectionsSerialized;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ExternalConnectionsSerialized = value;
+                Save();
+            }
+        }
         public string External_Host
         {
             get => global::Protes.Properties.Settings.Default.External_Host;
@@ -446,7 +457,47 @@ namespace Protes
         {
             global::Protes.Properties.Settings.Default.Save();
         }
+        // Step 2: Simulate list using current single settings
 
+        private const string DEFAULT_EXTERNAL_JSON = "[]";
+
+        public List<ExternalDbProfile> GetExternalDbProfiles()
+        {
+        try
+        {
+            var json = ExternalConnectionsSerialized ?? DEFAULT_EXTERNAL_JSON;
+            return JsonSerializer.Deserialize<List<ExternalDbProfile>>(json) ?? new List<ExternalDbProfile>();
+        }
+        catch
+        {
+            return new List<ExternalDbProfile>();
+        }
+    }
+
+    public void SaveExternalDbProfiles(List<ExternalDbProfile> profiles)
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(profiles, new JsonSerializerOptions { WriteIndented = true });
+            ExternalConnectionsSerialized = json;
+            Save();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to save external connections:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    // Helper to write back to current settings (for Edit)
+    public void SaveAsCurrentExternalConnection(ExternalDbProfile profile)
+        {
+            External_Host = profile.Host;
+            External_Port = profile.Port.ToString();
+            External_Database = profile.Database;
+            External_Username = profile.Username;
+            External_Password = profile.Password;
+            Save();
+        }
         public DatabaseMode GetDatabaseMode()
         {
             switch (DatabaseModeSetting)

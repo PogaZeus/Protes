@@ -526,5 +526,17 @@ namespace Protes.Properties {
                 this["LaunchOnStartup"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ExternalConnectionsSerialized {
+            get {
+                return ((string)(this["ExternalConnectionsSerialized"]));
+            }
+            set {
+                this["ExternalConnectionsSerialized"] = value;
+            }
+        }
     }
 }

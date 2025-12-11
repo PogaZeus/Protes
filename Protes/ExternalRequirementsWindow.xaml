@@ -1,0 +1,70 @@
+﻿<Window x:Class="Protes.Views.ExternalRequirementsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="External Database Requirements"
+        Height="420"
+        Width="520"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="Segoe UI"
+        ResizeMode="CanResizeWithGrip">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Table Name -->
+        <TextBlock Text="Your external database must contain a TABLE named:" FontWeight="Bold"/>
+
+        <!-- Table Name Value -->
+        <TextBlock Text="→ Notes"
+                   Foreground="Red"
+                   FontWeight="Bold"
+                   Margin="10,5,0,5"
+                   Grid.Row="1"/>
+
+        <!-- Column Header -->
+        <TextBlock Text="With the following columns:"
+                   FontWeight="Bold"
+                   Grid.Row="2"/>
+
+        <!-- Column List -->
+        <StackPanel Grid.Row="3" Margin="0,5,0,5">
+            <TextBlock Text="• Id (INTEGER PRIMARY KEY)" Margin="0,2"/>
+            <TextBlock Text="• Title (TEXT, NOT NULL)" Margin="0,2"/>
+            <TextBlock Text="• Content (TEXT)" Margin="0,2"/>
+            <TextBlock Text="• Tags (TEXT)" Margin="0,2"/>
+            <TextBlock Text="• LastModified (TEXT in 'yyyy-MM-dd HH:mm' format)" Margin="0,2"/>
+        </StackPanel>
+
+        <!-- SQL Box -->
+        <GroupBox Header="MySQL: Create Table SQL" Grid.Row="4" Margin="0,5,0,5">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBox x:Name="CreateTableSqlBox"
+                         Text="CREATE TABLE Notes (&#x0a;    Id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,&#x0a;    Title VARCHAR(255) NOT NULL,&#x0a;    Content TEXT,&#x0a;    Tags VARCHAR(255),&#x0a;    LastModified DATETIME&#x0a;);"
+                         FontFamily="Consolas"
+                         FontSize="12"
+                         IsReadOnly="True"
+                         AcceptsReturn="True"
+                         VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Auto"
+                         TextWrapping="NoWrap"
+                         Margin="0,5,0,5"/>
+                <Button Grid.Row="1"
+                        Content="Copy SQL"
+                        Width="80"
+                        HorizontalAlignment="Left"
+                        Margin="0,5"
+                        Click="CopySqlButton_Click"
+                        Padding="12,5"/>
+            </Grid>
+        </GroupBox>
+    </Grid>
+</Window>
