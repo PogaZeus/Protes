@@ -7,7 +7,7 @@
         MinHeight="540" 
         MinWidth="750"
         WindowStartupLocation="CenterOwner"
-        Background="#F2F6FA"
+        Background="#F8FAFC"
         FontFamily="Segoe UI">
 
     <Grid Margin="25">
@@ -23,12 +23,12 @@
             <TextBlock Text="Cats: Champions of the Digital Realm"
                        FontWeight="Bold"
                        FontSize="24"
-                       Foreground="#1F2A33"
+                       Foreground="#0F172A"
                        TextAlignment="Center"/>
             <TextBlock Text="Because if they can sit on your keyboard, they basically own your code."
                        FontStyle="Italic"
                        FontSize="12"
-                       Foreground="#3A4A57"
+                       Foreground="#475569"
                        TextAlignment="Center"/>
         </StackPanel>
 
@@ -36,19 +36,17 @@
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
-                <!-- Section: Why Cats Rule -->
-                <Border Background="#E4EBF3" Padding="5" CornerRadius="8" Margin="0 0 0 15">
+                <Border Background="#F1F5F9" Padding="15" CornerRadius="8" Margin="0 0 0 20">
                     <StackPanel>
                         <TextBlock Text="✨ WHY CATS ARE THE BEST ✨"
                                    FontSize="16"
                                    FontWeight="Bold"
-                                   Foreground="#1F2A33"
+                                   Foreground="#0F172A"
                                    Margin="0 0 0 10"/>
-
                         <TextBlock TextWrapping="Wrap"
                                    FontSize="14"
                                    LineHeight="22"
-                                   Foreground="#2D3943">
+                                   Foreground="#475569">
                             <Run Text="• Cats have built-in multitasking: sleep, judge you silently, and plan world domination — all at once."/><LineBreak/>
                             <Run Text="• They provide free quality assurance by knocking unstable objects off your desk."/><LineBreak/>
                             <Run Text="• When they sit on your keyboard, they aren't interrupting — they're optimizing."/><LineBreak/>
@@ -58,18 +56,17 @@
                 </Border>
 
                 <!-- Section: Cat Facts -->
-                <Border Background="#DFE7EF" Padding="15" CornerRadius="8" Margin="0 0 0 20">
+                <Border Background="#E2E8F0" Padding="15" CornerRadius="8" Margin="0 0 0 20">
                     <StackPanel>
                         <TextBlock Text="📚 INTERESTING CAT FACTS"
                                    FontSize="16"
                                    FontWeight="Bold"
-                                   Foreground="#1F2A33"
+                                   Foreground="#0F172A"
                                    Margin="0 0 0 10"/>
-
                         <TextBlock TextWrapping="Wrap"
                                    FontSize="14"
                                    LineHeight="22"
-                                   Foreground="#2D3943">
+                                   Foreground="#475569">
                             <Run Text="• A group of cats is called a “clowder,” which also sounds like a Linux distro."/><LineBreak/>
                             <Run Text="• Cats sleep up to 16 hours a day — a lifestyle most programmers deeply respect."/><LineBreak/>
                             <Run Text="• They can jump 6× their height, which is exactly how high your stress jumps when you deploy to production."/>
@@ -78,151 +75,135 @@
                 </Border>
 
                 <!-- Section: Jokes -->
-                <Border Background="#D7E1EC" Padding="15" CornerRadius="8">
+                <Border Background="#dbeafe" Padding="15" CornerRadius="8" Margin="0 0 0 20">
                     <StackPanel>
                         <TextBlock Text="😹 CAT JOKES"
                                    FontSize="16"
                                    FontWeight="Bold"
-                                   Foreground="#1F2A33"
+                                   Foreground="#0F172A"
                                    Margin="0 0 0 10"/>
-
                         <TextBlock TextWrapping="Wrap"
                                    FontSize="14"
                                    LineHeight="22"
-                                   Foreground="#2D3943">
-
+                                   Foreground="#475569">
                             <Run Text="Q: What do you call a cat who fixes computers?"/><LineBreak/>
                             <Run Text="A: A purr-ogrammer."/><LineBreak/><LineBreak/>
-                            
                             <Run Text="Q: What's a cat's favorite TV show?"/><LineBreak/>
                             <Run Text="A: The Evening Meows!"/><LineBreak/><LineBreak/>
-
                             <Run Text="Q: What’s a cat’s favorite coding language?"/><LineBreak/>
                             <Run Text="A: Scratch… followed closely by Meow-SQL."/><LineBreak/><LineBreak/>
-
                             <Run Text="Q: Why was the cat sitting on the computer?"/><LineBreak/>
                             <Run Text="A: It wanted to keep an eye on the mouse!"/><LineBreak/><LineBreak/>
-                            
                             <Run Text="Q: What's a cat's favorite dessert?"/><LineBreak/>
                             <Run Text="A: Mice-cream!"/><LineBreak/><LineBreak/>
-                            
                             <Run Text="Q: What's a cat's favorite subject in school?"/><LineBreak/>
                             <Run Text="A: Hiss-tory!"/><LineBreak/><LineBreak/>
-                            
                             <Run Text="Q: Why don't cats play poker in the jungle?"/><LineBreak/>
                             <Run Text="A: Too many cheetahs."/><LineBreak/><LineBreak/>
-                            
                             <Run Text="Q: What do you get when you cross a chick with an alley cat?"/><LineBreak/>
                             <Run Text="A: A peeping tom."/><LineBreak/><LineBreak/>
-                            
                             <Run Text="Q: Why was the cat called a developer?"/><LineBreak/>
                             <Run Text="A: Because it could see sharp! C#.. (ahh I wrote this one, lol!)"/><LineBreak/>
                         </TextBlock>
                     </StackPanel>
-                    
                 </Border>
-                <!-- Section: Cat Riddles -->
-                <Border Background="#E8F0F9" Padding="15" CornerRadius="8" Margin="0 20 0 0">
+
+                <Border Background="#f0f9ff" Padding="15" CornerRadius="8" Margin="0 20 0 0">
                     <StackPanel>
                         <TextBlock Text="🧠 CAT RIDDLES (Click to Reveal Answers)"
-                   FontSize="16"
-                   FontWeight="Bold"
-                   Foreground="#1F2A33"
-                   Margin="0 0 15 0"/>
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   Foreground="#0F172A"
+                                   Margin="0 0 15 0"/>
 
-                        <!-- Riddle 1 -->
                         <StackPanel Margin="0 0 0 15">
                             <TextBlock Text="Q: A group of kittens in a box, or a designated toilet for cats."
-                       FontSize="14"
-                       Foreground="#2D3943"
-                       TextWrapping="Wrap"/>
+                                       FontSize="14"
+                                       Foreground="#475569"
+                                       TextWrapping="Wrap"/>
                             <Button Content="🔍 Reveal Answer"
-                    FontSize="12"
-                    Foreground="#1F2A33"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Cursor="Hand"
-                    HorizontalAlignment="Left"
-                    Margin="0 5 0 0"
-                    Click="RevealRiddle1"/>
+                                    FontSize="12"
+                                    Foreground="#0F172A"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    HorizontalAlignment="Left"
+                                    Margin="0 5 0 0"
+                                    Click="RevealRiddle1"/>
                             <TextBlock x:Name="Riddle1Answer"
-                       Text="A: A litter box."
-                       FontSize="14"
-                       Foreground="#2D3943"
-                       Visibility="Collapsed"
-                       TextWrapping="Wrap"/>
+                                       Text="A: A litter box."
+                                       FontSize="14"
+                                       Foreground="#475569"
+                                       Visibility="Collapsed"
+                                       TextWrapping="Wrap"/>
                         </StackPanel>
 
-                        <!-- Riddle 2 -->
                         <StackPanel Margin="0 0 0 15">
                             <TextBlock Text="Q: I am what your cat tries to catch even though I don't exist"
-                       FontSize="14"
-                       Foreground="#2D3943"
-                       TextWrapping="Wrap"/>
+                                       FontSize="14"
+                                       Foreground="#475569"
+                                       TextWrapping="Wrap"/>
                             <Button Content="🔍 Reveal Answer"
-                    FontSize="12"
-                    Foreground="#1F2A33"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Cursor="Hand"
-                    HorizontalAlignment="Left"
-                    Margin="0 5 0 0"
-                    Click="RevealRiddle2"/>
+                                    FontSize="12"
+                                    Foreground="#0F172A"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    HorizontalAlignment="Left"
+                                    Margin="0 5 0 0"
+                                    Click="RevealRiddle2"/>
                             <TextBlock x:Name="Riddle2Answer"
-                       Text="A: A laser pointer dot."
-                       FontSize="14"
-                       Foreground="#2D3943"
-                       Visibility="Collapsed"
-                       TextWrapping="Wrap"/>
+                                       Text="A: A laser pointer dot."
+                                       FontSize="14"
+                                       Foreground="#475569"
+                                       Visibility="Collapsed"
+                                       TextWrapping="Wrap"/>
                         </StackPanel>
 
-                        <!-- Riddle 3 -->
                         <StackPanel>
                             <TextBlock Text="Q: Where is one place that your cat can sit, but you can't?"
-                       FontSize="14"
-                       Foreground="#2D3943"
-                       TextWrapping="Wrap"/>
+                                       FontSize="14"
+                                       Foreground="#475569"
+                                       TextWrapping="Wrap"/>
                             <Button Content="🔍 Reveal Answer"
-                    FontSize="12"
-                    Foreground="#1F2A33"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Cursor="Hand"
-                    HorizontalAlignment="Left"
-                    Margin="0 5 0 0"
-                    Click="RevealRiddle3"/>
+                                    FontSize="12"
+                                    Foreground="#0F172A"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    HorizontalAlignment="Left"
+                                    Margin="0 5 0 0"
+                                    Click="RevealRiddle3"/>
                             <TextBlock x:Name="Riddle3Answer"
-                       Text="A: Your lap."
-                       FontSize="14"
-                       Foreground="#2D3943"
-                       Visibility="Collapsed"
-                       TextWrapping="Wrap"/>
+                                       Text="A: Your lap."
+                                       FontSize="14"
+                                       Foreground="#475569"
+                                       Visibility="Collapsed"
+                                       TextWrapping="Wrap"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Checkbox -->
         <CheckBox Grid.Row="2"
                   x:Name="ShowCatButtonInToolbarCheckBox"
                   Content="Show 🐾 Cat Button in Main Toolbar"
                   FontSize="14"
                   FontWeight="SemiBold"
-                  Foreground="#1F2A33"
+                  Foreground="#0F172A"
                   Margin="0 20 0 10"
                   HorizontalAlignment="Center"/>
 
-        <!-- Button -->
         <Button Grid.Row="3"
                 Content="Meow!"
                 Width="120"
                 Height="36"
                 FontSize="15"
                 BorderThickness="0"
-                Background="#B9CFE4"
+                Background="#3B82F6"
                 Padding="4"
-                Foreground="#11212D"
+                Foreground="#FFFFFF"
                 FontWeight="Bold"
                 HorizontalAlignment="Center"
                 Click="MeowButton_Click"

@@ -4,7 +4,8 @@ namespace Protes
 {
     public class SettingsManager
     {
-        // ===== DATABASE MODE =====
+        #region Database Mode & Paths
+
         public string DatabaseModeSetting
         {
             get => global::Protes.Properties.Settings.Default.DatabaseMode;
@@ -25,7 +26,30 @@ namespace Protes
             }
         }
 
-        // ===== EXTERNAL DATABASE =====
+        public string DefaultDatabaseFolder
+        {
+            get => global::Protes.Properties.Settings.Default.DefaultDatabaseFolder;
+            set
+            {
+                global::Protes.Properties.Settings.Default.DefaultDatabaseFolder = value;
+                Save();
+            }
+        }
+
+        public string ImportedDatabasePaths
+        {
+            get => global::Protes.Properties.Settings.Default.ImportedDatabasePaths;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ImportedDatabasePaths = value;
+                Save();
+            }
+        }
+
+        #endregion
+
+        #region External Database
+
         public string External_Host
         {
             get => global::Protes.Properties.Settings.Default.External_Host;
@@ -76,7 +100,10 @@ namespace Protes
             }
         }
 
-        // ===== CONNECTION BEHAVIOR =====
+        #endregion
+
+        #region Connection Automation
+
         public bool AutoConnect
         {
             get => global::Protes.Properties.Settings.Default.AutoConnect;
@@ -87,22 +114,22 @@ namespace Protes
             }
         }
 
-        public bool AutoDisconnectOnSwitch
-        {
-            get => global::Protes.Properties.Settings.Default.AutoDisconnectOnSwitch;
-            set
-            {
-                global::Protes.Properties.Settings.Default.AutoDisconnectOnSwitch = value;
-                Save();
-            }
-        }
-
         public bool AutoConnectOnSwitch
         {
             get => global::Protes.Properties.Settings.Default.AutoConnectOnSwitch;
             set
             {
                 global::Protes.Properties.Settings.Default.AutoConnectOnSwitch = value;
+                Save();
+            }
+        }
+
+        public bool AutoDisconnectOnSwitch
+        {
+            get => global::Protes.Properties.Settings.Default.AutoDisconnectOnSwitch;
+            set
+            {
+                global::Protes.Properties.Settings.Default.AutoDisconnectOnSwitch = value;
                 Save();
             }
         }
@@ -123,51 +150,6 @@ namespace Protes
             set
             {
                 global::Protes.Properties.Settings.Default.NotifyDeleted = value;
-                Save();
-            }
-        }
-        public bool ShellNewIntegrationEnabled
-        {
-            get => Properties.Settings.Default.ShellNewIntegrationEnabled;
-            set
-            {
-                Properties.Settings.Default.ShellNewIntegrationEnabled = value;
-                Save();
-            }
-        }
-        public bool LaunchOnStartup
-        {
-            get => Properties.Settings.Default.LaunchOnStartup;
-            set
-            {
-                Properties.Settings.Default.LaunchOnStartup = value;
-                Save();
-            }
-        }
-        public bool SendToIntegrationEnabled
-        {
-            get => Properties.Settings.Default.SendToIntegrationEnabled;
-            set
-            {
-                Properties.Settings.Default.SendToIntegrationEnabled = value;
-                Save();
-            }
-        }
-        public bool MinimizeToTray
-        {
-            get => Properties.Settings.Default.MinimizeToTray;
-            set
-            {
-                Properties.Settings.Default.MinimizeToTray = value;
-                Save();
-            }
-        }
-        public bool CloseToTray
-        {
-            get => Properties.Settings.Default.CloseToTray;
-            set
-            {
-                Properties.Settings.Default.CloseToTray = value;
                 Save();
             }
         }
@@ -192,7 +174,64 @@ namespace Protes
             }
         }
 
-        // ===== VIEW PREFERENCES =====
+        #endregion
+
+        #region Application Integration
+
+        public bool LaunchOnStartup
+        {
+            get => Properties.Settings.Default.LaunchOnStartup;
+            set
+            {
+                Properties.Settings.Default.LaunchOnStartup = value;
+                Save();
+            }
+        }
+
+        public bool ShellNewIntegrationEnabled
+        {
+            get => Properties.Settings.Default.ShellNewIntegrationEnabled;
+            set
+            {
+                Properties.Settings.Default.ShellNewIntegrationEnabled = value;
+                Save();
+            }
+        }
+
+        public bool SendToIntegrationEnabled
+        {
+            get => Properties.Settings.Default.SendToIntegrationEnabled;
+            set
+            {
+                Properties.Settings.Default.SendToIntegrationEnabled = value;
+                Save();
+            }
+        }
+
+        public bool MinimizeToTray
+        {
+            get => Properties.Settings.Default.MinimizeToTray;
+            set
+            {
+                Properties.Settings.Default.MinimizeToTray = value;
+                Save();
+            }
+        }
+
+        public bool CloseToTray
+        {
+            get => Properties.Settings.Default.CloseToTray;
+            set
+            {
+                Properties.Settings.Default.CloseToTray = value;
+                Save();
+            }
+        }
+
+        #endregion
+
+        #region View Preferences (MainWindow)
+
         public bool ViewMainWindowTitle
         {
             get => global::Protes.Properties.Settings.Default.ViewMainWindowTitle;
@@ -223,18 +262,30 @@ namespace Protes
             }
         }
 
-        // ===== ZOOM =====
-        public double DataGridZoom
+        #endregion
+
+        #region Toolbar Visibility
+
+        public bool ViewMainToolbar
         {
-            get => global::Protes.Properties.Settings.Default.DataGridZoom;
+            get => global::Protes.Properties.Settings.Default.ViewMainToolbar;
             set
             {
-                global::Protes.Properties.Settings.Default.DataGridZoom = value;
+                global::Protes.Properties.Settings.Default.ViewMainToolbar = value;
                 Save();
             }
         }
 
-        // ===== TOOLBAR SUBMENU VISIBILITY =====
+        public bool ViewToolbarOptionsInMenu
+        {
+            get => global::Protes.Properties.Settings.Default.ViewToolbarOptionsInMenu;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ViewToolbarOptionsInMenu = value;
+                Save();
+            }
+        }
+
         public bool ViewToolbarConnect
         {
             get => global::Protes.Properties.Settings.Default.ViewToolbarConnect;
@@ -244,6 +295,7 @@ namespace Protes
                 Save();
             }
         }
+
         public bool ViewToolbarLocalDB
         {
             get => global::Protes.Properties.Settings.Default.ViewToolbarLocalDB;
@@ -273,6 +325,7 @@ namespace Protes
                 Save();
             }
         }
+
         public bool ViewToolbarSearch
         {
             get => global::Protes.Properties.Settings.Default.ViewToolbarSearch;
@@ -283,24 +336,6 @@ namespace Protes
             }
         }
 
-        public bool ViewMainToolbar
-        {
-            get => global::Protes.Properties.Settings.Default.ViewMainToolbar;
-            set
-            {
-                global::Protes.Properties.Settings.Default.ViewMainToolbar = value;
-                Save();
-            }
-        }
-        public bool ViewToolbarOptionsInMenu
-        {
-            get => global::Protes.Properties.Settings.Default.ViewToolbarOptionsInMenu;
-            set
-            {
-                global::Protes.Properties.Settings.Default.ViewToolbarOptionsInMenu = value;
-                Save();
-            }
-        }
         public bool ViewToolbarCat
         {
             get => global::Protes.Properties.Settings.Default.ViewToolbarCat;
@@ -311,31 +346,12 @@ namespace Protes
             }
         }
 
-        // ===== PERSISTENCE =====
-        public void Save()
-        {
-            global::Protes.Properties.Settings.Default.Save();
-        }
+        #endregion
 
-        // ===== HELPER: Convert stored string ↔ enum =====
-        public DatabaseMode GetDatabaseMode()
-        {
-            switch (DatabaseModeSetting)
-            {
-                case "Local":
-                    return DatabaseMode.Local;
-                case "External":
-                    return DatabaseMode.External;
-                default:
-                    return DatabaseMode.Local;
-            }
-        }
+        #region Font Settings
 
-        public void SetDatabaseMode(DatabaseMode mode)
-        {
-            DatabaseModeSetting = mode == DatabaseMode.Local ? "Local" : "External";
-        }
-        // ===== DEFAULT MAIN WINDOW FONT =====
+        // ===== Main Window Font =====
+
         public string DefaultMainFontFamily
         {
             get => global::Protes.Properties.Settings.Default.DefaultMainFontFamily;
@@ -366,7 +382,8 @@ namespace Protes
             }
         }
 
-        // ===== DEFAULT NOTE EDITOR FONT =====
+        // ===== Note Editor Font =====
+
         public string DefaultNoteEditorFontFamily
         {
             get => global::Protes.Properties.Settings.Default.DefaultNoteEditorFontFamily;
@@ -407,26 +424,47 @@ namespace Protes
             }
         }
 
+        #endregion
 
-        // ===== MISCELLANEOUS =====
-        public string DefaultDatabaseFolder
+        #region Zoom
+
+        public double DataGridZoom
         {
-            get => global::Protes.Properties.Settings.Default.DefaultDatabaseFolder;
+            get => global::Protes.Properties.Settings.Default.DataGridZoom;
             set
             {
-                global::Protes.Properties.Settings.Default.DefaultDatabaseFolder = value;
+                global::Protes.Properties.Settings.Default.DataGridZoom = value;
                 Save();
             }
         }
 
-        public string ImportedDatabasePaths
+        #endregion
+
+        #region Persistence & Helper Methods
+
+        public void Save()
         {
-            get => global::Protes.Properties.Settings.Default.ImportedDatabasePaths;
-            set
+            global::Protes.Properties.Settings.Default.Save();
+        }
+
+        public DatabaseMode GetDatabaseMode()
+        {
+            switch (DatabaseModeSetting)
             {
-                global::Protes.Properties.Settings.Default.ImportedDatabasePaths = value;
-                Save();
+                case "Local":
+                    return DatabaseMode.Local;
+                case "External":
+                    return DatabaseMode.External;
+                default:
+                    return DatabaseMode.Local;
             }
         }
+
+        public void SetDatabaseMode(DatabaseMode mode)
+        {
+            DatabaseModeSetting = mode == DatabaseMode.Local ? "Local" : "External";
+        }
+
+        #endregion
     }
 }

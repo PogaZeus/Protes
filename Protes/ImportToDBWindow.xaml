@@ -64,7 +64,7 @@
         </DataGrid>
 
         <!-- Bottom Controls: Progress, Cancel, Clear, Import, Close -->
-        <Grid Grid.Row="4" Margin="0,5,0,5">
+        <Grid Grid.Row="4" Margin="0,5,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>

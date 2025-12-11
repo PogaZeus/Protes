@@ -120,7 +120,7 @@
                         </GroupBox>
 
                         <!-- Default Database Folder (now at bottom) -->
-                        <GroupBox Grid.Row="2" Header="Default Database Folder" Margin="0,0,0,15">
+                        <GroupBox Grid.Row="2" Header="Default Database Folder" Margin="0,0,0,5">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -156,10 +156,10 @@
                     <GroupBox Grid.Row="0" Header="Required Table Schema" Margin="5,0,5,5">
                         <TabControl Margin="0,5,0,0">
                             <TabItem Header="Requirements">
-                                <StackPanel Margin="10">
-                                    <TextBlock Text="Your external database must contain a table named:" FontWeight="Bold"/>
-                                    <TextBlock Text="→ Notes" Margin="10,5" Foreground="Red"/>
-                                    <TextBlock Text="With the following columns:" Margin="0,10,0,5" FontWeight="Bold"/>
+                                <StackPanel Margin="5">
+                                    <TextBlock Text="Your external database must contain a TABLE named:" FontWeight="Bold"/>
+                                    <TextBlock Text="→ Notes" Margin="10,0" Foreground="Red"/>
+                                    <TextBlock Text="With the following columns:" Margin="0,0,0,0" FontWeight="Bold"/>
                                     <TextBlock Text="• Id (INTEGER PRIMARY KEY)" Margin="10,0"/>
                                     <TextBlock Text="• Title (TEXT, NOT NULL)" Margin="10,0"/>
                                     <TextBlock Text="• Content (TEXT)" Margin="10,0"/>
@@ -168,7 +168,7 @@
                                 </StackPanel>
                             </TabItem>
                             <TabItem Header="Create Table (MySQL)">
-                                <Grid Margin="10">
+                                <Grid Margin="5">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*"/>
                                         <RowDefinition Height="Auto"/>
@@ -182,7 +182,7 @@
                                              FontFamily="Consolas"
                                              FontSize="12"
                                              MinHeight="100"/>
-                                    <Button Grid.Row="1" Content="Copy SQL" Width="80" Height="26" HorizontalAlignment="Left" Margin="0,10,0,0" Click="CopySqlButton_Click"/>
+                                    <Button Grid.Row="1" Content="Copy SQL" Width="80" Height="26" HorizontalAlignment="Left" Margin="0,5,0,0" Click="CopySqlButton_Click"/>
                                 </Grid>
                             </TabItem>
                         </TabControl>

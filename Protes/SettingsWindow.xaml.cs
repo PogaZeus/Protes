@@ -19,6 +19,8 @@ namespace Protes.Views
         private List<string> _importedDbPaths = new List<string>();
         private readonly SettingsManager _settings = new SettingsManager();
         public string CurrentDbPath => _currentDatabasePath;
+
+        #region Constructor and Initialization
         public SettingsWindow(string currentDatabasePath, MainWindow mainWindow)
         {
             InitializeComponent();
@@ -74,6 +76,372 @@ namespace Protes.Views
 
             _isInitializing = false;
         }
+        #endregion
+
+        #region Local Database - UI Loading & Helpers
+        private void LoadLocalDatabases()
+        {
+            var dbFiles = new List<DbFileInfo>();
+
+            // 1. Default app folder (now user-configurable)
+            if (Directory.Exists(_appDataFolder))
+            {
+                var defaultFiles = Directory.GetFiles(_appDataFolder, "*.db")
+                                           .Concat(Directory.GetFiles(_appDataFolder, "*.prote"));
+                foreach (var file in defaultFiles)
+                {
+                    dbFiles.Add(new DbFileInfo
+                    {
+                        FileName = Path.GetFileName(file),
+                        FullPath = file,
+                        IsImported = false
+                    });
+                }
+            }
+
+            // 2. Imported databases
+            var importedRaw = _settings.ImportedDatabasePaths;
+            if (!string.IsNullOrWhiteSpace(importedRaw))
+            {
+                _importedDbPaths = new List<string>(importedRaw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+                _importedDbPaths.RemoveAll(p => !File.Exists(p));
+            }
+
+            foreach (var path in _importedDbPaths)
+            {
+                if (File.Exists(path))
+                {
+                    dbFiles.Add(new DbFileInfo
+                    {
+                        FileName = Path.GetFileName(path) + " (imported)",
+                        FullPath = path,
+                        IsImported = true
+                    });
+                }
+            }
+
+            var uniqueFiles = dbFiles.GroupBy(f => f.FullPath).Select(g => g.First()).ToList();
+            LocalDbList.ItemsSource = uniqueFiles;
+        }
+
+        private void LoadExternalSettings()
+        {
+            HostTextBox.Text = _settings.External_Host ?? "";
+            PortTextBox.Text = _settings.External_Port?.ToString() ?? "3306";
+            DatabaseTextBox.Text = _settings.External_Database ?? "";
+            UsernameTextBox.Text = _settings.External_Username ?? "";
+            // Password not loaded
+        }
+
+        private void LocalDbList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (LocalDbList.SelectedItem is DbFileInfo selected)
+            {
+                bool isCurrent = (selected.FullPath == _currentDatabasePath);
+                bool isInDefaultFolder = !selected.IsImported;
+
+                // "Load Selected" → hidden if current
+                LoadSelectedButton.Visibility = isCurrent ? Visibility.Collapsed : Visibility.Visible;
+                DeleteDatabaseButton.Visibility = !isCurrent ? Visibility.Visible : Visibility.Collapsed;
+
+                // "Remove from List & Delete" → hidden if in default folder OR if current
+                RemoveFromListButton.Visibility = (!isInDefaultFolder && !isCurrent) ? Visibility.Visible : Visibility.Collapsed;
+
+            }
+        }
+        #endregion
+
+        #region Local Database - Button Actions
+        private void NewDbButton_Click(object sender, RoutedEventArgs e)
+        {
+            var saveDialog = new SaveFileDialog
+            {
+                Filter = "Protes Database (*.prote)|*.prote|SQLite Database (*.db)|*.db",
+                FileName = $"notes_{DateTime.Now:yyyyMMdd_HHmm}.prote",
+                InitialDirectory = _appDataFolder
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={saveDialog.FileName};Version=3;"))
+                    {
+                        conn.Open();
+                        using (var cmd = new System.Data.SQLite.SQLiteCommand(@"
+                    CREATE TABLE IF NOT EXISTS Notes (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        Title TEXT NOT NULL,
+                        Content TEXT,
+                        Tags TEXT,
+                        LastModified TEXT
+                    )", conn))
+                        {
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    SwitchToDatabase(saveDialog.FileName);
+                    LoadLocalDatabases();
+                    MessageBox.Show("New database created successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to create database:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+        private void ExportDbButton_Click(object sender, RoutedEventArgs e)
+        {
+            var saveDialog = new SaveFileDialog
+            {
+                Filter = "Protes Database (*.prote)|*.prote|SQLite Database (*.db)|*.db",
+                FileName = Path.GetFileNameWithoutExtension(_currentDatabasePath) + ".prote", // prefer .prote
+                InitialDirectory = _appDataFolder
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    File.Copy(_currentDatabasePath, saveDialog.FileName, true);
+                    MessageBox.Show("Database exported successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    var switchResult = MessageBox.Show(
+                        "Do you want to switch to the exported database now?",
+                        "Switch Database",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+
+                    if (switchResult == MessageBoxResult.Yes)
+                    {
+                        string exportedPath = saveDialog.FileName;
+                        bool isInDefaultFolder = Path.GetDirectoryName(exportedPath)
+                            .Equals(_appDataFolder, StringComparison.OrdinalIgnoreCase);
+
+                        if (!isInDefaultFolder)
+                        {
+                            if (!_importedDbPaths.Contains(exportedPath))
+                            {
+                                _importedDbPaths.Add(exportedPath);
+                                _settings.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
+                            }
+                        }
+
+                        SwitchToDatabase(exportedPath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to export database:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+        private void ImportDbButton_Click(object sender, RoutedEventArgs e)
+        {
+            var openDialog = new OpenFileDialog
+            {
+                Filter = "Protes Database (*.prote;*.db)|*.prote;*.db|SQLite Database (*.db)|*.db|All files (*.*)|*.*"
+            };
+
+            if (openDialog.ShowDialog() == true)
+            {
+                string sourcePath = openDialog.FileName;
+
+                if (!_importedDbPaths.Contains(sourcePath))
+                {
+                    _importedDbPaths.Add(sourcePath);
+                    _settings.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
+                    _settings.Save();
+                }
+
+                SwitchToDatabase(sourcePath);
+            }
+        }
+        private void LoadSelectedButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedItem = LocalDbList.SelectedItem as DbFileInfo;
+            if (selectedItem != null)
+            {
+                SwitchToDatabase(selectedItem.FullPath);
+            }
+        }
+
+        private void RemoveFromListButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedItem = LocalDbList.SelectedItem as DbFileInfo;
+            if (selectedItem == null) return;
+
+            if (!selectedItem.IsImported)
+            {
+                MessageBox.Show(
+                    "This cannot be removed from the list as it is stored in the default database folder. " +
+                    "Your options are: keep it, move it to another folder, or delete it from the disk.",
+                    "Cannot Remove",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            if (MessageBox.Show(
+                $"Remove '{selectedItem.FileName.Replace(" (imported)", "")}' from the list?\n\nThe file will NOT be deleted.",
+                "Remove from List",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                _importedDbPaths.Remove(selectedItem.FullPath);
+                _settings.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
+                _settings.Save();
+                LoadLocalDatabases();
+            }
+        }
+
+        private void DeleteDatabaseButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedItem = LocalDbList.SelectedItem as DbFileInfo;
+            if (selectedItem == null) return;
+
+            string fileName = Path.GetFileName(selectedItem.FullPath);
+            string message = selectedItem.IsImported
+                ? $"Delete the database file '{fileName}' from your computer?\n\nThis will permanently remove the file."
+                : $"Delete the database file '{fileName}'?\n\nThis will permanently remove it from the Protes app data folder.";
+
+            if (MessageBox.Show(message, "Delete Database", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    if (selectedItem.FullPath == _currentDatabasePath)
+                    {
+                        MessageBox.Show("Cannot delete the currently loaded database.", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    File.Delete(selectedItem.FullPath);
+
+                    if (selectedItem.IsImported)
+                    {
+                        _importedDbPaths.Remove(selectedItem.FullPath);
+                        _settings.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
+                        _settings.Save();
+                    }
+
+                    LoadLocalDatabases();
+                    MessageBox.Show("Database deleted successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to delete database:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+        private void ChangeDefaultFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            var folderDialog = new System.Windows.Forms.FolderBrowserDialog
+            {
+                Description = "Select the default folder for Protes databases:",
+                SelectedPath = _appDataFolder,
+                ShowNewFolderButton = true
+            };
+
+            // System.Windows.Forms for FolderBrowserDialog
+            if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                string newFolder = folderDialog.SelectedPath;
+
+                // Optional: confirm it's writable
+                try
+                {
+                    var testFile = Path.Combine(newFolder, ".protes_test");
+                    File.WriteAllText(testFile, "ok");
+                    File.Delete(testFile);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Cannot write to selected folder:\n{ex.Message}", "Access Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Update and save
+                _appDataFolder = newFolder;
+                _settings.DefaultDatabaseFolder = newFolder;
+                DefaultDbFolderText.Text = newFolder;
+
+                // Refresh list
+                LoadLocalDatabases();
+            }
+        }
+        #endregion
+
+        #region Switch Local Database
+        private void SwitchToDatabase(string newDbPath)
+        {
+            if (!File.Exists(newDbPath))
+            {
+                MessageBox.Show("Database file does not exist.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            _currentDatabasePath = newDbPath;
+            CurrentDbPathText.Text = newDbPath;
+            _settings.LastLocalDatabasePath = newDbPath;
+
+            _mainWindow.SwitchToLocalDatabase(newDbPath);
+
+            LoadLocalDatabases();
+        }
+        #endregion
+
+        #region External Database
+        private void CopySqlButton_Click(object sender, RoutedEventArgs e)
+        {
+            string sql = CreateTableSqlBox.Text;
+            Clipboard.SetText(sql);
+            MessageBox.Show("SQL script copied to clipboard!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void SaveExternalSettings_Click(object sender, RoutedEventArgs e)
+        {
+            SaveExternalSettings();
+            MessageBox.Show("External database settings saved.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void ConnectNowButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveExternalSettings();
+
+            _mainWindow.Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    _mainWindow.SetDatabaseMode(DatabaseMode.External);
+                    var connString = _mainWindow.BuildExternalConnectionString();
+                    if (string.IsNullOrEmpty(connString))
+                    {
+                        MessageBox.Show("Configuration incomplete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    _mainWindow.SetExternalConnectionString(connString);
+                    _mainWindow.TriggerConnect();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Connection failed:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            });
+        }
+        private void SaveExternalSettings()
+        {
+            _settings.External_Host = HostTextBox.Text;
+            _settings.External_Port = PortTextBox.Text;
+            _settings.External_Database = DatabaseTextBox.Text;
+            _settings.External_Username = UsernameTextBox.Text;
+            _settings.External_Password = PasswordBox.Password;
+        }
+        #endregion
+
+        #region Application - Startup & Tray
+        private bool _isInitializing = true;
         private void LaunchOnStartupCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             if (_isInitializing) return;
@@ -127,6 +495,58 @@ namespace Protes.Views
                 {
                     key.DeleteValue(appName, throwOnMissingValue: false);
                 }
+            }
+        }
+        private void MinimizeToSystemTray_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.MinimizeToTray = MinimizeToSystemTray.IsChecked == true;
+        }
+        private void CloseToSystemTray_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.CloseToTray = CloseToSystemTray.IsChecked == true;
+        }
+        #endregion
+
+        #region Application - Shell Integration
+        private void ShellNewCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            if (MessageBox.Show(
+                "This will add 'Note Editor (Protes)' to the Windows 'New' menu in File Explorer.\n\n" +
+                "Allow this?",
+                "Protes", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    RegisterShellNew();
+                    _settings.ShellNewIntegrationEnabled = true;
+                    MessageBox.Show("Integration enabled successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to enable integration:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ShellNewCheckBox.IsChecked = false;
+                }
+            }
+            else
+            {
+                ShellNewCheckBox.IsChecked = false;
+            }
+        }
+        private void ShellNewCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            try
+            {
+                UnregisterShellNew();
+                _settings.ShellNewIntegrationEnabled = false;
+                MessageBox.Show("Integration removed.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to remove integration:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
         private void RegisterShellNew()
@@ -294,375 +714,9 @@ namespace Protes.Views
                 File.Delete(shortcutPath);
             }
         }
-  
-        // Change Default Database Folder
-        private void ChangeDefaultFolderButton_Click(object sender, RoutedEventArgs e)
-        {
-            var folderDialog = new System.Windows.Forms.FolderBrowserDialog
-            {
-                Description = "Select the default folder for Protes databases:",
-                SelectedPath = _appDataFolder,
-                ShowNewFolderButton = true
-            };
+        #endregion
 
-            // System.Windows.Forms for FolderBrowserDialog
-            if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                string newFolder = folderDialog.SelectedPath;
-
-                // Optional: confirm it's writable
-                try
-                {
-                    var testFile = Path.Combine(newFolder, ".protes_test");
-                    File.WriteAllText(testFile, "ok");
-                    File.Delete(testFile);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Cannot write to selected folder:\n{ex.Message}", "Access Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                // Update and save
-                _appDataFolder = newFolder;
-                _settings.DefaultDatabaseFolder = newFolder;
-                DefaultDbFolderText.Text = newFolder;
-
-                // Refresh list
-                LoadLocalDatabases();
-            }
-        }
-        private void LoadLocalDatabases()
-        {
-            var dbFiles = new List<DbFileInfo>();
-
-            // 1. Default app folder (now user-configurable)
-            if (Directory.Exists(_appDataFolder))
-            {
-                var defaultFiles = Directory.GetFiles(_appDataFolder, "*.db")
-                                           .Concat(Directory.GetFiles(_appDataFolder, "*.prote"));
-                foreach (var file in defaultFiles)
-                {
-                    dbFiles.Add(new DbFileInfo
-                    {
-                        FileName = Path.GetFileName(file),
-                        FullPath = file,
-                        IsImported = false
-                    });
-                }
-            }
-
-            // 2. Imported databases
-            var importedRaw = _settings.ImportedDatabasePaths;
-            if (!string.IsNullOrWhiteSpace(importedRaw))
-            {
-                _importedDbPaths = new List<string>(importedRaw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
-                _importedDbPaths.RemoveAll(p => !File.Exists(p));
-            }
-
-            foreach (var path in _importedDbPaths)
-            {
-                if (File.Exists(path))
-                {
-                    dbFiles.Add(new DbFileInfo
-                    {
-                        FileName = Path.GetFileName(path) + " (imported)",
-                        FullPath = path,
-                        IsImported = true
-                    });
-                }
-            }
-
-            var uniqueFiles = dbFiles.GroupBy(f => f.FullPath).Select(g => g.First()).ToList();
-            LocalDbList.ItemsSource = uniqueFiles;
-        }
-
-        private void LoadExternalSettings()
-        {
-            HostTextBox.Text = _settings.External_Host ?? "";
-            PortTextBox.Text = _settings.External_Port?.ToString() ?? "3306";
-            DatabaseTextBox.Text = _settings.External_Database ?? "";
-            UsernameTextBox.Text = _settings.External_Username ?? "";
-            // Password not loaded
-        }
-
-        private void LocalDbList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (LocalDbList.SelectedItem is DbFileInfo selected)
-            {
-                bool isCurrent = (selected.FullPath == _currentDatabasePath);
-                bool isInDefaultFolder = !selected.IsImported;
-
-                // "Load Selected" → hidden if current
-                LoadSelectedButton.Visibility = isCurrent ? Visibility.Collapsed : Visibility.Visible;
-                DeleteDatabaseButton.Visibility = !isCurrent ? Visibility.Visible : Visibility.Collapsed;
-
-                // "Remove from List & Delete" → hidden if in default folder OR if current
-                RemoveFromListButton.Visibility = (!isInDefaultFolder && !isCurrent) ? Visibility.Visible : Visibility.Collapsed;
-                
-            }
-            else
-            {
-                
-            }
-        }
-
-        // ===== LOCAL DATABASE ACTIONS =====
-
-        private void ExportDbButton_Click(object sender, RoutedEventArgs e)
-        {
-            var saveDialog = new SaveFileDialog
-            {
-                Filter = "Protes Database (*.prote)|*.prote|SQLite Database (*.db)|*.db",
-                FileName = Path.GetFileNameWithoutExtension(_currentDatabasePath) + ".prote", // prefer .prote
-                InitialDirectory = _appDataFolder
-            };
-
-            if (saveDialog.ShowDialog() == true)
-            {
-                try
-                {
-                    File.Copy(_currentDatabasePath, saveDialog.FileName, true);
-                    MessageBox.Show("Database exported successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                    var switchResult = MessageBox.Show(
-                        "Do you want to switch to the exported database now?",
-                        "Switch Database",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-
-                    if (switchResult == MessageBoxResult.Yes)
-                    {
-                        string exportedPath = saveDialog.FileName;
-                        bool isInDefaultFolder = Path.GetDirectoryName(exportedPath)
-                            .Equals(_appDataFolder, StringComparison.OrdinalIgnoreCase);
-
-                        if (!isInDefaultFolder)
-                        {
-                            if (!_importedDbPaths.Contains(exportedPath))
-                            {
-                                _importedDbPaths.Add(exportedPath);
-                                _settings.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
-                            }
-                        }
-
-                        SwitchToDatabase(exportedPath);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to export database:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
-        private void NewDbButton_Click(object sender, RoutedEventArgs e)
-        {
-            var saveDialog = new SaveFileDialog
-            {
-                Filter = "Protes Database (*.prote)|*.prote|SQLite Database (*.db)|*.db",
-                FileName = $"notes_{DateTime.Now:yyyyMMdd_HHmm}.prote",
-                InitialDirectory = _appDataFolder
-            };
-
-            if (saveDialog.ShowDialog() == true)
-            {
-                try
-                {
-                    using (var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={saveDialog.FileName};Version=3;"))
-                    {
-                        conn.Open();
-                        using (var cmd = new System.Data.SQLite.SQLiteCommand(@"
-                    CREATE TABLE IF NOT EXISTS Notes (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        Title TEXT NOT NULL,
-                        Content TEXT,
-                        Tags TEXT,
-                        LastModified TEXT
-                    )", conn))
-                        {
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
-
-                    SwitchToDatabase(saveDialog.FileName);
-                    LoadLocalDatabases(); 
-                    MessageBox.Show("New database created successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to create database:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
-        private void CopySqlButton_Click(object sender, RoutedEventArgs e)
-        {
-            string sql = CreateTableSqlBox.Text;
-            Clipboard.SetText(sql);
-            MessageBox.Show("SQL script copied to clipboard!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void ImportDbButton_Click(object sender, RoutedEventArgs e)
-        {
-            var openDialog = new OpenFileDialog
-            {
-                Filter = "Protes Database (*.prote;*.db)|*.prote;*.db|SQLite Database (*.db)|*.db|All files (*.*)|*.*"
-            };
-
-            if (openDialog.ShowDialog() == true)
-            {
-                string sourcePath = openDialog.FileName;
-
-                if (!_importedDbPaths.Contains(sourcePath))
-                {
-                    _importedDbPaths.Add(sourcePath);
-                    _settings.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
-                    _settings.Save();
-                }
-
-                SwitchToDatabase(sourcePath);
-            }
-        }
-
-        private void SwitchToDatabase(string newDbPath)
-        {
-            if (!File.Exists(newDbPath))
-            {
-                MessageBox.Show("Database file does not exist.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            _currentDatabasePath = newDbPath;
-            CurrentDbPathText.Text = newDbPath;
-            _settings.LastLocalDatabasePath = newDbPath;
-
-            _mainWindow.SwitchToLocalDatabase(newDbPath);
-
-            LoadLocalDatabases();
-        }
-
-        private void LoadSelectedButton_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedItem = LocalDbList.SelectedItem as DbFileInfo;
-            if (selectedItem != null)
-            {
-                SwitchToDatabase(selectedItem.FullPath);
-            }
-        }
-
-        private void RemoveFromListButton_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedItem = LocalDbList.SelectedItem as DbFileInfo;
-            if (selectedItem == null) return;
-
-            if (!selectedItem.IsImported)
-            {
-                MessageBox.Show(
-                    "This cannot be removed from the list as it is stored in the default database folder. " +
-                    "Your options are: keep it, move it to another folder, or delete it from the disk.",
-                    "Cannot Remove",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-                return;
-            }
-
-            if (MessageBox.Show(
-                $"Remove '{selectedItem.FileName.Replace(" (imported)", "")}' from the list?\n\nThe file will NOT be deleted.",
-                "Remove from List",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question) == MessageBoxResult.Yes)
-            {
-                _importedDbPaths.Remove(selectedItem.FullPath);
-                _settings.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
-                _settings.Save();
-                LoadLocalDatabases();
-            }
-        }
-
-        private void DeleteDatabaseButton_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedItem = LocalDbList.SelectedItem as DbFileInfo;
-            if (selectedItem == null) return;
-
-            string fileName = Path.GetFileName(selectedItem.FullPath);
-            string message = selectedItem.IsImported
-                ? $"Delete the database file '{fileName}' from your computer?\n\nThis will permanently remove the file."
-                : $"Delete the database file '{fileName}'?\n\nThis will permanently remove it from the Protes app data folder.";
-
-            if (MessageBox.Show(message, "Delete Database", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
-            {
-                try
-                {
-                    if (selectedItem.FullPath == _currentDatabasePath)
-                    {
-                        MessageBox.Show("Cannot delete the currently loaded database.", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
-
-                    File.Delete(selectedItem.FullPath);
-
-                    if (selectedItem.IsImported)
-                    {
-                        _importedDbPaths.Remove(selectedItem.FullPath);
-                        _settings.ImportedDatabasePaths = string.Join(";", _importedDbPaths);
-                        _settings.Save();
-                    }
-
-                    LoadLocalDatabases();
-                    MessageBox.Show("Database deleted successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to delete database:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
-        // ===== EXTERNAL DATABASE =====
-
-        private void SaveExternalSettings_Click(object sender, RoutedEventArgs e)
-        {
-            SaveExternalSettings();
-            MessageBox.Show("External database settings saved.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void ConnectNowButton_Click(object sender, RoutedEventArgs e)
-        {
-            SaveExternalSettings();
-
-            _mainWindow.Dispatcher.Invoke(() =>
-            {
-                try
-                {
-                    _mainWindow.SetDatabaseMode(DatabaseMode.External);
-                    var connString = _mainWindow.BuildExternalConnectionString();
-                    if (string.IsNullOrEmpty(connString))
-                    {
-                        MessageBox.Show("Configuration incomplete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return;
-                    }
-
-                    _mainWindow.SetExternalConnectionString(connString);
-                    _mainWindow.TriggerConnect();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Connection failed:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            });
-        }
-
-        private void SaveExternalSettings()
-        {
-            _settings.External_Host = HostTextBox.Text;
-            _settings.External_Port = PortTextBox.Text;
-            _settings.External_Database = DatabaseTextBox.Text;
-            _settings.External_Username = UsernameTextBox.Text;
-            _settings.External_Password = PasswordBox.Password;
-        }
-
-        // ===== MORE OPTIONS =====
+        #region Application - Connection Automation
         private void AutoConnectCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             bool isChecked = AutoConnectCheckBox.IsChecked == true;
@@ -693,15 +747,23 @@ namespace Protes.Views
                 _settings.AutoDisconnectOnSwitch = AutoDisconnectOnSwitchCheckBox.IsChecked == true;
             }
         }
+        private void SyncAutoSwitchUiState()
+        {
+            bool autoConnectOnSwitch = _settings.AutoConnectOnSwitch;
 
-        private void MinimizeToSystemTray_Checked(object sender, RoutedEventArgs e)
-        {
-            _settings.MinimizeToTray = MinimizeToSystemTray.IsChecked == true;
+            // Disable AutoDisconnect checkbox when AutoConnectOnSwitch is ON
+            AutoDisconnectOnSwitchCheckBox.IsEnabled = !autoConnectOnSwitch;
+
+            // Enforce AutoDisconnect = true when AutoConnectOnSwitch is enabled
+            if (autoConnectOnSwitch && !_settings.AutoDisconnectOnSwitch)
+            {
+                _settings.AutoDisconnectOnSwitch = true;
+                AutoDisconnectOnSwitchCheckBox.IsChecked = true;
+            }
         }
-        private void CloseToSystemTray_Checked(object sender, RoutedEventArgs e)
-        {
-            _settings.CloseToTray = CloseToSystemTray.IsChecked == true;
-        }
+        #endregion
+
+        #region Application - Notifications
         private void ShowNotificationsCheckBox_Changed(object sender, RoutedEventArgs e)
         {
             bool isChecked = ShowNotificationsCheckBox.IsChecked == true;
@@ -721,6 +783,9 @@ namespace Protes.Views
         {
             _settings.NotifyPasted = NotifyPastedCheckBox.IsChecked == true;
         }
+        #endregion
+
+        #region Toolbar - Visibility & Icons
         private void ViewToolbarMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewMainToolbar = ViewToolbarMenuItem.IsChecked == true;
@@ -735,106 +800,52 @@ namespace Protes.Views
         {
             _settings.ViewToolbarConnect = ViewToolbarConnectMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.RefreshToolbarVisibility(); // 👈 notify MainWindow
+            _mainWindow?.UpdateToolbarIconVisibility(); // 👈 notify MainWindow
         }
 
         private void ViewToolbarLocalDBMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarLocalDB = ViewToolbarLocalDBMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.RefreshToolbarVisibility();
+            _mainWindow?.UpdateToolbarIconVisibility();
         }
 
         private void ViewToolbarACOSMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarACOS = ViewToolbarACOSMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.RefreshToolbarVisibility();
+            _mainWindow?.UpdateToolbarIconVisibility();
         }
 
         private void ViewToolbarImpExMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarImpEx = ViewToolbarImpExMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.RefreshToolbarVisibility();
+            _mainWindow?.UpdateToolbarIconVisibility();
         }
 
         private void ViewToolbarSearchMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarSearch = ViewToolbarSearchMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.RefreshToolbarVisibility();
+            _mainWindow?.UpdateToolbarIconVisibility();
         }
-
-        private void SyncAutoSwitchUiState()
-        {
-            bool autoConnectOnSwitch = _settings.AutoConnectOnSwitch;
-
-            // Disable AutoDisconnect checkbox when AutoConnectOnSwitch is ON
-            AutoDisconnectOnSwitchCheckBox.IsEnabled = !autoConnectOnSwitch;
-
-            // Enforce AutoDisconnect = true when AutoConnectOnSwitch is enabled
-            if (autoConnectOnSwitch && !_settings.AutoDisconnectOnSwitch)
-            {
-                _settings.AutoDisconnectOnSwitch = true;
-                AutoDisconnectOnSwitchCheckBox.IsChecked = true;
-            }
-        }
-
-        private bool _isInitializing = true;
-        private void ShellNewCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            if (_isInitializing) return;
-
-            if (MessageBox.Show(
-                "This will add 'Note Editor (Protes)' to the Windows 'New' menu in File Explorer.\n\n" +
-                "Allow this?",
-                "Protes", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
-            {
-                try
-                {
-                    RegisterShellNew();
-                    _settings.ShellNewIntegrationEnabled = true;
-                    MessageBox.Show("Integration enabled successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to enable integration:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
-                    ShellNewCheckBox.IsChecked = false;
-                }
-            }
-            else
-            {
-                ShellNewCheckBox.IsChecked = false;
-            }
-        }
-
-        private void ShellNewCheckBox_Unchecked(object sender, RoutedEventArgs e)
-        {
-            if (_isInitializing) return;
-
-            try
-            {
-                UnregisterShellNew();
-                _settings.ShellNewIntegrationEnabled = false;
-                MessageBox.Show("Integration removed.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to remove integration:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-
+        #endregion
+                 
+        #region Window Management
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             Close();
         }
+        #endregion
 
+        #region Supporting Types
         public class DbFileInfo
         {
             public string FileName { get; set; }
             public string FullPath { get; set; }
             public bool IsImported { get; set; }
         }
+        #endregion
     }
 }

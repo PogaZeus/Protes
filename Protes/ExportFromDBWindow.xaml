@@ -8,7 +8,7 @@
         FontFamily="Segoe UI"
         ResizeMode="CanResizeWithGrip">
 
-    <Grid Margin="15">
+    <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -102,7 +102,7 @@
             </TextBlock>
 
             <!-- Buttons -->
-            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,10">
                 <Button Content="Cancel" Padding="12,5" Click="CancelButton_Click" Margin="0,0,10,0"/>
                 <Button x:Name="ExportButton" Content="Export" Padding="12,5" Click="ExportButton_Click"/>
             </StackPanel>

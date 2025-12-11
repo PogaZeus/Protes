@@ -74,6 +74,7 @@ namespace Protes
             ApplyMainFontToDataGrid();
             UpdateDataGridColumns();
             UpdateToolbarVisibility();
+            UpdateToolbarIconVisibility();
 
             // Load View settings
             _isToolbarVisible = _settings.ViewMainToolbar;
@@ -88,13 +89,6 @@ namespace Protes
             ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
             ViewToolbarImpExMenuItem.IsChecked = _settings.ViewToolbarImpEx;
             ViewToolbarSearchMenuItem.IsChecked = _settings.ViewToolbarSearch;
-            // Apply initial visibility
-            ViewToolbarConnectainer.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
-            AutoConnectOSContainer.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
-            LocalDbControls.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
-            ImportExportControls.Visibility = _settings.ViewToolbarImpEx ? Visibility.Visible : Visibility.Collapsed;
-            SearchDatabase.Visibility = _settings.ViewToolbarSearch ? Visibility.Visible : Visibility.Collapsed;
-            CatButton.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
 
             // Load zoom level
             double zoomPoints = _settings.DataGridZoom;
@@ -1128,7 +1122,7 @@ namespace Protes
                 toolbar.Visibility = _isToolbarVisible ? Visibility.Visible : Visibility.Collapsed;
             }
         }
-        public void RefreshToolbarVisibility()
+        public void UpdateToolbarIconVisibility()
         {
             ViewToolbarConnectainer.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
             LocalDbControls.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
