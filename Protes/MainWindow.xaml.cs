@@ -124,30 +124,52 @@ namespace Protes
         {
             Loaded -= MainWindow_Loaded; // prevent multiple calls
 
-            if (_settings.AutoConnect)
+            if (!_settings.AutoConnect)
+                return;
+
+            // Auto-connect logic based on current mode
+            if (_currentMode == DatabaseMode.Local)
             {
-                if (_currentMode == DatabaseMode.Local)
-                {
-                    Connect_Click(this, new RoutedEventArgs());
-                }
-                else if (_currentMode == DatabaseMode.External)
-                {
-                    var host = _settings.External_Host;
-                    var database = _settings.External_Database;
-                    if (!string.IsNullOrWhiteSpace(host) && !string.IsNullOrWhiteSpace(database))
-                    {
-                        Connect_Click(this, new RoutedEventArgs());
-                    }
-                    else
-                    {
-                        // This one is an error, so it's OK to show as top-level
-                        MessageBox.Show(
-                            "Auto-connect failed: External database configuration is incomplete.\n\n" +
-                            "Please go to Settings → External Database to configure your connection.",
-                            "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    }
-                }
+                AttemptAutoConnect();
             }
+            else if (_currentMode == DatabaseMode.External)
+            {
+                var host = _settings.External_Host;
+                var database = _settings.External_Database;
+
+                if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(database))
+                {
+                    ShowExternalConfigError();
+                    return;
+                }
+
+                AttemptAutoConnect();
+            }
+        }
+        private void AttemptAutoConnect()
+        {
+            try
+            {
+                Connect_Click(this, new RoutedEventArgs());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Auto-connect failed: {ex.Message}",
+                    "Protes",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
+        private void ShowExternalConfigError()
+        {
+            MessageBox.Show(
+                "Auto-connect failed: External database configuration is incomplete.\n\n" +
+                "Please go to Settings → External Database to configure your connection.",
+                "Protes",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
         }
 
         // File Menu NewDatabase
@@ -983,8 +1005,6 @@ namespace Protes
 
         private void Connect_Click(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine($"=== CONNECT CLICKED === _isConnected = {_isConnected}");
-            System.Diagnostics.Debug.WriteLine($"Stack trace:\n{Environment.StackTrace}");
             if (_currentMode == DatabaseMode.None)
             {
                 MessageBox.Show("Please select a database mode first (Local or External).", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -1074,28 +1094,25 @@ namespace Protes
 
         private void Disconnect_Click(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine("=== DISCONNECT CLICKED ===");
-            System.Diagnostics.Debug.WriteLine($"Window hashcode: {this.GetHashCode()}");
-            System.Diagnostics.Debug.WriteLine($"BEFORE: _isConnected = {_isConnected}");
-
             _isConnected = false;
             _connectedMode = DatabaseMode.None;
             _pendingModeSwitch = DatabaseMode.None;
             NotesDataGrid.ItemsSource = null;
             NotesDataGrid.Visibility = Visibility.Collapsed;
             DisconnectedPlaceholder.Visibility = Visibility.Visible;
-            System.Diagnostics.Debug.WriteLine($"AFTER: _isConnected = {_isConnected}");
 
             UpdateStatusBar();
             UpdateButtonStates();
             NotesDataGrid_ContextMenuOpening(null, null);
-            // Show notification only if enabled
+
             if (_settings.ShowNotifications)
             {
-                MessageBox.Show("Disconnected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(
+                    "Disconnected.",
+                    "Protes",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             }
-
-            System.Diagnostics.Debug.WriteLine("=== DISCONNECT COMPLETE ===");
         }
 
         private void Quit_Click(object sender, RoutedEventArgs e)
@@ -1498,63 +1515,88 @@ namespace Protes
         }
 
         //Opening a .prote file (External file incoming!)
-        //Opening a .prote file (External file incoming!)
         public void HandleIpcMessage(string message)
         {
-            System.Diagnostics.Debug.WriteLine($"[IPC] Received: '{message}' | Exists: {File.Exists(message)}");
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 if (message == "-new")
                 {
-                    // Create new note
-                    if (!_isConnected)
-                    {
-                        ActivateWindow();
-                        MessageBox.Show("Please connect to a database first...", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return;
-                    }
-                    var editor = new NoteEditorWindow(noteId: null, onSaveRequested: OnSaveNoteRequested);
-                    editor.Show();
+                    HandleNewNoteRequest();
                 }
-                else if (File.Exists(message) &&
-                         (message.EndsWith(".txt", StringComparison.OrdinalIgnoreCase) ||
-                          message.EndsWith(".md", StringComparison.OrdinalIgnoreCase) ||
-                          message.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)))
+                else if (IsImportableFile(message))
                 {
-                    // 🟢 IMPORT TEXT/MD/CSV FILE via Send To
-                    if (!_isConnected)
-                    {
-                        ActivateWindow();
-                        MessageBox.Show("Please connect to a database before importing.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return;
-                    }
-
-                    // Open Import window with preselected file
-                    var importWindow = new ImportToDBWindow(
-                        _databasePath,
-                        _currentMode,
-                        _externalConnectionString,
-                        _noteRepository,
-                        () => LoadNotesFromDatabase(),
-                        preselectedFilePath: message
-                    );
-                    importWindow.Show(); // or ShowDialog() if preferred
+                    HandleFileImport(message);
                 }
-                else if (File.Exists(message) &&
-                         (message.EndsWith(".db", StringComparison.OrdinalIgnoreCase) ||
-                          message.EndsWith(".prote", StringComparison.OrdinalIgnoreCase)))
+                else if (IsDatabaseFile(message))
                 {
-                    // Handle .db/.prote file open (existing logic)
                     PromptAndSwitchDatabase(message);
                 }
                 else
                 {
-                    // Unknown — just activate
                     ActivateWindow();
                 }
             }));
         }
+        private void HandleNewNoteRequest()
+        {
+            if (!_isConnected)
+            {
+                ActivateWindow();
+                MessageBox.Show(
+                    "Please connect to a database first...",
+                    "Protes",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
 
+            var editor = new NoteEditorWindow(
+                noteId: null,
+                onSaveRequested: OnSaveNoteRequested);
+            editor.Show();
+        }
+
+        private void HandleFileImport(string filePath)
+        {
+            if (!_isConnected)
+            {
+                ActivateWindow();
+                MessageBox.Show(
+                    "Please connect to a database before importing.",
+                    "Protes",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            var importWindow = new ImportToDBWindow(
+                _databasePath,
+                _currentMode,
+                _externalConnectionString,
+                _noteRepository,
+                () => LoadNotesFromDatabase(),
+                preselectedFilePath: filePath
+            );
+            importWindow.Show();
+        }
+
+        private bool IsImportableFile(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return false;
+
+            string ext = Path.GetExtension(filePath).ToLowerInvariant();
+            return ext == ".txt" || ext == ".md" || ext == ".csv";
+        }
+
+        private bool IsDatabaseFile(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return false;
+
+            string ext = Path.GetExtension(filePath).ToLowerInvariant();
+            return ext == ".db" || ext == ".prote";
+        }
 
         public void ActivateWindow()
         {
