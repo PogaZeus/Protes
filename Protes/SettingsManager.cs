@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Text.Json;
+using Newtonsoft.Json;
 
 namespace Protes
 {
@@ -471,33 +471,36 @@ namespace Protes
 
         public List<ExternalDbProfile> GetExternalDbProfiles()
         {
-        try
-        {
-            var json = ExternalConnectionsSerialized ?? DEFAULT_EXTERNAL_JSON;
-            return JsonSerializer.Deserialize<List<ExternalDbProfile>>(json) ?? new List<ExternalDbProfile>();
-        }
-        catch
-        {
-            return new List<ExternalDbProfile>();
-        }
-    }
+            try
+            {
+                var json = ExternalConnectionsSerialized;
+                if (string.IsNullOrWhiteSpace(json) || json == "[]")
+                    return new List<ExternalDbProfile>();
 
-    public void SaveExternalDbProfiles(List<ExternalDbProfile> profiles)
-    {
-        try
-        {
-            var json = JsonSerializer.Serialize(profiles, new JsonSerializerOptions { WriteIndented = true });
-            ExternalConnectionsSerialized = json;
-            Save();
+                return JsonConvert.DeserializeObject<List<ExternalDbProfile>>(json) ?? new List<ExternalDbProfile>();
+            }
+            catch
+            {
+                return new List<ExternalDbProfile>();
+            }
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Failed to save external connections:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
 
-    // Helper to write back to current settings (for Edit)
-    public void SaveAsCurrentExternalConnection(ExternalDbProfile profile)
+        public void SaveExternalDbProfiles(List<ExternalDbProfile> profiles)
+        {
+            try
+            {
+                var json = JsonConvert.SerializeObject(profiles, Formatting.Indented);
+                ExternalConnectionsSerialized = json;
+                Save();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save external connections:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // Helper to write back to current settings (for Edit)
+        public void SaveAsCurrentExternalConnection(ExternalDbProfile profile)
         {
             External_Host = profile.Host;
             External_Port = profile.Port.ToString();

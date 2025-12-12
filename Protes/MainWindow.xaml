@@ -284,16 +284,6 @@
                 <DataGridTextColumn Header="Tags" Binding="{Binding Tags, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
                 <DataGridTextColumn Header="Modified" Binding="{Binding LastModified}" IsReadOnly="True" Width="120"/>
             </DataGrid.Columns>
-            <DataGrid.Template>
-                <ControlTemplate TargetType="DataGrid">
-                    <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
-                        <ScrollViewer x:Name="DG_ScrollViewer" Focusable="false" Background="{TemplateBinding Background}">
-                            <ItemsPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                        </ScrollViewer>
-                    </Border>
-                </ControlTemplate>
-            </DataGrid.Template>
-            
         </DataGrid>
 
         <!-- Placeholder when disconnected -->
