@@ -222,7 +222,6 @@
 
         <!-- === NOTES TABLE (DATA GRID) === -->
         <DataGrid Grid.Row="2" x:Name="NotesDataGrid"
-                  FontSize="11"
                   ContextMenuOpening="NotesDataGrid_ContextMenuOpening"
                   PreviewMouseDown="NotesDataGrid_PreviewMouseDown" 
                   VerticalScrollBarVisibility="Auto"
