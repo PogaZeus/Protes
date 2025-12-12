@@ -73,6 +73,7 @@ namespace Protes.Views
             CloseToSystemTray.IsChecked = _settings.CloseToTray;
             ShellNewCheckBox.IsChecked = _settings.ShellNewIntegrationEnabled;
             SendToCheckBox.IsChecked = _settings.SendToIntegrationEnabled;
+            SendToNoteEditorCheckBox.IsChecked = _settings.SendToNoteEditorEnabled;
             CurrentDbPathText.Text = _currentDatabasePath;
             LoadLocalDatabases();
             var importedRaw = _settings.ImportedDatabasePaths;
@@ -834,7 +835,7 @@ namespace Protes.Views
             dynamic shortcut = shell.CreateShortcut(shortcutPath);
 
             shortcut.TargetPath = exePath;
-            shortcut.Arguments = "";
+            shortcut.Arguments = "-import"; // ✅ REMOVED "%1" — Windows supplies file automatically
             shortcut.WindowStyle = 1;
             shortcut.Description = "Import file into Protes";
             shortcut.IconLocation = exePath + ",0";
@@ -848,6 +849,99 @@ namespace Protes.Views
                 "Microsoft", "Windows", "SendTo"
             );
             string shortcutPath = Path.Combine(sendToFolder, "Protes (Import).lnk");
+
+            if (File.Exists(shortcutPath))
+            {
+                File.Delete(shortcutPath);
+            }
+        }
+        private void SendToNoteEditorCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            if (MessageBox.Show(
+                "This will add 'Pro Note' to the Windows 'Send to' context menu.\n\n" +
+                "When you right-click a file and choose 'Send to → Pro Note',\n" +
+                "Protes will open the Note Editor with the file's content loaded.\n" +
+                "You can then save it as a new note in your database.\n\n" +
+                "Note: A database connection is required.\n\n" +
+                "Allow this?",
+                "Protes", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    RegisterSendToNoteEditorShortcut();
+                    _settings.SendToNoteEditorEnabled = true;
+                    _settings.Save();
+                    MessageBox.Show("Send to Note Editor integration enabled successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to enable Send to Note Editor integration:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                    SendToNoteEditorCheckBox.IsChecked = false;
+                }
+            }
+            else
+            {
+                SendToNoteEditorCheckBox.IsChecked = false;
+            }
+        }
+
+        private void SendToNoteEditorCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            if (MessageBox.Show(
+                "Remove 'Pro Note' from the Windows 'Send to' menu?",
+                "Protes", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    UnregisterSendToNoteEditorShortcut();
+                    _settings.SendToNoteEditorEnabled = false;
+                    _settings.Save();
+                    MessageBox.Show("Send to Note Editor integration removed.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to remove integration:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                    SendToNoteEditorCheckBox.IsChecked = true; // revert
+                }
+            }
+            else
+            {
+                SendToNoteEditorCheckBox.IsChecked = true;
+            }
+        }
+        private void RegisterSendToNoteEditorShortcut()
+        {
+            string sendToFolder = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Microsoft", "Windows", "SendTo"
+            );
+
+            string shortcutPath = Path.Combine(sendToFolder, "Pro Note.lnk");
+            string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+
+            Type shellType = Type.GetTypeFromProgID("WScript.Shell");
+            dynamic shell = Activator.CreateInstance(shellType);
+            dynamic shortcut = shell.CreateShortcut(shortcutPath);
+
+            shortcut.TargetPath = exePath;
+            shortcut.Arguments = "-noteeditor"; // ✅ REMOVED "%1"
+            shortcut.WindowStyle = 1;
+            shortcut.Description = "Open file content in Pro Note Editor";
+            shortcut.IconLocation = exePath + ",0";
+            shortcut.Save();
+        }
+
+        private void UnregisterSendToNoteEditorShortcut()
+        {
+            string sendToFolder = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Microsoft", "Windows", "SendTo"
+            );
+            string shortcutPath = Path.Combine(sendToFolder, "Pro Note.lnk"); 
 
             if (File.Exists(shortcutPath))
             {

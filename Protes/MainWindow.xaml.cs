@@ -1638,19 +1638,31 @@ namespace Protes
         #region IPC and External File Handling
         public void HandleIpcMessage(string message)
         {
+            System.Diagnostics.Debug.WriteLine($"[IPC] Raw: {message}");
+
+            var (command, filePath) = ParseIpcMessage(message);
+
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (message == "-new")
+                if (command == "-new")
                 {
                     HandleNewNoteRequest();
                 }
-                else if (IsImportableFile(message))
+                else if (command == "-noteeditor")
                 {
-                    HandleFileImport(message);
+                    HandleNoteEditorWithFile(filePath);
                 }
-                else if (IsDatabaseFile(message))
+                else if (command == "-import")
                 {
-                    PromptAndSwitchDatabase(message);
+                    HandleImportFileRequest(filePath);
+                }
+                else if (IsDatabaseFile(command))
+                {
+                    PromptAndSwitchDatabase(command);
+                }
+                else if (File.Exists(command))
+                {
+                    HandleNoteEditorWithFile(command);
                 }
                 else
                 {
@@ -1658,12 +1670,154 @@ namespace Protes
                 }
             }));
         }
+        // Helper method in MainWindow
+        private static (string command, string filePath) ParseIpcMessage(string message)
+        {
+            var parts = message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2) return (message.Trim('"'), null);
+
+            string command = parts[0].Trim('"');
+            string filePath = parts[1].Trim('"');
+
+            // Handle paths with spaces: if more than 2 parts, recombine
+            if (parts.Length > 2)
+            {
+                // Reconstruct: assume everything after the first token is the file path
+                var remaining = message.Substring(parts[0].Length).Trim();
+                // Remove leading quote if present
+                if (remaining.StartsWith("\""))
+                    remaining = remaining.Substring(1);
+                if (remaining.EndsWith("\""))
+                    remaining = remaining.Substring(0, remaining.Length - 1);
+                filePath = remaining;
+            }
+
+            return (command, filePath);
+        }
+
+        // Helper to safely extract file path from args like `"C:\file.txt"` or `C:\file.txt`
+        private string ExtractFilePathFromArgument(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+
+            // Trim whitespace and any trailing nulls
+            input = input.Trim('\0', ' ');
+
+            // If starts and ends with quotes, remove them
+            if (input.Length >= 2 && input[0] == '"' && input[input.Length - 1] == '"')
+            {
+                return input.Substring(1, input.Length - 2);
+            }
+
+            // Otherwise return as-is
+            return input;
+        }
+
+        private void HandleImportFileRequest(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                ActivateWindow();
+                MessageBox.Show(this,
+                    $"File not found:\n{filePath}",
+                    "Protes",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!_isConnected)
+            {
+                ActivateWindow();
+                MessageBox.Show(this,
+                    "Please connect to a database first.\nImport requires an active database connection.",
+                    "Protes",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                var importWindow = new ImportToDBWindow(
+                    databasePath: _databasePath,
+                    databaseMode: _currentMode,                      // ✅ Correct field
+                    externalConnectionString: _externalConnectionString,
+                    noteRepository: _noteRepository,
+                    onImportCompleted: () => { },
+                    preselectedFilePath: filePath
+                );
+                importWindow.Show();
+                ActivateWindow();
+            }
+            catch (Exception ex)
+            {
+                ActivateWindow();
+                MessageBox.Show(this,
+                    $"Failed to open Import window:\n{ex.Message}",
+                    "Protes",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        private void HandleNoteEditorWithFile(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                ActivateWindow();
+                MessageBox.Show(this,
+                    $"File not found:\n{filePath}",
+                    "Protes",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!_isConnected)
+            {
+                ActivateWindow();
+                MessageBox.Show(this,
+                    "Please connect to a database first.\n\nThe Note Editor can only save notes to a database.",
+                    "Protes",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                string title = Path.GetFileNameWithoutExtension(filePath);
+                string content = File.ReadAllText(filePath);
+                string tags = "";
+
+                var editor = new NoteEditorWindow(
+                    title: title,
+                    content: content,
+                    tags: tags,
+                    noteId: null,
+                    onSaveRequested: OnSaveNoteRequested
+                );
+                editor.Show();
+                ActivateWindow();
+            }
+            catch (Exception ex)
+            {
+                ActivateWindow();
+                MessageBox.Show(this,
+                    $"Could not open file:\n{ex.Message}",
+                    "Protes",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
         private void HandleNewNoteRequest()
         {
             if (!_isConnected)
             {
                 ActivateWindow();
-                MessageBox.Show(
+                MessageBox.Show(this,
                     "Please connect to a database first...",
                     "Protes",
                     MessageBoxButton.OK,
@@ -1677,47 +1831,13 @@ namespace Protes
             editor.Show();
         }
 
-        private void HandleFileImport(string filePath)
-        {
-            if (!_isConnected)
-            {
-                ActivateWindow();
-                MessageBox.Show(
-                    "Please connect to a database before importing.",
-                    "Protes",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-
-            var importWindow = new ImportToDBWindow(
-                _databasePath,
-                _currentMode,
-                _externalConnectionString,
-                _noteRepository,
-                () => LoadNotesFromDatabase(),
-                preselectedFilePath: filePath
-            );
-            importWindow.Show();
-        }
-
-        private bool IsImportableFile(string filePath)
-        {
-            if (!File.Exists(filePath))
-                return false;
-
-            string ext = Path.GetExtension(filePath).ToLowerInvariant();
-            return ext == ".txt" || ext == ".md" || ext == ".csv";
-        }
-
         private bool IsDatabaseFile(string filePath)
         {
-            if (!File.Exists(filePath))
-                return false;
-
+            if (!File.Exists(filePath)) return false;
             string ext = Path.GetExtension(filePath).ToLowerInvariant();
             return ext == ".db" || ext == ".prote";
         }
+
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
@@ -1727,6 +1847,7 @@ namespace Protes
                 source.AddHook(WndProc);
             }
         }
+
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             if (msg == 0x004A) // WM_COPYDATA
@@ -1739,9 +1860,7 @@ namespace Protes
                         byte[] buffer = new byte[cds.cbData];
                         Marshal.Copy(cds.lpData, buffer, 0, cds.cbData);
                         string message = System.Text.Encoding.UTF8.GetString(buffer).TrimEnd('\0');
-
-                        // Handle in UI thread
-                        this.Dispatcher.BeginInvoke(new Action(() =>
+                        Dispatcher.BeginInvoke(new Action(() =>
                         {
                             HandleIpcMessage(message);
                         }));

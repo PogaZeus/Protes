@@ -538,5 +538,17 @@ namespace Protes.Properties {
                 this["ExternalConnectionsSerialized"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool SendToNoteEditorEnabled {
+            get {
+                return ((bool)(this["SendToNoteEditorEnabled"]));
+            }
+            set {
+                this["SendToNoteEditorEnabled"] = value;
+            }
+        }
     }
 }

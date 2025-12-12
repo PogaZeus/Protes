@@ -281,8 +281,14 @@
                                           Content="Add to Windows 'Send to' menu: 'Protes (Import)'"
                                           Checked="SendToCheckBox_Checked"
                                           Unchecked="SendToCheckBox_Unchecked"
+                                          Margin="0,5,0,0"/>
+                                <CheckBox x:Name="SendToNoteEditorCheckBox"
+                                          Content="Add to Windows 'Send to' menu: 'Pro Note'"
+                                          Checked="SendToNoteEditorCheckBox_Checked"
+                                          Unchecked="SendToNoteEditorCheckBox_Unchecked"
                                           Margin="0,5,0,5"/>
                             </StackPanel>
+                            
                         </GroupBox>
 
                         <!-- Auto Connect -->

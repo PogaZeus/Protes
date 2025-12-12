@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.IO.Pipes;
+using System.Linq;
 using System.Threading;
 using System.Windows;
 
@@ -32,24 +33,13 @@ namespace Protes
             mainWindow.Title = "[Protes] Pro Notes Database";
             mainWindow.Show();
 
-            // Handle startup args AFTER window is ready
             if (e.Args.Length > 0)
             {
                 string arg = e.Args[0];
-                if (File.Exists(arg))
+                mainWindow.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    mainWindow.Dispatcher.BeginInvoke(new Action(() =>
-                    {
-                        mainWindow.HandleIpcMessage(arg);
-                    }));
-                }
-                else if (arg == "-new")
-                {
-                    mainWindow.Dispatcher.BeginInvoke(new Action(() =>
-                    {
-                        mainWindow.HandleIpcMessage(arg);
-                    }));
-                }
+                    mainWindow.HandleIpcMessage(arg);
+                }));
             }
 
             base.OnStartup(e);
@@ -72,9 +62,15 @@ namespace Protes
                     using (var writer = new StreamWriter(client) { AutoFlush = true })
                     {
                         if (args.Length > 0)
-                            writer.WriteLine(args[0]);
+                        {
+                            // Join all args with spaces to reconstruct full command
+                            string fullMessage = string.Join(" ", args.Select(arg => $"\"{arg}\""));
+                            writer.WriteLine(fullMessage);
+                        }
                         else
+                        {
                             writer.WriteLine("!ACTIVATE");
+                        }
                     }
                 }
             }
@@ -109,7 +105,6 @@ namespace Protes
                                     }
                                     else
                                     {
-                                        // 👇 THIS IS THE KEY: route ALL messages through HandleIpcMessage
                                         mainWindow.HandleIpcMessage(message);
                                     }
                                 }

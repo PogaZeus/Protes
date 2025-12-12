@@ -198,7 +198,15 @@ namespace Protes
                 Save();
             }
         }
-
+        public bool SendToNoteEditorEnabled
+        {
+            get => Properties.Settings.Default.SendToNoteEditorEnabled;
+            set
+            {
+                Properties.Settings.Default.SendToNoteEditorEnabled = value;
+                Save();
+            }
+        }
         public bool ShellNewIntegrationEnabled
         {
             get => Properties.Settings.Default.ShellNewIntegrationEnabled;
