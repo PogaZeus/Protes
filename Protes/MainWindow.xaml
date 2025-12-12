@@ -84,7 +84,7 @@
 
     <!-- ✅ ROOT WRAPPER GRID: captures right-click anywhere -->
     <Grid x:Name="MainContentGrid" 
-      Background="Transparent">
+      Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <!-- Menu -->
@@ -225,6 +225,7 @@
                   FontSize="11"
                   ContextMenuOpening="NotesDataGrid_ContextMenuOpening"
                   PreviewMouseDown="NotesDataGrid_PreviewMouseDown" 
+                  VerticalScrollBarVisibility="Auto"
                   Margin="5"
                   AutoGenerateColumns="False"
                   IsReadOnly="False"    
@@ -232,9 +233,18 @@
                   SelectionMode="Extended"
                   SelectionUnit="FullRow"
                   Visibility="Collapsed"
+                  ScrollViewer.CanContentScroll="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
                   BeginningEdit="NotesDataGrid_BeginningEdit"
                   CellEditEnding="NotesDataGrid_CellEditEnding"
                   MouseDoubleClick="NotesDataGrid_MouseDoubleClick">
+            <DataGrid.Resources>
+                <Style TargetType="ScrollBar">
+                    <Setter Property="IsHitTestVisible" Value="True"/>
+                    <Setter Property="Focusable" Value="True"/>
+                </Style>
+            </DataGrid.Resources>
             <DataGrid.Columns>
                 <DataGridTemplateColumn 
                     x:Name="SelectCheckBoxColumn"
@@ -273,6 +283,16 @@
                 <DataGridTextColumn Header="Tags" Binding="{Binding Tags, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
                 <DataGridTextColumn Header="Modified" Binding="{Binding LastModified}" IsReadOnly="True" Width="120"/>
             </DataGrid.Columns>
+            <DataGrid.Template>
+                <ControlTemplate TargetType="DataGrid">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                        <ScrollViewer x:Name="DG_ScrollViewer" Focusable="false" Background="{TemplateBinding Background}">
+                            <ItemsPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                        </ScrollViewer>
+                    </Border>
+                </ControlTemplate>
+            </DataGrid.Template>
+            
         </DataGrid>
 
         <!-- Placeholder when disconnected -->

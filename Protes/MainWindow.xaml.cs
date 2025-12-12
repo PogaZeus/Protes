@@ -842,15 +842,20 @@ namespace Protes
         {
             var originalSource = e.OriginalSource as DependencyObject;
 
-            // 👇 NEW: Ignore clicks inside column headers
-            var parentHeader = FindVisualParent<DataGridColumnHeader>(originalSource);
-            if (parentHeader != null)
+            // 👇 NEW: Let scrollbars work normally
+            if (originalSource is ScrollBar || originalSource is ScrollViewer)
             {
-                // Let the header handle the click (e.g., checkbox)
                 return;
             }
 
-            // Walk up to find a DataGridRow (for row clicks)
+            // Ignore clicks inside column headers
+            var parentHeader = FindVisualParent<DataGridColumnHeader>(originalSource);
+            if (parentHeader != null)
+            {
+                return;
+            }
+
+            // Walk up to find a DataGridRow
             while (originalSource != null && !(originalSource is DataGridRow))
             {
                 originalSource = VisualTreeHelper.GetParent(originalSource);
@@ -858,11 +863,11 @@ namespace Protes
 
             if (originalSource == null)
             {
-                // Click on empty space → deselect
+                // Click on empty space (below rows) → deselect
                 NotesDataGrid.SelectedItem = null;
                 NotesDataGrid.CurrentCell = new DataGridCellInfo();
                 UpdateButtonStates();
-                e.Handled = true;
+                //e.Handled = true;
             }
         }
 
