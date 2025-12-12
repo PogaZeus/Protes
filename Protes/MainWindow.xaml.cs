@@ -46,6 +46,10 @@ namespace Protes
         private const double DEFAULT_ZOOM_POINTS = 11.0;
         private const double MIN_ZOOM_POINTS = 8.0;
         private const double MAX_ZOOM_POINTS = 24.0;
+        // GateEntry (Not Secure from Hackers!)
+        private bool _isGateLocked = false;
+        private bool _hasGatePassword = false; // true if EntryGate table exists and has a password
+        private const string GATE_TABLE_NAME = "EntryGate";
 
         #region Constructor and Initialization
         public MainWindow()
@@ -183,6 +187,7 @@ namespace Protes
             AutoConnectOnSwitchCheckBox.IsChecked = _settings.AutoConnectOnSwitch;
             UpdateDatabaseModeCheckmarks();
         }
+
         #endregion
 
         #region Database Connection Management
@@ -230,9 +235,15 @@ namespace Protes
             _isConnected = false;
             _connectedMode = DatabaseMode.None;
             _pendingModeSwitch = DatabaseMode.None;
+
+            _isGateLocked = false;
+            _hasGatePassword = false;
+            UpdateGateUI();
+
             NotesDataGrid.ItemsSource = null;
             NotesDataGrid.Visibility = Visibility.Collapsed;
             DisconnectedPlaceholder.Visibility = Visibility.Visible;
+            DisconnectedPlaceholder.Text = "Not connected to a database. Choose 'Local' or 'External Database' from Options.";
 
             UpdateStatusBar();
             UpdateButtonStates();
@@ -541,21 +552,78 @@ namespace Protes
 
         private void FinishConnection()
         {
-            LoadNotesFromDatabase();
+            bool hasGate = DoesGateTableExist();
+            string hashedPassword = "";
+            bool isLocked = false;
+
+            if (hasGate)
+            {
+                (hashedPassword, isLocked) = ReadGateState();
+                _hasGatePassword = !string.IsNullOrEmpty(hashedPassword);
+                _isGateLocked = isLocked && _hasGatePassword;
+            }
+            else
+            {
+                _hasGatePassword = false;
+                _isGateLocked = false;
+            }
+
+            // 🔑 CRITICAL: Only show placeholder if actually locked
+            if (_isGateLocked)
+            {
+                _isConnected = true;
+                _connectedMode = _currentMode;
+                _noteRepository = null; // Do not load notes
+                ShowGatePlaceholder("🔒 This database is protected. Click the lock icon in the toolbar to unlock.");
+                UpdateGateUI();
+                UpdateStatusBar();
+                return;
+            }
+
+            // ✅ Normal flow: create repo and load notes
+            if (_currentMode == DatabaseMode.Local)
+                _noteRepository = new SqliteNoteRepository(_databasePath);
+            else if (_currentMode == DatabaseMode.External)
+                _noteRepository = new MySqlNoteRepository(_externalConnectionString);
+
             _isConnected = true;
             _connectedMode = _currentMode;
             _pendingModeSwitch = DatabaseMode.None;
+            LoadNotesFromDatabase();
             NotesDataGrid.Visibility = Visibility.Visible;
             DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
+            UpdateGateUI();
             UpdateStatusBar();
             UpdateButtonStates();
 
             if (_settings.ShowNotifications)
-            {
                 MessageBox.Show("Connected successfully!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
         }
+        public void ConnectToExternalProfileTemporary(ExternalDbProfile profile)
+        {
+            if (profile == null) return;
 
+            // Force disconnect first
+            if (_isConnected)
+            {
+                TriggerDisconnect();
+            }
+
+            // Temporarily override *in-memory* settings (DO NOT save to disk!)
+            _settings.External_Host = profile.Host;
+            _settings.External_Port = profile.Port.ToString();
+            _settings.External_Database = profile.Database;
+            _settings.External_Username = profile.Username;
+            _settings.External_Password = profile.Password;
+
+            // Switch mode to External
+            _currentMode = DatabaseMode.External;
+            UpdateDatabaseModeCheckmarks();
+            UpdateStatusBar();
+
+            // Use your EXISTING connection logic
+            TriggerConnect();
+        }
         #endregion
 
         #region Note Operations (CRUD)
@@ -828,10 +896,8 @@ namespace Protes
         }
         private void LoadNotesFromDatabase(string searchTerm = "", string searchField = "All")
         {
-            // 🔒 SAFETY: If no repository, show disconnected state
             if (_noteRepository == null)
             {
-                // Clear UI
                 NotesDataGrid.ItemsSource = null;
                 _fullNotesCache.Clear();
                 NoteCountText.Text = "";
@@ -842,7 +908,6 @@ namespace Protes
             {
                 var fullNotes = _noteRepository.LoadNotes(searchTerm, searchField);
                 _fullNotesCache = fullNotes;
-
                 var noteItems = fullNotes.Select(note => new NoteItem
                 {
                     Id = note.Id,
@@ -850,12 +915,12 @@ namespace Protes
                     Preview = GetFirstTwoLines(note.Content),
                     Tags = note.Tags,
                     LastModified = note.LastModified,
-                    //IsSelected = false
                 }).ToList();
 
                 NotesDataGrid.ItemsSource = noteItems;
                 AllItemsAreChecked = false;
                 NoteCountText.Text = $"{noteItems.Count} Note{(noteItems.Count == 1 ? "" : "s")}";
+                // ⚠️ Do NOT touch DisconnectedPlaceholder here!
             }
             catch (Exception ex)
             {
@@ -865,6 +930,382 @@ namespace Protes
                 NoteCountText.Text = "";
             }
         }
+        #endregion
+
+        #region Gate Entry
+        private bool DoesGateTableExist()
+        {
+            try
+            {
+                if (_currentMode == DatabaseMode.Local)
+                {
+                    using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                    {
+                        conn.Open();
+                        using (var cmd = new SQLiteCommand("SELECT name FROM sqlite_master WHERE type='table' AND name=@name;", conn))
+                        {
+                            cmd.Parameters.AddWithValue("@name", GATE_TABLE_NAME);
+                            return cmd.ExecuteScalar() != null;
+                        }
+                    }
+                }
+                else if (_currentMode == DatabaseMode.External)
+                {
+                    using (var conn = new MySqlConnection(_externalConnectionString))
+                    {
+                        conn.Open();
+                        using (var cmd = new MySqlCommand("SHOW TABLES LIKE @name;", conn))
+                        {
+                            cmd.Parameters.AddWithValue("@name", GATE_TABLE_NAME);
+                            return cmd.ExecuteScalar() != null;
+                        }
+                    }
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        private void EnsureGateTableExists()
+        {
+            if (!DoesGateTableExist())
+            {
+                try
+                {
+                    if (_currentMode == DatabaseMode.Local)
+                    {
+                        using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                        {
+                            conn.Open();
+                            using (var cmd = new SQLiteCommand(@"
+                        CREATE TABLE EntryGate (
+                            Sp00ns TEXT,
+                            IsL0ck3d INTEGER DEFAULT 1
+                        )", conn))
+                            {
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        using (var conn = new MySqlConnection(_externalConnectionString))
+                        {
+                            conn.Open();
+                            using (var cmd = new MySqlCommand(@"
+                        CREATE TABLE EntryGate (
+                            Sp00ns TEXT,
+                            IsL0ck3d TINYINT(1) DEFAULT 1
+                        )", conn))
+                            {
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to create EntryGate table:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private string HashPassword(string password)
+        {
+            if (string.IsNullOrEmpty(password)) return "";
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                byte[] bytes = System.Text.Encoding.UTF8.GetBytes(password);
+                byte[] hash = sha256.ComputeHash(bytes);
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            }
+        }
+
+        private (string hashedPassword, bool isLocked) ReadGateState()
+        {
+            if (!DoesGateTableExist())
+                return ("", false);
+
+            try
+            {
+                string query = "SELECT Sp00ns, IsL0ck3d FROM EntryGate LIMIT 1";
+
+                if (_currentMode == DatabaseMode.Local)
+                {
+                    using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                    {
+                        conn.Open();
+                        using (var cmd = new SQLiteCommand(query, conn))
+                        using (var reader = cmd.ExecuteReader()) // 👈 USING
+                        {
+                            if (reader.Read())
+                            {
+                                string pwd = reader["Sp00ns"]?.ToString() ?? "";
+                                bool locked = Convert.ToBoolean(reader["IsL0ck3d"]);
+                                return (pwd, locked);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    using (var conn = new MySqlConnection(_externalConnectionString))
+                    {
+                        conn.Open();
+                        using (var cmd = new MySqlCommand(query, conn))
+                        using (var reader = cmd.ExecuteReader()) // 👈 USING
+                        {
+                            if (reader.Read())
+                            {
+                                string pwd = reader["Sp00ns"]?.ToString() ?? "";
+                                bool locked = Convert.ToBoolean(reader["IsL0ck3d"]);
+                                return (pwd, locked);
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+
+            return ("", false);
+        }
+
+        private void SaveGateState(string hashedPassword, bool isLocked)
+        {
+            // ✅ ASSUME TABLE EXISTS — caller must ensure that!
+            string cmdText;
+            if (_currentMode == DatabaseMode.Local)
+            {
+                cmdText = "INSERT OR REPLACE INTO EntryGate (rowid, Sp00ns, IsL0ck3d) VALUES (1, @pwd, @locked)";
+            }
+            else
+            {
+                cmdText = @"
+            INSERT INTO EntryGate (Sp00ns, IsL0ck3d) VALUES (@pwd, @locked)
+            ON DUPLICATE KEY UPDATE Sp00ns = @pwd, IsL0ck3d = @locked";
+            }
+
+            if (_currentMode == DatabaseMode.Local)
+            {
+                using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                {
+                    conn.Open();
+                    using (var cmd = new SQLiteCommand(cmdText, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@pwd", hashedPassword ?? "");
+                        cmd.Parameters.AddWithValue("@locked", isLocked ? 1 : 0);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            else
+            {
+                using (var conn = new MySqlConnection(_externalConnectionString))
+                {
+                    conn.Open();
+                    using (var cmd = new MySqlCommand(cmdText, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@pwd", hashedPassword ?? "");
+                        cmd.Parameters.AddWithValue("@locked", isLocked);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+        private void UpdateGateUI()
+        {
+            if (!_hasGatePassword)
+            {
+                GateLockButton.Content = "🔓";
+                GateSettingsButton.Visibility = Visibility.Collapsed;
+            }
+            else if (_isGateLocked)
+            {
+                GateLockButton.Content = "🔒";
+                GateSettingsButton.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                GateLockButton.Content = "🔓";
+                GateSettingsButton.Visibility = Visibility.Visible;
+            }
+
+            // Disable note actions when locked
+            bool canEdit = _isConnected && !_isGateLocked;
+            NewNoteButton.IsEnabled = canEdit;
+            EditNoteButton.IsEnabled = canEdit && GetSelectedNoteCount() == 1;
+            DeleteNoteButton.IsEnabled = canEdit && GetSelectedNoteCount() >= 1;
+            SearchBox.IsEnabled = canEdit && !_isSelectMode;
+            CopyNoteButton.IsEnabled = canEdit && GetSelectedNoteCount() >= 1;
+            PasteNoteButton.IsEnabled = canEdit && _copiedNotes.Any();
+            SelectNotesButton.IsEnabled = canEdit;
+            ImportFilesButton.IsEnabled = canEdit;
+            ExportFilesButton.IsEnabled = canEdit && (_fullNotesCache?.Any() == true);
+        }
+        private void GateLockButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_hasGatePassword)
+            {
+                // === SET PASSWORD ===
+                var pwdWindow = new GatePasswordWindow(isSettingPassword: true, isChanging: false);
+                pwdWindow.Owner = this;
+                if (pwdWindow.ShowDialog() != true || string.IsNullOrWhiteSpace(pwdWindow.Password))
+                    return;
+
+                try
+                {
+                    // Create table + lock
+                    if (_currentMode == DatabaseMode.Local)
+                    {
+                        using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                        {
+                            conn.Open();
+                            using (var cmd = new SQLiteCommand(@"
+                        CREATE TABLE IF NOT EXISTS EntryGate (
+                            Sp00ns TEXT,
+                            IsL0ck3d INTEGER DEFAULT 1
+                        )", conn))
+                                cmd.ExecuteNonQuery();
+                        }
+                    }
+                    else
+                    {
+                        using (var conn = new MySqlConnection(_externalConnectionString))
+                        {
+                            conn.Open();
+                            using (var cmd = new MySqlCommand(@"
+                        CREATE TABLE IF NOT EXISTS EntryGate (
+                            Sp00ns TEXT,
+                            IsL0ck3d TINYINT(1) DEFAULT 1
+                        )", conn))
+                                cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    string hash = HashPassword(pwdWindow.Password);
+                    SaveGateState(hash, isLocked: true);
+                    _hasGatePassword = true;
+                    _isGateLocked = true;
+                    UpdateGateUI();
+                    ShowGatePlaceholder("🔒 Database is now locked.");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to protect database:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else if (_isGateLocked)
+            {
+                // === UNLOCK ===
+                var pwdWindow = new GatePasswordWindow(isSettingPassword: false, isChanging: false);
+                pwdWindow.Owner = this;
+                if (pwdWindow.ShowDialog() != true)
+                    return;
+
+                string enteredHash = HashPassword(pwdWindow.Password);
+                var (savedHash, _) = ReadGateState();
+
+                if (enteredHash == savedHash)
+                {
+                    // ✅ HIDE PLACEHOLDER IMMEDIATELY
+                    NotesDataGrid.Visibility = Visibility.Visible;
+                    DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
+
+                    SaveGateState(savedHash, isLocked: false);
+                    _isGateLocked = false;
+                    UpdateGateUI();
+
+                    // Recreate repo and load notes
+                    if (_currentMode == DatabaseMode.Local)
+                        _noteRepository = new SqliteNoteRepository(_databasePath);
+                    else
+                        _noteRepository = new MySqlNoteRepository(_externalConnectionString);
+
+                    LoadNotesFromDatabase();
+                }
+                else
+                {
+                    MessageBox.Show("Incorrect password.", "Access Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            else
+            {
+                // === RE-LOCK ===
+                var (savedHash, _) = ReadGateState();
+                SaveGateState(savedHash, isLocked: true);
+                _isGateLocked = true;
+                UpdateGateUI();
+                ShowGatePlaceholder("🔒 Database locked.");
+            }
+        }
+
+        private void GateSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var pwdWindow = new GatePasswordWindow(isSettingPassword: true, isChanging: true);
+            if (pwdWindow.ShowDialog() == true)
+            {
+                if (pwdWindow.WantsToRemovePassword)
+                {
+                    try
+                    {
+                        string dropCmd = "DROP TABLE EntryGate";
+                        if (_currentMode == DatabaseMode.Local)
+                        {
+                            using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                            {
+                                conn.Open();
+                                using (var cmd = new SQLiteCommand(dropCmd, conn))
+                                    cmd.ExecuteNonQuery();
+                            }
+                        }
+                        else
+                        {
+                            using (var conn = new MySqlConnection(_externalConnectionString))
+                            {
+                                conn.Open();
+                                using (var cmd = new MySqlCommand(dropCmd, conn))
+                                    cmd.ExecuteNonQuery();
+                            }
+                        }
+                        _hasGatePassword = false;
+                        _isGateLocked = false;
+                        UpdateGateUI();
+                        LoadNotesFromDatabase();
+                        MessageBox.Show("Password removed. Database is no longer protected.", "Gate Entry", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to remove password:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(pwdWindow.Password))
+                {
+                    string hash = HashPassword(pwdWindow.Password);
+                    SaveGateState(hash, isLocked: _isGateLocked);
+                    MessageBox.Show("Password updated.", "Gate Entry", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+        }
+
+        private void ShowGatePlaceholder(string message)
+        {
+            NotesDataGrid.Visibility = Visibility.Collapsed;
+            DisconnectedPlaceholder.Text = message;
+            DisconnectedPlaceholder.Visibility = Visibility.Visible;
+        }
+        private int GetSelectedNoteCount()
+        {
+            if (_isSelectMode)
+            {
+                var items = NotesDataGrid.ItemsSource as List<NoteItem>;
+                return items?.Count(n => n.IsSelected) ?? 0;
+            }
+            return NotesDataGrid.SelectedItem != null ? 1 : 0;
+        }
+
         #endregion
 
         #region DataGrid Event Handlers
@@ -1063,6 +1504,8 @@ namespace Protes
 
             // Connection-dependent buttons
             bool isConnected = _isConnected;
+            // 🔒 Gate Entry: treat locked state as "not editable"
+            bool isEditable = _isConnected && !_isGateLocked;
             NewNoteButton.IsEnabled = isConnected;
             EditNoteButton.IsEnabled = isConnected && selectedCount == 1;
             DeleteNoteButton.IsEnabled = isConnected && selectedCount >= 1;
@@ -1726,6 +2169,7 @@ namespace Protes
                 }
             }
         }
+
         #endregion
 
         #region IPC and External File Handling
@@ -1757,7 +2201,7 @@ namespace Protes
                 {
                     if (args.Count == 0)
                     {
-                        ActivateWindow();
+    
                         MessageBox.Show(this, "No file specified for Note Editor.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
@@ -2296,7 +2740,7 @@ namespace Protes
 
                 var menuItem = new MenuItem
                 {
-                    Header = $"{profile.Name}: {profile.Host}:{profile.Port}/{profile.Database}",
+                    Header = $"{profile.Host}:{profile.Port}/{profile.Database}",
                     IsCheckable = true,
                     IsChecked = isActive,
                     Tag = profile // Store the full profile for click handler
@@ -2344,7 +2788,7 @@ namespace Protes
                 else
                 {
                     // Just save — user will switch mode separately
-                    MessageBox.Show($"Default external connection set to:\n{profile.Name}", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show($"Default external connection set to:\n{profile}", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
         }
@@ -2590,6 +3034,15 @@ namespace Protes
         #endregion
 
         #region Window Lifecycle
+        public void TriggerDisconnect()
+        {
+            if (_isConnected)
+            {
+                Disconnect_Click(this, new RoutedEventArgs());
+            }
+        }
+
+        public bool IsConnected => _isConnected;
         private void Quit_Click(object sender, RoutedEventArgs e)
         {
             _isExplicitlyExiting = true;
@@ -2815,6 +3268,7 @@ namespace Protes
         public string FileName { get; set; }
         public string FullPath { get; set; }
         public bool IsImported { get; set; }
+        public string DisplayNameWithIndicator { get; set; } 
     }
 
     public class FullNote

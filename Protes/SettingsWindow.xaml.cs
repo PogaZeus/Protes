@@ -86,19 +86,24 @@ namespace Protes.Views
         private void LoadLocalDatabases()
         {
             var dbFiles = new List<DbFileInfo>();
+            string currentDefaultDb = _settings.LastLocalDatabasePath ?? "";
 
-            // 1. Default app folder (now user-configurable)
+            // 1. Default app folder
             if (Directory.Exists(_appDataFolder))
             {
                 var defaultFiles = Directory.GetFiles(_appDataFolder, "*.db")
                                            .Concat(Directory.GetFiles(_appDataFolder, "*.prote"));
                 foreach (var file in defaultFiles)
                 {
+                    bool isDefault = file.Equals(currentDefaultDb, StringComparison.OrdinalIgnoreCase);
+                    string displayName = isDefault ? $"⭐ {Path.GetFileName(file)}" : Path.GetFileName(file);
+
                     dbFiles.Add(new DbFileInfo
                     {
                         FileName = Path.GetFileName(file),
                         FullPath = file,
-                        IsImported = false
+                        IsImported = false,
+                        DisplayNameWithIndicator = displayName
                     });
                 }
             }
@@ -107,20 +112,27 @@ namespace Protes.Views
             var importedRaw = _settings.ImportedDatabasePaths;
             if (!string.IsNullOrWhiteSpace(importedRaw))
             {
-                _importedDbPaths = new List<string>(importedRaw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+                _importedDbPaths = new List<string>(
+                    importedRaw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                );
                 _importedDbPaths.RemoveAll(p => !File.Exists(p));
-            }
 
-            foreach (var path in _importedDbPaths)
-            {
-                if (File.Exists(path))
+                foreach (var path in _importedDbPaths)
                 {
-                    dbFiles.Add(new DbFileInfo
+                    if (File.Exists(path))
                     {
-                        FileName = Path.GetFileName(path) + " (imported)",
-                        FullPath = path,
-                        IsImported = true
-                    });
+                        bool isDefault = path.Equals(currentDefaultDb, StringComparison.OrdinalIgnoreCase);
+                        string fileName = Path.GetFileName(path) + " (imported)";
+                        string displayName = isDefault ? $"⭐ {fileName}" : fileName;
+
+                        dbFiles.Add(new DbFileInfo
+                        {
+                            FileName = fileName,
+                            FullPath = path,
+                            IsImported = true,
+                            DisplayNameWithIndicator = displayName
+                        });
+                    }
                 }
             }
 
@@ -389,10 +401,28 @@ namespace Protes.Views
         #region External Database
         private void LoadExternalConnectionsList()
         {
-            var profiles = _settings.GetExternalDbProfiles(); // from JSON list
+            var profiles = _settings.GetExternalDbProfiles();
+
+            // Get current default connection values for comparison
+            string currentHost = _settings.External_Host ?? "";
+            string currentPort = _settings.External_Port ?? "3306";
+            string currentDb = _settings.External_Database ?? "";
+            string currentUser = _settings.External_Username ?? "";
+
+            // Add visual indicator to default connection
+            foreach (var profile in profiles)
+            {
+                bool isDefault = (profile.Host == currentHost) &&
+                                 (profile.Port.ToString() == currentPort) &&
+                                 (profile.Database == currentDb) &&
+                                 (profile.Username == currentUser);
+                profile.DisplayNameWithIndicator = isDefault ? $"⭐ {profile.DisplayName}" : profile.DisplayName;
+            }
+
+            ExternalConnectionsList.ItemsSource = null;
             ExternalConnectionsList.ItemsSource = profiles;
 
-            // 🔹 Show current DEFAULT connection (from single settings)
+            // Update CurrentDefaultExternalText
             if (!string.IsNullOrWhiteSpace(_settings.External_Host) &&
                 !string.IsNullOrWhiteSpace(_settings.External_Database))
             {
@@ -431,12 +461,23 @@ namespace Protes.Views
         {
             _selectedExternalProfile = ExternalConnectionsList.SelectedItem as ExternalDbProfile;
             bool enabled = _selectedExternalProfile != null;
+            bool isDefault = enabled && IsProfileCurrentDefault(_selectedExternalProfile);
+
             EditConnectionButton.IsEnabled = enabled;
             RemoveConnectionButton.IsEnabled = enabled;
             ConnectNowButton.IsEnabled = enabled;
-            SetDefaultButton.IsEnabled = enabled;
+            SetDefaultButton.IsEnabled = enabled && !isDefault; // 👈 disable if already default
         }
-
+        private bool IsProfileCurrentDefault(ExternalDbProfile profile)
+        {
+            if (profile == null) return false;
+            return
+                profile.Host == _settings.External_Host &&
+                profile.Port.ToString() == (_settings.External_Port ?? "3306") &&
+                profile.Database == _settings.External_Database &&
+                profile.Username == _settings.External_Username;
+            // ❗ Skip password for UI comparison (security + UX)
+        }
         private void AddConnectionButton_Click(object sender, RoutedEventArgs e)
         {
             var editor = new ExtConSettingsWindow();
@@ -456,7 +497,6 @@ namespace Protes.Views
             // Deep copy to avoid reference mutation
             var profileCopy = new ExternalDbProfile
             {
-                Name = _selectedExternalProfile.Name,
                 Host = _selectedExternalProfile.Host,
                 Port = _selectedExternalProfile.Port,
                 Database = _selectedExternalProfile.Database,
@@ -490,7 +530,16 @@ namespace Protes.Views
                 MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 var profiles = _settings.GetExternalDbProfiles();
-                profiles.Remove(_selectedExternalProfile);
+
+                // ✅ Remove by value (compare all fields)
+                profiles = profiles.Where(p =>
+                    p.Host != _selectedExternalProfile.Host ||
+                    p.Port != _selectedExternalProfile.Port ||
+                    p.Database != _selectedExternalProfile.Database ||
+                    p.Username != _selectedExternalProfile.Username ||
+                    p.Password != _selectedExternalProfile.Password
+                ).ToList();
+
                 _settings.SaveExternalDbProfiles(profiles);
                 LoadExternalConnectionsList();
             }
@@ -500,34 +549,21 @@ namespace Protes.Views
         {
             if (_selectedExternalProfile == null) return;
 
-            // Save to current external settings (used by MainWindow)
-            _settings.External_Host = _selectedExternalProfile.Host;
-            _settings.External_Port = _selectedExternalProfile.Port.ToString();
-            _settings.External_Database = _selectedExternalProfile.Database;
-            _settings.External_Username = _selectedExternalProfile.Username;
-            _settings.External_Password = _selectedExternalProfile.Password;
-            _settings.Save();
-
-            // Trigger connect in MainWindow
             _mainWindow.Dispatcher.Invoke(() =>
             {
-                try
-                {
-                    _mainWindow.SetDatabaseMode(DatabaseMode.External);
-                    var connStr = _mainWindow.BuildExternalConnectionString();
-                    if (string.IsNullOrEmpty(connStr))
-                    {
-                        MessageBox.Show("Incomplete connection details.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return;
-                    }
-                    _mainWindow.SetExternalConnectionString(connStr);
-                    _mainWindow.TriggerConnect();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to connect:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                _mainWindow.ConnectToExternalProfileTemporary(_selectedExternalProfile);
             });
+        }
+        private string BuildConnectionStringFromProfile(ExternalDbProfile profile)
+        {
+            if (string.IsNullOrWhiteSpace(profile.Host) || string.IsNullOrWhiteSpace(profile.Database))
+                return null;
+
+            string port = profile.Port.ToString();
+            if (string.IsNullOrWhiteSpace(port) || port == "0") port = "3306";
+            string password = profile.Password ?? "";
+
+            return $"Server={profile.Host};Port={port};Database={profile.Database};Uid={profile.Username};Pwd={password};";
         }
         #endregion
 
@@ -1079,6 +1115,7 @@ namespace Protes.Views
             public string FileName { get; set; }
             public string FullPath { get; set; }
             public bool IsImported { get; set; }
+            public string DisplayNameWithIndicator { get; set; } 
         }
         #endregion
     }

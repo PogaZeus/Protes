@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace Protes
 {
-    public interface INoteRepository
+    public interface INoteRepository : IDisposable
     {
         void EnsureSchemaExists();
         List<FullNote> LoadNotes(string searchTerm = "", string searchField = "All");
@@ -25,7 +25,10 @@ namespace Protes
             _databasePath = databasePath ?? throw new ArgumentNullException(nameof(databasePath));
             EnsureAppDataFolder();
         }
-
+        public void Dispose()
+        {
+            // No-op — connections are opened/closed per method
+        }
         private void EnsureAppDataFolder()
         {
             var folder = Path.GetDirectoryName(_databasePath);
@@ -210,7 +213,10 @@ namespace Protes
                 }
             }
         }
-
+        public void Dispose()
+        {
+            // No-op — connections are opened/closed per method
+        }
         public void SaveNote(string title, string content, string tags)
         {
             using (var conn = new MySqlConnection(_connectionString))

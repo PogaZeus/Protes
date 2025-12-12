@@ -30,6 +30,13 @@
             <Setter Property="Height" Value="26"/>
             <Setter Property="Padding" Value="10,0"/>
         </Style>
+
+        <DataTemplate x:Key="ExternalDbProfileTemplate" DataType="{x:Type local:ExternalDbProfile}">
+            <StackPanel>
+                <TextBlock Text="{Binding DisplayNameWithIndicator}" FontWeight="Bold"/>
+                <TextBlock Text="{Binding DisplaySubtitle}" FontSize="10" Foreground="Gray"/>
+            </StackPanel>
+        </DataTemplate>
     </Window.Resources>
 
     <Grid Margin="15">
@@ -65,7 +72,7 @@
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
                                             <StackPanel>
-                                                <TextBlock Text="{Binding FileName}" FontWeight="Bold"/>
+                                                <TextBlock Text="{Binding DisplayNameWithIndicator}" FontWeight="Bold"/>
                                                 <TextBlock Text="{Binding FullPath}" FontStyle="Italic" FontSize="10" Foreground="Gray"/>
                                             </StackPanel>
                                         </DataTemplate>
@@ -161,18 +168,11 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <ListBox x:Name="ExternalConnectionsList"
+                                <!-- ✅ Corrected ListBox: only one ItemTemplate via resource -->
+                                <ListBox x:Name="ExternalConnectionsList" 
                              SelectionChanged="ExternalConnectionsList_SelectionChanged"
-                             VerticalContentAlignment="Stretch">
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding DisplayName}" FontWeight="Bold"/>
-                                                <TextBlock Text="{Binding DisplaySubtitle}" FontSize="10" Foreground="Gray"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
+                             VerticalContentAlignment="Stretch"
+                             ItemTemplate="{StaticResource ExternalDbProfileTemplate}" />
 
                                 <!-- Action Buttons -->
                                 <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,0">
@@ -209,27 +209,27 @@
                             </Grid>
                         </GroupBox>
 
-                        <!-- ✅ Current Default External Connection -->
+                        <!-- Current Default External Connection -->
                         <GroupBox Grid.Row="1" Header="Current External Default Database" Margin="0,0,0,5">
                             <TextBlock x:Name="CurrentDefaultExternalText"
-               Text="(No external connection configured)"
-               FontStyle="Italic"
-               TextWrapping="Wrap"
-               Margin="0,5,0,5"/>
+                           Text="(No external connection configured)"
+                           FontStyle="Italic"
+                           TextWrapping="Wrap"
+                           Margin="0,5,0,5"/>
                         </GroupBox>
 
                         <GroupBox Grid.Row="2" Header="Database Table Requirements" Margin="0,0,0,0">
                             <StackPanel>
                                 <TextBlock Text="External databases need to be setup with a Notes table before connecting."
-                   FontStyle="Italic"
-                   Foreground="Gray"
-                   Margin="0,5,0,0"/>
+                               FontStyle="Italic"
+                               Foreground="Gray"
+                               Margin="0,5,0,0"/>
                                 <Button x:Name="RequirementsButton"
-                Content="Info..."
-                HorizontalAlignment="Left"
-                Margin="0,5,0,0"
-                Padding="10,5"
-                Click="RequirementsButton_Click"/>
+                            Content="Info..."
+                            HorizontalAlignment="Left"
+                            Margin="0,5,0,0"
+                            Padding="10,5"
+                            Click="RequirementsButton_Click"/>
                             </StackPanel>
                         </GroupBox>
                     </Grid>

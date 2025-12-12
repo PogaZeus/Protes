@@ -133,6 +133,9 @@
     <Compile Include="FontPickerWindow.xaml.cs">
       <DependentUpon>FontPickerWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="GatePasswordWindow.xaml.cs">
+      <DependentUpon>GatePasswordWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ImportToDBWindow.xaml.cs">
       <DependentUpon>ImportToDBWindow.xaml</DependentUpon>
     </Compile>
@@ -173,6 +176,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="FontPickerWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="GatePasswordWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -232,11 +239,11 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
+    <PackageReference Include="MySqlConnector">
+      <Version>2.5.0</Version>
+    </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
       <Version>13.0.4</Version>
-    </PackageReference>
-    <PackageReference Include="System.Memory">
-      <Version>4.6.3</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

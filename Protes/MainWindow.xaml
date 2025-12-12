@@ -217,6 +217,23 @@
                     TextChanged="SearchBox_TextChanged"
                     VerticalAlignment="Center" Margin="0,0,8,0"/>
             </StackPanel>
+            <!-- Gate Entry System -->
+            <Button x:Name="GateLockButton"
+        Content="🔓"
+        Padding="6,5"
+        FontSize="16"
+        Click="GateLockButton_Click"
+        Margin="0,0,8,0"
+        ToolTip="Lock/Unlock Database"/>
+            <Button x:Name="GateSettingsButton"
+        Content="⚙️"
+        Padding="6,5"
+        FontSize="16"
+        Click="GateSettingsButton_Click"
+        Margin="0,0,8,0"
+        ToolTip="Password Settings"
+        Visibility="Collapsed"/>
+            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
             <Button x:Name="CatButton" Content="🐾" FontSize="16" Padding="6,5" Margin="0,0,8,0" ToolTip="Open Cat Wisdom" Click="OpenCatWindow_Click"/>
         </StackPanel>
 

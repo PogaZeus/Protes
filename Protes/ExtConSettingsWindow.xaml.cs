@@ -13,8 +13,7 @@ namespace Protes.Views
             InitializeComponent();
             Profile = profile ?? new ExternalDbProfile();
 
-            // Populate fields
-            NameTextBox.Text = Profile.Name;
+            // Populate fields (no Name)
             HostTextBox.Text = Profile.Host;
             PortTextBox.Text = Profile.Port.ToString();
             DatabaseTextBox.Text = Profile.Database;
@@ -24,7 +23,6 @@ namespace Protes.Views
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            // Validation
             if (string.IsNullOrWhiteSpace(HostTextBox.Text) || string.IsNullOrWhiteSpace(DatabaseTextBox.Text))
             {
                 MessageBox.Show("Host and Database are required.", "Validation", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -37,8 +35,7 @@ namespace Protes.Views
                 return;
             }
 
-            // Update profile
-            Profile.Name = string.IsNullOrWhiteSpace(NameTextBox.Text) ? "Connection" : NameTextBox.Text.Trim();
+            // Update profile — NO Name
             Profile.Host = HostTextBox.Text.Trim();
             Profile.Port = port;
             Profile.Database = DatabaseTextBox.Text.Trim();
