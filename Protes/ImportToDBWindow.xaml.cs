@@ -63,8 +63,10 @@ namespace Protes.Views
         }
 
         // ✅ Helper to add a single file (used by constructor and future "Add Files" logic)
-        private void AddFileToImportList(string filePath)
+        public void AddFileToImportList(string filePath)
         {
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
+
             if (!_fileItems.Any(f => f.FullPath.Equals(filePath, StringComparison.OrdinalIgnoreCase)))
             {
                 var fileInfo = new FileInfo(filePath);
@@ -73,11 +75,12 @@ namespace Protes.Views
                     FullPath = filePath,
                     FileName = fileInfo.Name,
                     FileSize = $"{fileInfo.Length / 1024} KB",
-                    IsSelected = true // Auto-select since user explicitly sent it
+                    IsSelected = true
                 });
             }
+            UpdateImportButtonState();
+            UpdateClearListButtonState();
         }
-
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

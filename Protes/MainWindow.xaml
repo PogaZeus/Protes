@@ -222,6 +222,7 @@
 
         <!-- === NOTES TABLE (DATA GRID) === -->
         <DataGrid Grid.Row="2" x:Name="NotesDataGrid"
+                  FontSize="11"
                   ContextMenuOpening="NotesDataGrid_ContextMenuOpening"
                   PreviewMouseDown="NotesDataGrid_PreviewMouseDown" 
                   VerticalScrollBarVisibility="Auto"
@@ -244,6 +245,7 @@
                     <Setter Property="Focusable" Value="True"/>
                 </Style>
             </DataGrid.Resources>
+
             <DataGrid.Columns>
                 <DataGridTemplateColumn 
                     x:Name="SelectCheckBoxColumn"

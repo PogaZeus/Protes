@@ -8,12 +8,14 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Threading;
 using SWF = System.Windows.Forms;
 
 namespace Protes
@@ -32,6 +34,9 @@ namespace Protes
         private NoteItem _editingItem;
         private List<FullNote> _copiedNotes = new List<FullNote>();
         private SWF.NotifyIcon _notifyIcon;
+        private readonly List<string> _pendingImportFiles = new List<string>();
+        private DispatcherTimer _importDebounceTimer;
+        private readonly object _importLock = new object();
         private bool _isToolbarVisible = true;
         private bool _isSelectMode = false;
         private bool _isConnected = false;
@@ -110,6 +115,31 @@ namespace Protes
 
             var showNotifications = _settings.ShowNotifications;
             SelectCheckBoxColumn.Visibility = Visibility.Collapsed;
+
+            // Initialize debounce timer for batch import
+            _importDebounceTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(500) // Wait 500ms after last file
+            };
+            _importDebounceTimer.Tick += (s, e) =>
+            {
+                _importDebounceTimer.Stop();
+                lock (_importLock)
+                {
+                    if (_pendingImportFiles.Count > 0)
+                    {
+                        // Open ONE Import window with all files
+                        var files = new List<string>(_pendingImportFiles);
+                        _pendingImportFiles.Clear();
+
+                        Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            OpenBatchImportWindow(files);
+                        }));
+                    }
+                }
+            };
+
             Loaded += MainWindow_Loaded;
         }
 
@@ -1315,6 +1345,69 @@ namespace Protes
         );
             importWindow.Show(); // or ShowDialog()
         }
+
+        private void HandleImportFileRequestBatch(List<string> filePaths)
+        {
+            if (!_isConnected)
+            {
+                ActivateWindow();
+                MessageBox.Show(this,
+                    "Please connect to a database first.\nImport requires an active database connection.",
+                    "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Filter out non-existent files
+            var validPaths = filePaths.Where(File.Exists).ToList();
+            var invalidPaths = filePaths.Except(validPaths).ToList();
+
+            if (invalidPaths.Any())
+            {
+                string missing = string.Join("\n", invalidPaths.Take(5)); // show max 5
+                if (invalidPaths.Count > 5)
+                    missing += $"\n... and {invalidPaths.Count - 5} more";
+
+                ActivateWindow();
+                MessageBox.Show(this,
+                    $"The following files were not found and will be skipped:\n\n{missing}",
+                    "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+
+            if (!validPaths.Any())
+            {
+                ActivateWindow();
+                MessageBox.Show(this, "No valid files to import.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                var importWindow = new ImportToDBWindow(
+                    databasePath: _databasePath,
+                    databaseMode: _currentMode,
+                    externalConnectionString: _externalConnectionString,
+                    noteRepository: _noteRepository,
+                    onImportCompleted: () => { },
+                    preselectedFilePath: null // We'll add all files manually
+                );
+
+                // Add all valid files
+                foreach (var path in validPaths)
+                {
+                    importWindow.AddFileToImportList(path);
+                }
+
+                importWindow.Show();
+                ActivateWindow();
+            }
+            catch (Exception ex)
+            {
+                ActivateWindow();
+                MessageBox.Show(this,
+                    $"Failed to open Import window:\n{ex.Message}",
+                    "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
         #endregion
 
         #region Database File Management
@@ -1640,21 +1733,105 @@ namespace Protes
         {
             System.Diagnostics.Debug.WriteLine($"[IPC] Raw: {message}");
 
-            var (command, filePath) = ParseIpcMessage(message);
-
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (command == "-new")
+                // Handle -new
+                if (message == "-new")
                 {
                     HandleNewNoteRequest();
+                    return;
                 }
-                else if (command == "-noteeditor")
+
+                // Split into tokens, respecting quotes
+                var tokens = SplitCommandLine(message);
+                if (tokens.Count == 0)
                 {
-                    HandleNoteEditorWithFile(filePath);
+                    ActivateWindow();
+                    return;
+                }
+
+                string command = tokens[0];
+                var args = tokens.Skip(1).ToList();
+
+                if (command == "-noteeditor")
+                {
+                    if (args.Count == 0)
+                    {
+                        ActivateWindow();
+                        MessageBox.Show(this, "No file specified for Note Editor.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    // Only allow ONE file for Note Editor
+                    if (args.Count > 1)
+                    {
+                        ActivateWindow();
+                        MessageBox.Show(this,
+                            "The Note Editor only supports opening one file at a time.\n\n" +
+                            $"You selected {args.Count} files. Only the first will be opened.",
+                            "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                    HandleNoteEditorWithFile(args[0]);
                 }
                 else if (command == "-import")
                 {
-                    HandleImportFileRequest(filePath);
+                    if (args.Count == 0)
+                    {
+                        ActivateWindow();
+                        MessageBox.Show(this, "No files specified for import.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    // Validate all paths
+                    var validPaths = new List<string>();
+                    var invalidPaths = new List<string>();
+                    foreach (var path in args)
+                    {
+                        if (File.Exists(path))
+                            validPaths.Add(path);
+                        else
+                            invalidPaths.Add(path);
+                    }
+
+                    if (invalidPaths.Any())
+                    {
+                        string msg = $"The following files were not found and will be skipped:\n\n{string.Join("\n", invalidPaths.Take(5))}";
+                        if (invalidPaths.Count > 5) msg += $"\n... and {invalidPaths.Count - 5} more";
+                        ActivateWindow();
+                        MessageBox.Show(this, msg, "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+
+                    if (validPaths.Count == 0)
+                    {
+                        ActivateWindow();
+                        MessageBox.Show(this, "No valid files to import.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    // ✅ Open ONE Import window with ALL valid files
+                    try
+                    {
+                        var importWindow = new ImportToDBWindow(
+                            databasePath: _databasePath,
+                            databaseMode: _currentMode,
+                            externalConnectionString: _externalConnectionString,
+                            noteRepository: _noteRepository,
+                            onImportCompleted: () => { },
+                            preselectedFilePath: null
+                        );
+
+                        foreach (var path in validPaths)
+                        {
+                            importWindow.AddFileToImportList(path);
+                        }
+
+                        importWindow.Show();
+                        ActivateWindow();
+                    }
+                    catch (Exception ex)
+                    {
+                        ActivateWindow();
+                        MessageBox.Show(this, $"Failed to open Import window:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
                 else if (IsDatabaseFile(command))
                 {
@@ -1670,83 +1847,62 @@ namespace Protes
                 }
             }));
         }
-        // Helper method in MainWindow
-        private static (string command, string filePath) ParseIpcMessage(string message)
+        private static List<string> SplitCommandLine(string commandLine)
         {
-            var parts = message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length < 2) return (message.Trim('"'), null);
+            var parts = new List<string>();
+            if (string.IsNullOrWhiteSpace(commandLine)) return parts;
 
-            string command = parts[0].Trim('"');
-            string filePath = parts[1].Trim('"');
+            bool inQuotes = false;
+            StringBuilder current = new StringBuilder();
 
-            // Handle paths with spaces: if more than 2 parts, recombine
-            if (parts.Length > 2)
+            for (int i = 0; i < commandLine.Length; i++)
             {
-                // Reconstruct: assume everything after the first token is the file path
-                var remaining = message.Substring(parts[0].Length).Trim();
-                // Remove leading quote if present
-                if (remaining.StartsWith("\""))
-                    remaining = remaining.Substring(1);
-                if (remaining.EndsWith("\""))
-                    remaining = remaining.Substring(0, remaining.Length - 1);
-                filePath = remaining;
+                char c = commandLine[i];
+                if (c == '"')
+                {
+                    inQuotes = !inQuotes;
+                }
+                else if (char.IsWhiteSpace(c) && !inQuotes)
+                {
+                    if (current.Length > 0)
+                    {
+                        parts.Add(current.ToString());
+                        current.Clear();
+                    }
+                }
+                else
+                {
+                    current.Append(c);
+                }
             }
 
-            return (command, filePath);
+            if (current.Length > 0)
+            {
+                parts.Add(current.ToString());
+            }
+
+            return parts;
         }
-
-        // Helper to safely extract file path from args like `"C:\file.txt"` or `C:\file.txt`
-        private string ExtractFilePathFromArgument(string input)
+ 
+        private void OpenBatchImportWindow(List<string> filePaths)
         {
-            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
-
-            // Trim whitespace and any trailing nulls
-            input = input.Trim('\0', ' ');
-
-            // If starts and ends with quotes, remove them
-            if (input.Length >= 2 && input[0] == '"' && input[input.Length - 1] == '"')
-            {
-                return input.Substring(1, input.Length - 2);
-            }
-
-            // Otherwise return as-is
-            return input;
-        }
-
-        private void HandleImportFileRequest(string filePath)
-        {
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
-            {
-                ActivateWindow();
-                MessageBox.Show(this,
-                    $"File not found:\n{filePath}",
-                    "Protes",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-
-            if (!_isConnected)
-            {
-                ActivateWindow();
-                MessageBox.Show(this,
-                    "Please connect to a database first.\nImport requires an active database connection.",
-                    "Protes",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-
             try
             {
                 var importWindow = new ImportToDBWindow(
                     databasePath: _databasePath,
-                    databaseMode: _currentMode,                      // ✅ Correct field
+                    databaseMode: _currentMode,
                     externalConnectionString: _externalConnectionString,
                     noteRepository: _noteRepository,
-                    onImportCompleted: () => { },
-                    preselectedFilePath: filePath
+                    onImportCompleted: () => { /* optional: refresh notes */ },
+                    preselectedFilePath: null // We’ll pass all files via a new constructor
                 );
+
+                // 👇 NEW: Add a method in ImportToDBWindow to add multiple files
+                foreach (var path in filePaths)
+                {
+                    importWindow.AddFileToImportList(path);
+                }
+
                 importWindow.Show();
                 ActivateWindow();
             }
@@ -1754,10 +1910,8 @@ namespace Protes
             {
                 ActivateWindow();
                 MessageBox.Show(this,
-                    $"Failed to open Import window:\n{ex.Message}",
-                    "Protes",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    $"Failed to open batch import window:\n{ex.Message}",
+                    "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
