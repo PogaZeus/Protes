@@ -334,6 +334,35 @@ namespace Protes
                 Save();
             }
         }
+        
+
+        public bool ViewToolbarSettings
+        {
+            get => global::Protes.Properties.Settings.Default.ViewToolbarSettings;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ViewToolbarSettings = value;
+                Save();
+            }
+        }
+        public bool ViewToolbarNoteTools
+        {
+            get => global::Protes.Properties.Settings.Default.ViewToolbarNoteTools;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ViewToolbarNoteTools = value;
+                Save();
+            }
+        }
+        public bool ViewToolbarCopyPaste
+        {
+            get => global::Protes.Properties.Settings.Default.ViewToolbarCopyPaste;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ViewToolbarCopyPaste = value;
+                Save();
+            }
+        }
 
         public bool ViewToolbarImpEx
         {

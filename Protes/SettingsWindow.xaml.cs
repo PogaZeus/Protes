@@ -62,6 +62,9 @@ namespace Protes.Views
             ViewToolbarMenuItem.IsChecked = _settings.ViewMainToolbar;
             ViewToolbarOptionsInMenuCheckBox.IsChecked = _settings.ViewToolbarOptionsInMenu;
             ViewToolbarConnectMenuItem.IsChecked = _settings.ViewToolbarConnect;
+            ViewToolbarSettingsMenuItem.IsChecked = _settings.ViewToolbarSettings;
+            ViewToolbarNoteToolsMenuItem.IsChecked = _settings.ViewToolbarNoteTools;
+            ViewToolbarCopyPasteMenuItem.IsChecked = _settings.ViewToolbarCopyPaste;
             ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
             ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
             ViewToolbarImpExMenuItem.IsChecked = _settings.ViewToolbarImpEx;
@@ -1106,6 +1109,26 @@ namespace Protes.Views
             _settings.ViewToolbarGateEntry = ViewToolbarGateEntryMenuItem.IsChecked == true;
             _settings.Save();
             _mainWindow?.UpdateToolbarIconVisibility(); // Notify MainWindow to refresh toolbar
+        }
+        private void ViewToolbarSettingsMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewToolbarSettings = ViewToolbarSettingsMenuItem.IsChecked == true;
+            _settings.Save();
+            _mainWindow?.UpdateToolbarIconVisibility();
+        }
+
+        private void ViewToolbarNoteToolsMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewToolbarNoteTools = ViewToolbarNoteToolsMenuItem.IsChecked == true;
+            _settings.Save();
+            _mainWindow?.UpdateToolbarIconVisibility();
+        }
+
+        private void ViewToolbarCopyPasteMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewToolbarCopyPaste = ViewToolbarCopyPasteMenuItem.IsChecked == true;
+            _settings.Save();
+            _mainWindow?.UpdateToolbarIconVisibility();
         }
         #endregion
 

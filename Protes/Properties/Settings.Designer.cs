@@ -562,5 +562,41 @@ namespace Protes.Properties {
                 this["ViewToolbarGateEntry"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ViewToolbarSettings {
+            get {
+                return ((bool)(this["ViewToolbarSettings"]));
+            }
+            set {
+                this["ViewToolbarSettings"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ViewToolbarNoteTools {
+            get {
+                return ((bool)(this["ViewToolbarNoteTools"]));
+            }
+            set {
+                this["ViewToolbarNoteTools"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ViewToolbarCopyPaste {
+            get {
+                return ((bool)(this["ViewToolbarCopyPaste"]));
+            }
+            set {
+                this["ViewToolbarCopyPaste"] = value;
+            }
+        }
     }
 }
