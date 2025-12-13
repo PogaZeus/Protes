@@ -400,6 +400,11 @@
                                           Checked="ViewToolbarSearchMenuItem_Checked"
                                           Unchecked="ViewToolbarSearchMenuItem_Checked"
                                           Margin="0,5,0,0"/>
+                                <CheckBox x:Name="ViewToolbarGateEntryMenuItem"
+          Content="Lock Database (Automatic if it has a password)"
+          Checked="ViewToolbarGateEntryMenuItem_Checked"
+          Unchecked="ViewToolbarGateEntryMenuItem_Checked"
+          Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
                     </Grid>

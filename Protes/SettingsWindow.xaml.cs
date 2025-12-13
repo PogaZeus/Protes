@@ -66,6 +66,7 @@ namespace Protes.Views
             ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
             ViewToolbarImpExMenuItem.IsChecked = _settings.ViewToolbarImpEx;
             ViewToolbarSearchMenuItem.IsChecked = _settings.ViewToolbarSearch;
+            ViewToolbarGateEntryMenuItem.IsChecked = _settings.ViewToolbarGateEntry;
 
             //Systray
             LaunchOnStartupCheckBox.IsChecked = _settings.LaunchOnStartup;
@@ -1100,8 +1101,14 @@ namespace Protes.Views
             _settings.Save();
             _mainWindow?.UpdateToolbarIconVisibility();
         }
+        private void ViewToolbarGateEntryMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewToolbarGateEntry = ViewToolbarGateEntryMenuItem.IsChecked == true;
+            _settings.Save();
+            _mainWindow?.UpdateToolbarIconVisibility(); // Notify MainWindow to refresh toolbar
+        }
         #endregion
-                 
+
         #region Window Management
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {

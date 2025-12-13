@@ -121,6 +121,7 @@
                     <MenuItem x:Name="ViewToolbarLocalDBMenuItem" Header="Local Databases" IsCheckable="True" Checked="ViewToolbarLocalDBMenuItem_Checked" Unchecked="ViewToolbarLocalDBMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarImpExMenuItem" Header="Import/Export" IsCheckable="True" Checked="ViewToolbarImpExMenuItem_Checked" Unchecked="ViewToolbarImpExMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarSearchMenuItem" Header="Search Database" IsCheckable="True" Checked="ViewToolbarSearchMenuItem_Checked" Unchecked="ViewToolbarSearchMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarGateEntryMenuItem" Header="Gate Entry (Lock/Settings)" IsCheckable="True" Checked="ViewToolbarGateEntryMenuItem_Checked" Unchecked="ViewToolbarGateEntryMenuItem_Checked"/>
                 </MenuItem>
                 <MenuItem Header="_Settings" Click="OpenSettings_Click"/>
             </MenuItem>
@@ -217,6 +218,8 @@
                     TextChanged="SearchBox_TextChanged"
                     VerticalAlignment="Center" Margin="0,0,8,0"/>
             </StackPanel>
+            
+            <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
             <!-- Gate Entry System -->
             <Button x:Name="GateLockButton"
         Content="🔓"

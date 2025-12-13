@@ -354,7 +354,15 @@ namespace Protes
                 Save();
             }
         }
-
+        public bool ViewToolbarGateEntry
+        {
+            get => global::Protes.Properties.Settings.Default.ViewToolbarGateEntry;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ViewToolbarGateEntry = value;
+                Save();
+            }
+        }
         public bool ViewToolbarCat
         {
             get => global::Protes.Properties.Settings.Default.ViewToolbarCat;

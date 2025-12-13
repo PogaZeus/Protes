@@ -550,5 +550,17 @@ namespace Protes.Properties {
                 this["SendToNoteEditorEnabled"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ViewToolbarGateEntry {
+            get {
+                return ((bool)(this["ViewToolbarGateEntry"]));
+            }
+            set {
+                this["ViewToolbarGateEntry"] = value;
+            }
+        }
     }
 }

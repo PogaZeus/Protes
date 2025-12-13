@@ -96,6 +96,7 @@ namespace Protes
             ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
             ViewToolbarImpExMenuItem.IsChecked = _settings.ViewToolbarImpEx;
             ViewToolbarSearchMenuItem.IsChecked = _settings.ViewToolbarSearch;
+            ViewToolbarGateEntryMenuItem.IsChecked = _settings.ViewToolbarGateEntry;
 
             // Load zoom level
             double zoomPoints = _settings.DataGridZoom;
@@ -294,10 +295,9 @@ namespace Protes
                     _settings.SetDatabaseMode(DatabaseMode.Local);
                     UpdateDatabaseModeCheckmarks();
                     UpdateStatusBar();
-                    LoadAvailableDatabases(); // ✅ Refresh dropdown when entering Local mode
+                    LoadAvailableDatabases();
                     return;
                 }
-
                 // If connected to External and AutoDisconnect is OFF → set pending
                 if (!_settings.AutoDisconnectOnSwitch)
                 {
@@ -306,7 +306,7 @@ namespace Protes
                     _settings.SetDatabaseMode(DatabaseMode.Local);
                     UpdateDatabaseModeCheckmarks();
                     UpdateStatusBar();
-                    LoadAvailableDatabases(); // ✅ Still in Local mode (pending), so show list
+                    LoadAvailableDatabases();
                     return;
                 }
             }
@@ -321,21 +321,7 @@ namespace Protes
             {
                 try
                 {
-                    using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
-                    {
-                        conn.Open();
-                        using (var cmd = new SQLiteCommand(@"
-                    CREATE TABLE IF NOT EXISTS Notes (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        Title TEXT NOT NULL,
-                        Content TEXT,
-                        Tags TEXT,
-                        LastModified TEXT
-                    )", conn))
-                        {
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
+                    EnsureNotesTableExistsLocal();
 
                     if (_isConnected && _settings.AutoDisconnectOnSwitch)
                     {
@@ -343,38 +329,28 @@ namespace Protes
                     }
 
                     _noteRepository = new SqliteNoteRepository(_databasePath);
-                    LoadNotesFromDatabase();
-                    _isConnected = true;
-                    _connectedMode = DatabaseMode.Local;
-                    NotesDataGrid.Visibility = Visibility.Visible;
-                    DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
-                    LoadAvailableDatabases(); // ✅ Connected → refresh list
-                    UpdateButtonStates();
-                    UpdateStatusBar();
-
-                    if (_settings.ShowNotifications)
-                    {
-                        MessageBox.Show("Local database (SQLite) selected.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
+                    FinishConnection(); // ✅ Gate logic + lock/placeholder handled here
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show($"Failed to connect to local database:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
                     _isConnected = false;
                     _connectedMode = DatabaseMode.None;
-                    LoadAvailableDatabases(); // ✅ Still Local mode, just disconnected
+                    LoadAvailableDatabases();
                     UpdateButtonStates();
                     UpdateStatusBar();
                 }
             }
             else
             {
+                // AutoConnect OFF: just switch mode, stay disconnected
                 _isConnected = false;
                 _connectedMode = DatabaseMode.None;
                 NotesDataGrid.ItemsSource = null;
                 NotesDataGrid.Visibility = Visibility.Collapsed;
                 DisconnectedPlaceholder.Visibility = Visibility.Visible;
-                LoadAvailableDatabases(); // ✅ Local mode selected → show DB list
+                DisconnectedPlaceholder.Text = "Not connected to a database. Choose 'Local' or 'External Database' from Options.";
+                LoadAvailableDatabases();
                 UpdateButtonStates();
                 UpdateStatusBar();
             }
@@ -388,37 +364,17 @@ namespace Protes
             _settings.SetDatabaseMode(DatabaseMode.Local);
             _settings.LastLocalDatabasePath = databasePath;
 
-            // ✅ Use the SAME table existence check as in Connect_Click
             try
             {
-                using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
-                {
-                    conn.Open();
-                    using (var cmd = new SQLiteCommand(@"
-                CREATE TABLE IF NOT EXISTS Notes (
-                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    Title TEXT NOT NULL,
-                    Content TEXT,
-                    Tags TEXT,
-                    LastModified TEXT
-                )", conn))
-                    {
-                        cmd.ExecuteNonQuery();
-                    }
-                }
+                EnsureNotesTableExistsLocal();
 
-                // 🔄 Now use the standard connection flow (which includes Gate check)
                 if (_isConnected && _settings.AutoDisconnectOnSwitch)
                 {
                     Disconnect_Click(this, new RoutedEventArgs());
                 }
 
-                // Reassign mode and path
-                _currentMode = DatabaseMode.Local;
-                _databasePath = databasePath;
-
-                // ✅ This will call FinishConnection → which checks GateEntry!
-                Connect_Click(this, new RoutedEventArgs());
+                _noteRepository = new SqliteNoteRepository(_databasePath);
+                FinishConnection(); // ✅ This handles lock detection, placeholder, and UI
             }
             catch (Exception ex)
             {
@@ -446,7 +402,6 @@ namespace Protes
                     RefreshLocalDbControls();
                     return;
                 }
-
                 // If connected to Local and AutoDisconnect is OFF → set pending
                 if (!_settings.AutoDisconnectOnSwitch)
                 {
@@ -465,14 +420,14 @@ namespace Protes
             _settings.SetDatabaseMode(DatabaseMode.External);
             UpdateDatabaseModeCheckmarks();
             RefreshLocalDbControls();
+
             if (_settings.AutoConnectOnSwitch)
             {
                 var connString = BuildExternalConnectionString();
                 if (connString == null)
                 {
                     MessageBox.Show(
-                        "External database configuration is incomplete.\n\n" +
-                        "Please go to Settings → External Database to configure your connection.",
+                        "External database configuration is incomplete.\nPlease go to Settings → External Database to configure your connection.",
                         "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -482,15 +437,17 @@ namespace Protes
                     Disconnect_Click(this, new RoutedEventArgs());
                 }
 
-                ConnectToExternalDatabase(connString);
+                ConnectToExternalDatabase(connString); // → which calls FinishConnection()
             }
             else
             {
+                // AutoConnect OFF: just switch mode, stay disconnected
                 _isConnected = false;
                 _connectedMode = DatabaseMode.None;
                 NotesDataGrid.ItemsSource = null;
                 NotesDataGrid.Visibility = Visibility.Collapsed;
                 DisconnectedPlaceholder.Visibility = Visibility.Visible;
+                DisconnectedPlaceholder.Text = "Not connected to a database. Choose 'Local' or 'External Database' from Options.";
                 UpdateButtonStates();
                 UpdateStatusBar();
                 RefreshLocalDbControls();
@@ -504,7 +461,7 @@ namespace Protes
                 TestExternalConnection(connectionString);
                 _externalConnectionString = connectionString;
                 _noteRepository = new MySqlNoteRepository(connectionString);
-                FinishConnection();
+                FinishConnection(); // ✅ All gate and UI logic here
             }
             catch (InvalidOperationException ex)
             {
@@ -512,7 +469,7 @@ namespace Protes
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Connection failed:\n{ex.Message}\n\nInner: {ex.InnerException?.Message}",
+                MessageBox.Show($"Connection failed:\n{ex.Message}\nInner: {ex.InnerException?.Message}",
                                 "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -576,6 +533,7 @@ namespace Protes
                 ShowGatePlaceholder("🔒 This database is protected. Click the lock icon in the toolbar to unlock.");
                 UpdateGateUI();
                 UpdateStatusBar();
+                UpdateToolbarIconVisibility();
                 return;
             }
 
@@ -594,6 +552,7 @@ namespace Protes
             UpdateGateUI();
             UpdateStatusBar();
             UpdateButtonStates();
+            UpdateToolbarIconVisibility();
 
             if (_settings.ShowNotifications)
                 MessageBox.Show("Connected successfully!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1189,6 +1148,7 @@ namespace Protes
                     _hasGatePassword = true;
                     _isGateLocked = true;
                     UpdateGateUI();
+                    UpdateToolbarIconVisibility();
                     ShowGatePlaceholder("🔒 Database is now locked.");
                 }
                 catch (Exception ex)
@@ -1282,6 +1242,7 @@ namespace Protes
                         _isGateLocked = false;
                         UpdateGateUI();
                         LoadNotesFromDatabase();
+                        UpdateToolbarIconVisibility();
                         MessageBox.Show("Password removed. Database is no longer protected.", "Gate Entry", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     catch (Exception ex)
@@ -1611,12 +1572,25 @@ namespace Protes
         }
         public void UpdateToolbarIconVisibility()
         {
+            // Standard toolbar items (controlled by user settings)
             ViewToolbarConnectainer.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
             LocalDbControls.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
             AutoConnectOSContainer.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
             ImportExportControls.Visibility = _settings.ViewToolbarImpEx ? Visibility.Visible : Visibility.Collapsed;
             SearchDatabase.Visibility = _settings.ViewToolbarSearch ? Visibility.Visible : Visibility.Collapsed;
             CatButton.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
+
+
+            // - If no password respect ViewToolbarGateEntry setting
+            GateLockButton.Visibility = _hasGatePassword
+                ? Visibility.Visible
+                : (_settings.ViewToolbarGateEntry ? Visibility.Visible : Visibility.Collapsed);
+
+            // 🔑 GateSettingsButton: only when password exists AND unlocked
+            GateSettingsButton.Visibility = (_hasGatePassword && !_isGateLocked)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
         }
         #endregion
 
@@ -1685,6 +1659,13 @@ namespace Protes
             _settings.ViewToolbarSearch = isVisible;
             _settings.Save();
             SearchDatabase.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+        private void ViewToolbarGateEntryMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            bool isVisible = ViewToolbarGateEntryMenuItem.IsChecked == true;
+            _settings.ViewToolbarGateEntry = isVisible;
+            _settings.Save();
+            UpdateToolbarIconVisibility(); 
         }
         #endregion
 
