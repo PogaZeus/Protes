@@ -226,7 +226,7 @@
         Margin="0,0,8,0"
         ToolTip="Lock/Unlock Database"/>
             <Button x:Name="GateSettingsButton"
-        Content="⚙️"
+        Content="🔑"
         Padding="6,5"
         FontSize="16"
         Click="GateSettingsButton_Click"

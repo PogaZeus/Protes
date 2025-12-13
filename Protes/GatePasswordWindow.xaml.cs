@@ -12,6 +12,15 @@ namespace Protes.Views
         private readonly bool _isSettingPassword;
         private readonly bool _isChanging;
 
+        // Constructor with database name
+        public GatePasswordWindow(string databaseDisplayName, bool isSettingPassword, bool isChanging)
+            : this(isSettingPassword, isChanging)
+        {
+            DatabaseNameText.Text = databaseDisplayName;
+            DatabaseNameText.Visibility = Visibility.Visible;
+        }
+
+        // Original constructor
         public GatePasswordWindow(bool isSettingPassword, bool isChanging)
         {
             InitializeComponent();
@@ -20,9 +29,10 @@ namespace Protes.Views
 
             if (!_isSettingPassword)
             {
-                // Unlock only
+                // 🔓 Unlock mode
                 Title = "Unlock Database";
                 InstructionText.Text = "Enter password to unlock:";
+                RemovePasswordButton.Visibility = Visibility.Collapsed;
                 ConfirmText.Visibility = Visibility.Collapsed;
                 PasswordBox2.Visibility = Visibility.Collapsed;
                 PasswordText2.Visibility = Visibility.Collapsed;
@@ -30,9 +40,10 @@ namespace Protes.Views
             }
             else if (_isChanging)
             {
-                // Change or remove
+                // 🔐 Password Settings mode (change/remove)
                 Title = "Database Password";
-                InstructionText.Text = "New password (leave blank to remove):";
+                InstructionText.Text = "Set a new password:";
+                RemovePasswordButton.Visibility = Visibility.Visible;
                 ConfirmText.Visibility = Visibility.Visible;
                 PasswordBox2.Visibility = Visibility.Visible;
                 PasswordText2.Visibility = Visibility.Visible;
@@ -40,9 +51,10 @@ namespace Protes.Views
             }
             else
             {
-                // Initial setup
+                // ✅ Initial set mode
                 Title = "Set Database Password";
-                InstructionText.Text = "Enter a password:";
+                InstructionText.Text = "Set a password:";
+                RemovePasswordButton.Visibility = Visibility.Collapsed;
                 ConfirmText.Visibility = Visibility.Visible;
                 PasswordBox2.Visibility = Visibility.Visible;
                 PasswordText2.Visibility = Visibility.Visible;
@@ -52,138 +64,101 @@ namespace Protes.Views
             ShowPasswordCheckBox.IsChecked = false;
         }
 
-        private void OnShowPasswordChanged(object sender, RoutedEventArgs e)
+        private void RemovePasswordButton_Click(object sender, RoutedEventArgs e)
         {
-            bool show = ShowPasswordCheckBox.IsChecked == true;
-
-            if (show)
+            var result = MessageBox.Show(
+                "Are you sure you want to remove database password protection?",
+                "Confirm Removal",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
             {
-                // Copy password → text
-                PasswordText1.Text = PasswordBox1.Password;
-                PasswordText2.Text = PasswordBox2.Password;
-
-                // Hide PasswordBox, show TextBox
-                PasswordBox1.Visibility = Visibility.Collapsed;
-                PasswordBox2.Visibility = Visibility.Collapsed;
-                PasswordText1.Visibility = Visibility.Visible;
-                PasswordText2.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                // Copy text → password
-                PasswordBox1.Password = PasswordText1.Text;
-                PasswordBox2.Password = PasswordText2.Text;
-
-                // Hide TextBox, show PasswordBox
-                PasswordText1.Visibility = Visibility.Collapsed;
-                PasswordText2.Visibility = Visibility.Collapsed;
-                PasswordBox1.Visibility = Visibility.Visible;
-                PasswordBox2.Visibility = Visibility.Visible;
+                WantsToRemovePassword = true;
+                DialogResult = true;
+                Close();
             }
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine("🔍 [GatePasswordWindow] OK button clicked");
-
-            // Read passwords from visible controls
-            string pwd1 = PasswordBox1.Visibility == Visibility.Visible
-                ? PasswordBox1.Password
-                : PasswordText1.Text;
-
-            string pwd2 = PasswordBox2.Visibility == Visibility.Visible
-                ? PasswordBox2.Password
-                : PasswordText2.Text;
-
-            System.Diagnostics.Debug.WriteLine($"🔍 pwd1 = '{pwd1}' (length: {pwd1?.Length ?? 0})");
-            System.Diagnostics.Debug.WriteLine($"🔍 pwd2 = '{pwd2}' (length: {pwd2?.Length ?? 0})");
-            System.Diagnostics.Debug.WriteLine($"🔍 _isSettingPassword = {_isSettingPassword}");
-            System.Diagnostics.Debug.WriteLine($"🔍 _isChanging = {_isChanging}");
-
             try
             {
                 if (!_isSettingPassword)
                 {
-                    // 🔓 Unlock mode
-                    System.Diagnostics.Debug.WriteLine("🔓 Entering UNLOCK mode logic");
+                    // 🔓 Unlock
+                    string pwd = PasswordBox1.Visibility == Visibility.Visible
+                        ? PasswordBox1.Password
+                        : PasswordText1.Text;
 
-                    if (string.IsNullOrWhiteSpace(pwd1))
+                    if (string.IsNullOrWhiteSpace(pwd))
                     {
-                        System.Diagnostics.Debug.WriteLine("❌ Password is empty in UNLOCK mode");
+                        MessageBox.Show("Password cannot be empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    Password = pwd;
+                }
+                else
+                {
+                    // 🔐 Set new password (no removal via empty field — handled by Remove button)
+                    string newPwd = PasswordBox1.Visibility == Visibility.Visible
+                        ? PasswordBox1.Password
+                        : PasswordText1.Text;
+
+                    string confirmPwd = PasswordBox2.Visibility == Visibility.Visible
+                        ? PasswordBox2.Password
+                        : PasswordText2.Text;
+
+                    if (string.IsNullOrWhiteSpace(newPwd))
+                    {
                         MessageBox.Show("Password cannot be empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
 
-                    Password = pwd1;
-                    System.Diagnostics.Debug.WriteLine("✅ Unlock password captured successfully");
-                }
-                else
-                {
-                    // 🔐 Set or change password
-                    System.Diagnostics.Debug.WriteLine("🔐 Entering SET/CHANGE password logic");
-
-                    if (string.IsNullOrWhiteSpace(pwd1))
+                    if (newPwd != confirmPwd)
                     {
-                        System.Diagnostics.Debug.WriteLine("⚠️ Password is empty → checking if REMOVE is allowed");
-
-                        if (_isChanging)
-                        {
-                            System.Diagnostics.Debug.WriteLine("🗑️ REMOVE password requested");
-                            WantsToRemovePassword = true;
-                        }
-                        else
-                        {
-                            System.Diagnostics.Debug.WriteLine("❌ Empty password not allowed in SET mode");
-                            MessageBox.Show("Password cannot be empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                            return;
-                        }
+                        MessageBox.Show("Passwords do not match.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
                     }
-                    else
+
+                    Password = newPwd;
+
+                    if (!_isChanging)
                     {
-                        // ✅ Password provided — validate match
-                        System.Diagnostics.Debug.WriteLine("✅ Non-empty password provided");
-
-                        if (pwd1 != pwd2)
-                        {
-                            System.Diagnostics.Debug.WriteLine("❌ Passwords do not match");
-                            MessageBox.Show("Passwords do not match.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        var result = MessageBox.Show(
+                            "⚠️ DISCLAIMER:\nThis feature offers basic obfuscation only. " +
+                            "It is not a substitute for file encryption or system-level security.",
+                            "Security Notice", MessageBoxButton.OKCancel, MessageBoxImage.Warning);
+                        if (result == MessageBoxResult.Cancel)
                             return;
-                        }
-
-                        Password = pwd1;
-                        System.Diagnostics.Debug.WriteLine("✅ Passwords match — proceeding");
-
-                        // Show disclaimer only on first set or change
-                        if (!_isChanging)
-                        {
-                            System.Diagnostics.Debug.WriteLine("ℹ️ Showing security disclaimer (first-time set)");
-                            var result = MessageBox.Show(
-                                "⚠️ DISCLAIMER:\n" +
-                                "This feature offers basic obfuscation only. " +
-                                "It is not a substitute for file encryption or system-level security.",
-                                "Security Notice", MessageBoxButton.OKCancel, MessageBoxImage.Warning);
-                            if (result == MessageBoxResult.Cancel)
-                            {
-                                System.Diagnostics.Debug.WriteLine("❌ User canceled after disclaimer");
-                                return;
-                            }
-                        }
                     }
                 }
 
-                // ✅ All validation passed — set DialogResult and close
-                System.Diagnostics.Debug.WriteLine("✅ All logic passed — setting DialogResult = true");
                 DialogResult = true;
-                System.Diagnostics.Debug.WriteLine("CloseOperation: Close() called");
                 Close();
             }
             catch (Exception ex)
             {
-                // 🔥 Catch any unexpected exception
-                System.Diagnostics.Debug.WriteLine($"💥 UNEXPECTED EXCEPTION in OkButton_Click: {ex}");
-                MessageBox.Show($"An unexpected error occurred:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"An error occurred:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 DialogResult = false;
                 Close();
+            }
+        }
+
+        private void OnShowPasswordChanged(object sender, RoutedEventArgs e)
+        {
+            bool show = ShowPasswordCheckBox.IsChecked == true;
+
+            // Toggle New Password
+            PasswordText1.Text = PasswordBox1.Password;
+            PasswordText1.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            PasswordBox1.Visibility = show ? Visibility.Collapsed : Visibility.Visible;
+
+            // Toggle Confirm Password (only if visible)
+            if (_isSettingPassword)
+            {
+                PasswordText2.Text = PasswordBox2.Password;
+                PasswordText2.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+                PasswordBox2.Visibility = show ? Visibility.Collapsed : Visibility.Visible;
             }
         }
 

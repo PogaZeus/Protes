@@ -388,6 +388,7 @@ namespace Protes
             _settings.SetDatabaseMode(DatabaseMode.Local);
             _settings.LastLocalDatabasePath = databasePath;
 
+            // ✅ Use the SAME table existence check as in Connect_Click
             try
             {
                 using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
@@ -406,27 +407,25 @@ namespace Protes
                     }
                 }
 
+                // 🔄 Now use the standard connection flow (which includes Gate check)
                 if (_isConnected && _settings.AutoDisconnectOnSwitch)
                 {
-                    _isConnected = false;
+                    Disconnect_Click(this, new RoutedEventArgs());
                 }
 
-                _noteRepository = new SqliteNoteRepository(_databasePath);
-                LoadNotesFromDatabase();
-                _isConnected = true;
-                _connectedMode = DatabaseMode.Local;
-                NotesDataGrid.Visibility = Visibility.Visible;
-                DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
-                LoadAvailableDatabases(); // ✅ Always refresh after switching DB
-                UpdateStatusBar();
-                UpdateButtonStates();
+                // Reassign mode and path
+                _currentMode = DatabaseMode.Local;
+                _databasePath = databasePath;
+
+                // ✅ This will call FinishConnection → which checks GateEntry!
+                Connect_Click(this, new RoutedEventArgs());
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to connect to local database:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
                 _isConnected = false;
                 _connectedMode = DatabaseMode.None;
-                LoadAvailableDatabases(); // ✅ Still in Local mode context
+                LoadAvailableDatabases();
                 UpdateButtonStates();
                 UpdateStatusBar();
             }
@@ -1200,7 +1199,11 @@ namespace Protes
             else if (_isGateLocked)
             {
                 // === UNLOCK ===
-                var pwdWindow = new GatePasswordWindow(isSettingPassword: false, isChanging: false);
+                string dbName = _currentMode == DatabaseMode.Local
+    ? Path.GetFileName(_databasePath)
+    : $"{_settings.External_Host}/{_settings.External_Database}";
+
+                var pwdWindow = new GatePasswordWindow(dbName, isSettingPassword: false, isChanging: false);
                 pwdWindow.Owner = this;
                 if (pwdWindow.ShowDialog() != true)
                     return;
@@ -1244,11 +1247,16 @@ namespace Protes
 
         private void GateSettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            var pwdWindow = new GatePasswordWindow(isSettingPassword: true, isChanging: true);
+            string dbName = _currentMode == DatabaseMode.Local
+                ? Path.GetFileName(_databasePath)
+                : $"{_settings.External_Host}/{_settings.External_Database}";
+
+            var pwdWindow = new GatePasswordWindow(dbName, isSettingPassword: true, isChanging: true);
             if (pwdWindow.ShowDialog() == true)
             {
                 if (pwdWindow.WantsToRemovePassword)
                 {
+                    // ✅ Simply drop the table — no password validation needed
                     try
                     {
                         string dropCmd = "DROP TABLE EntryGate";
@@ -1283,13 +1291,13 @@ namespace Protes
                 }
                 else if (!string.IsNullOrWhiteSpace(pwdWindow.Password))
                 {
+                    // ✅ Set new password — no current password check
                     string hash = HashPassword(pwdWindow.Password);
                     SaveGateState(hash, isLocked: _isGateLocked);
                     MessageBox.Show("Password updated.", "Gate Entry", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
         }
-
         private void ShowGatePlaceholder(string message)
         {
             NotesDataGrid.Visibility = Visibility.Collapsed;
