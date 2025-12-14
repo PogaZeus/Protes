@@ -363,6 +363,15 @@ namespace Protes
                 Save();
             }
         }
+        public bool ViewToolbarCalculator
+        {
+            get => global::Protes.Properties.Settings.Default.ViewToolbarCalculator;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ViewToolbarCalculator = value;
+                Save();
+            }
+        }
 
         public bool ViewToolbarImpEx
         {

@@ -1576,6 +1576,7 @@ public void UpdateToolbarIconVisibility()
     NoteToolsGroup.Visibility = _settings.ViewToolbarNoteTools ? Visibility.Visible : Visibility.Collapsed;
     CopyPasteGroup.Visibility = _settings.ViewToolbarCopyPaste ? Visibility.Visible : Visibility.Collapsed;
     SearchGroup.Visibility = _settings.ViewToolbarSearch ? Visibility.Visible : Visibility.Collapsed;
+    CalculatorGroup.Visibility = _settings.ViewToolbarCalculator ? Visibility.Visible : Visibility.Collapsed;
     CatButtonGroup.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
 
     bool shouldShowGateGroup = _hasGatePassword || _settings.ViewToolbarGateEntry;
@@ -1688,12 +1689,20 @@ public void UpdateToolbarIconVisibility()
             UpdateToolbarIconVisibility();
         }
 
+        private void ViewToolbarCalcMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewToolbarCalculator = ViewToolbarCalcMenuItem.IsChecked == true;
+            _settings.Save();
+            UpdateToolbarIconVisibility();
+        }
+
         private void ViewToolbarGateEntryMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarGateEntry = ViewToolbarGateEntryMenuItem.IsChecked == true;
             _settings.Save();
             UpdateToolbarIconVisibility();
         }
+
         #endregion
 
         #region Zoom Controls
@@ -3175,6 +3184,31 @@ public void UpdateToolbarIconVisibility()
                 }
                 UpdateButtonStates();
             }
+        }
+        private void CalculatorButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_isConnected)
+            {
+                MessageBox.Show("Please connect to a database first.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            bool isEditable = !_isGateLocked;
+            var recentNotes = _fullNotesCache
+                .OrderByDescending(n => DateTime.Parse(n.LastModified))
+                .Take(10)
+                .ToList();
+            var calc = new CalculatorWindow(_noteRepository, recentNotes, isEditable, () => LoadNotesFromDatabase());
+            calc.Show(); 
+        }
+        protected override void OnActivated(EventArgs e)
+        {
+            // Prevent minimize-to-tray from being triggered by reactivation
+            if (WindowState == WindowState.Minimized && _settings.MinimizeToTray)
+            {
+                // But still allow user-initiated minimize
+                // So do nothing here — just avoid Hide() on reactivation
+            }
+            base.OnActivated(e);
         }
         private void OpenCatWindow_Click(object sender, RoutedEventArgs e)
         {

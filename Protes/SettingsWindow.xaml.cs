@@ -69,7 +69,9 @@ namespace Protes.Views
             ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
             ViewToolbarImpExMenuItem.IsChecked = _settings.ViewToolbarImpEx;
             ViewToolbarSearchMenuItem.IsChecked = _settings.ViewToolbarSearch;
+            ViewToolbarCalcMenuItem.IsChecked = _settings.ViewToolbarCalculator;
             ViewToolbarGateEntryMenuItem.IsChecked = _settings.ViewToolbarGateEntry;
+
 
             //Systray
             LaunchOnStartupCheckBox.IsChecked = _settings.LaunchOnStartup;
@@ -1101,6 +1103,12 @@ namespace Protes.Views
         private void ViewToolbarSearchMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarSearch = ViewToolbarSearchMenuItem.IsChecked == true;
+            _settings.Save();
+            _mainWindow?.UpdateToolbarIconVisibility();
+        }
+        private void ViewToolbarCalcMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.ViewToolbarCalculator = ViewToolbarCalcMenuItem.IsChecked == true;
             _settings.Save();
             _mainWindow?.UpdateToolbarIconVisibility();
         }

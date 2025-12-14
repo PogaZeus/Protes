@@ -144,6 +144,7 @@
                     <MenuItem x:Name="ViewToolbarNoteToolsMenuItem" Header="Note Tools (New/Edit/Select/Delete)" IsCheckable="True" Checked="ViewToolbarNoteToolsMenuItem_Checked" Unchecked="ViewToolbarNoteToolsMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarCopyPasteMenuItem" Header="Copy/Paste Buttons" IsCheckable="True" Checked="ViewToolbarCopyPasteMenuItem_Checked" Unchecked="ViewToolbarCopyPasteMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarSearchMenuItem" Header="Search Database" IsCheckable="True" Checked="ViewToolbarSearchMenuItem_Checked" Unchecked="ViewToolbarSearchMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarCalcMenuItem" Header="Calculator" IsCheckable="True" Checked="ViewToolbarCalcMenuItem_Checked" Unchecked="ViewToolbarCalcMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarGateEntryMenuItem" Header="Gate Entry (Lock/Settings)" IsCheckable="True" Checked="ViewToolbarGateEntryMenuItem_Checked" Unchecked="ViewToolbarGateEntryMenuItem_Checked"/>
                 </MenuItem>
             </MenuItem>
@@ -159,9 +160,9 @@
 
             <!-- Connect / Disconnect -->
             <StackPanel x:Name="ConnectDisconnectGroup" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="ConnectIconBtn" Content="🔌" FontSize="16" Width="32" Height="32"
+                <Button x:Name="ConnectIconBtn" Content="🔌" Padding="6,5" FontSize="16" 
             ToolTip="Connect" Click="Connect_Click" Margin="0,0,8,0"/>
-                <Button x:Name="DisconnectIconBtn" Content="🚫" FontSize="16" Width="32" Height="32"
+                <Button x:Name="DisconnectIconBtn" Content="🚫" Padding="6,5" FontSize="16" 
             ToolTip="Disconnect" Click="Disconnect_Click" Margin="0,0,8,0"/>
             </StackPanel>
 
@@ -180,7 +181,7 @@
             <!-- Settings -->
             <StackPanel x:Name="SettingsGroup" Orientation="Horizontal" VerticalAlignment="Center">
                 <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
-                <Button x:Name="SettingsIconBtn" Content="⚙️" FontSize="16" Width="32" Height="32"
+                <Button x:Name="SettingsIconBtn" Content="⚙️" Padding="6,5" FontSize="16" 
             ToolTip="Settings" Click="OpenSettings_Click" Margin="0,0,8,0"/>
             </StackPanel>
 
@@ -189,7 +190,7 @@
                 <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
                 <TextBlock x:Name="DatabaseModeLabel" Text="Local:" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <ComboBox x:Name="DatabaseOrConnectionComboBox" MinWidth="150" Margin="0,0,8,0" VerticalContentAlignment="Center" Height="28"/>
-                <Button x:Name="LoadSelectedDbButton" Content="↻" FontSize="16" Width="32" Height="32"
+                <Button x:Name="LoadSelectedDbButton" Content="🔄" Padding="6,5" FontSize="16"
             ToolTip="Load Selected Database or Connection" Click="LoadSelectedDbButton_Click" Margin="0,0,8,0"/>
             </StackPanel>
 
@@ -240,7 +241,14 @@
             TextChanged="SearchBox_TextChanged"
             VerticalAlignment="Center" Margin="0,0,8,0"/>
             </StackPanel>
-
+            
+            <!-- Calculator -->
+            <StackPanel x:Name="CalculatorGroup" Orientation="Horizontal" VerticalAlignment="Center">
+                <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
+                <Button x:Name="CalculatorButton" Content="🔢"  Padding="6,5" FontSize="16"
+            Margin="0,0,8,0" ToolTip="Open Calculator" Click="CalculatorButton_Click"/>
+            </StackPanel>
+            
             <!-- Gate Entry -->
             <StackPanel x:Name="GateEntryGroup" Orientation="Horizontal" VerticalAlignment="Center">
                 <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
@@ -265,7 +273,7 @@
             <!-- Cat Button Group -->
             <StackPanel x:Name="CatButtonGroup" Orientation="Horizontal" VerticalAlignment="Center">
                 <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
-                <Button x:Name="CatButton" Content="🐾" FontSize="16" Padding="6,5" Margin="0,0,8,0"
+                <Button x:Name="CatButton" Content="🐾" Padding="6,5" FontSize="16" Margin="0,0,8,0"
             ToolTip="Open Cat Wisdom" Click="OpenCatWindow_Click"/>
             </StackPanel>
         </StackPanel>

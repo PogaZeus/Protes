@@ -383,6 +383,7 @@
                                 <CheckBox x:Name="ViewToolbarNoteToolsMenuItem" Content="Note Tools (New/Edit/Select/Delete)" Checked="ViewToolbarNoteToolsMenuItem_Checked" Unchecked="ViewToolbarNoteToolsMenuItem_Checked" Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarCopyPasteMenuItem" Content="Copy/Paste Buttons" Checked="ViewToolbarCopyPasteMenuItem_Checked" Unchecked="ViewToolbarCopyPasteMenuItem_Checked" Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarSearchMenuItem" Content="Search Database" Checked="ViewToolbarSearchMenuItem_Checked" Unchecked="ViewToolbarSearchMenuItem_Checked" Margin="0,5,0,0"/>
+                                <CheckBox x:Name="ViewToolbarCalcMenuItem" Content="Calculator" Checked="ViewToolbarCalcMenuItem_Checked" Unchecked="ViewToolbarCalcMenuItem_Checked" Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarGateEntryMenuItem" Content="Lock Database (Automatic if it has a password)" Checked="ViewToolbarGateEntryMenuItem_Checked" Unchecked="ViewToolbarGateEntryMenuItem_Checked" Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>

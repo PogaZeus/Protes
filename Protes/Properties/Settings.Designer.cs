@@ -598,5 +598,17 @@ namespace Protes.Properties {
                 this["ViewToolbarCopyPaste"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ViewToolbarCalculator {
+            get {
+                return ((bool)(this["ViewToolbarCalculator"]));
+            }
+            set {
+                this["ViewToolbarCalculator"] = value;
+            }
+        }
     }
 }

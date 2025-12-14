@@ -1,0 +1,182 @@
+﻿<Window x:Class="Protes.Views.CalculatorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Protes Calculator" 
+        Width="280"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="Segoe UI" 
+        FontSize="14"
+ResizeMode="CanMinimize">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="36"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="8"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="8"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Background="#F0F0F0" Margin="0,0,0,1">
+            <TextBlock Text="Protes Calculator" VerticalAlignment="Center" Margin="12,0"/>
+            <Button x:Name="HistoryToggleButton" 
+                    Padding="6,5" 
+                    Content="📜" 
+                    VerticalAlignment="Center" HorizontalAlignment="Right" 
+                    Margin="0,0,8,0"
+                    Click="HistoryToggleButton_Click"/>
+        </Grid>
+
+        <TextBox x:Name="DisplayBox" 
+                 Grid.Row="1" 
+                 Text="0" 
+                 HorizontalContentAlignment="Right" 
+                 IsReadOnly="True" 
+                 FontSize="20" 
+                 Height="40" 
+                 Margin="8,0"/>
+
+        <Grid Grid.Row="3" Margin="8,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Button Content="C" Click="Button_Click" Grid.Column="0"/>
+            <Button Content="CE" Click="Button_Click" Grid.Column="1"/>
+            <Button Content="%" Click="Button_Click" Grid.Column="2"/>
+            <Button Content="÷" Click="Button_Click" Grid.Column="3"/>
+        </Grid>
+
+        <Grid Grid.Row="4" Margin="8,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Button Content="7" Click="Button_Click" Grid.Column="0"/>
+            <Button Content="8" Click="Button_Click" Grid.Column="1"/>
+            <Button Content="9" Click="Button_Click" Grid.Column="2"/>
+            <Button Content="×" Click="Button_Click" Grid.Column="3"/>
+        </Grid>
+
+        <Grid Grid.Row="5" Margin="8,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Button Content="4" Click="Button_Click" Grid.Column="0"/>
+            <Button Content="5" Click="Button_Click" Grid.Column="1"/>
+            <Button Content="6" Click="Button_Click" Grid.Column="2"/>
+            <Button Content="-" Click="Button_Click" Grid.Column="3"/>
+        </Grid>
+
+        <Grid Grid.Row="6" Margin="8,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Button Content="1" Click="Button_Click" Grid.Column="0"/>
+            <Button Content="2" Click="Button_Click" Grid.Column="1"/>
+            <Button Content="3" Click="Button_Click" Grid.Column="2"/>
+            <Button Content="+" Click="Button_Click" Grid.Column="3"/>
+        </Grid>
+
+        <!-- ✅ FIXED BOTTOM ROW: 4 buttons in 4 columns -->
+        <Grid Grid.Row="7" Margin="8,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Button Content="±" Click="Button_Click" Grid.Column="0"/>
+            <Button Content="0" Click="Button_Click" Grid.Column="1"/>
+            <Button Content="." Click="Button_Click" Grid.Column="2"/>
+            <Button Content="=" Click="Button_Click" Grid.Column="3"/>
+        </Grid>
+
+        <Grid Grid.Row="9" Margin="5,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <ComboBox x:Name="InsertToComboBox" 
+                      Grid.Column="0"
+                      SelectedIndex="0"
+                      IsEnabled="{Binding IsEditable, RelativeSource={RelativeSource AncestorType=Window}}"/>
+            <Button Grid.Column="1"
+                    Content="➡️" 
+                    Padding="6,5"
+                    Click="InsertButton_Click" 
+                    Margin="4,0,0,0"
+             ToolTip="Insert calculation into selected note"
+                    IsEnabled="{Binding IsEditable, RelativeSource={RelativeSource AncestorType=Window}}"/>
+            <Button x:Name="NewNoteButton" 
+                Grid.Column="2"
+                Content="➕" 
+                Padding="6,5"
+                Click="NewNoteButton_Click" 
+                 ToolTip="Create new note from last calculation"
+                Margin="4,0,0,0"
+                IsEnabled="{Binding IsEditable, RelativeSource={RelativeSource AncestorType=Window}}"/>
+        </Grid>
+
+        <Border x:Name="HistoryPanel"
+                Grid.Row="0" Grid.RowSpan="13"
+                Visibility="Collapsed"
+                Background="White"
+                BorderBrush="Gray" BorderThickness="1"
+                Margin="0,30,0,0"
+                Panel.ZIndex="10">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="8" Opacity="0.3"/>
+            </Border.Effect>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="History" FontWeight="Bold" Margin="8,4"/>
+                <ScrollViewer Grid.Row="1" MaxHeight="250" Margin="0,0,0,8">
+                    <StackPanel x:Name="HistoryStackPanel"/>
+                </ScrollViewer>
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="8">
+                    <Button Content="➕" 
+        ToolTip="Save full history as new note"
+        IsEnabled="{Binding IsEditable, RelativeSource={RelativeSource AncestorType=Window}}"
+        Click="SaveHistoryAsNoteButton_Click"/>
+                    <Button Content="🗑️" 
+                            Padding="6,5" 
+                            ToolTip="Clear all history"
+                            Click="ClearHistoryButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
