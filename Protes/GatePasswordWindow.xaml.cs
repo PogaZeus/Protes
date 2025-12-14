@@ -124,12 +124,23 @@ namespace Protes.Views
 
                     if (!_isChanging)
                     {
-                        var result = MessageBox.Show(
-                            "⚠️ DISCLAIMER:\nThis feature offers basic obfuscation only. " +
-                            "It is not a substitute for file encryption or system-level security.",
-                            "Security Notice", MessageBoxButton.OKCancel, MessageBoxImage.Warning);
-                        if (result == MessageBoxResult.Cancel)
-                            return;
+                        var settings = new SettingsManager();
+                        if (settings.ShowGateEntryWarning)
+                        {
+                            var warningWindow = new SecurityWarningWindow();
+                            warningWindow.Owner = this;
+                            if (warningWindow.ShowDialog() != true)
+                            {
+                                return; // User clicked Cancel
+                            }
+
+                            // Save user preference
+                            if (warningWindow.UserChoseNotToShowAgain)
+                            {
+                                settings.ShowGateEntryWarning = false;
+                                settings.Save();
+                            }
+                        }
                     }
                 }
 

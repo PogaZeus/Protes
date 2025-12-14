@@ -917,50 +917,6 @@ namespace Protes
             return false;
         }
 
-        private void EnsureGateTableExists()
-        {
-            if (!DoesGateTableExist())
-            {
-                try
-                {
-                    if (_currentMode == DatabaseMode.Local)
-                    {
-                        using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
-                        {
-                            conn.Open();
-                            using (var cmd = new SQLiteCommand(@"
-                        CREATE TABLE EntryGate (
-                            Sp00ns TEXT,
-                            IsL0ck3d INTEGER DEFAULT 1
-                        )", conn))
-                            {
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        using (var conn = new MySqlConnection(_externalConnectionString))
-                        {
-                            conn.Open();
-                            using (var cmd = new MySqlCommand(@"
-                        CREATE TABLE EntryGate (
-                            Sp00ns TEXT,
-                            IsL0ck3d TINYINT(1) DEFAULT 1
-                        )", conn))
-                            {
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to create EntryGate table:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
         private string HashPassword(string password)
         {
             if (string.IsNullOrEmpty(password)) return "";

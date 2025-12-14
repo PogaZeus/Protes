@@ -610,5 +610,17 @@ namespace Protes.Properties {
                 this["ViewToolbarCalculator"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ShowGateEntryWarning {
+            get {
+                return ((bool)(this["ShowGateEntryWarning"]));
+            }
+            set {
+                this["ShowGateEntryWarning"] = value;
+            }
+        }
     }
 }

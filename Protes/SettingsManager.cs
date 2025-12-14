@@ -154,7 +154,9 @@ namespace Protes
                 Save();
             }
         }
+        #endregion
 
+        #region Notifications
         public bool NotifyDeleted
         {
             get => global::Protes.Properties.Settings.Default.NotifyDeleted;
@@ -184,7 +186,15 @@ namespace Protes
                 Save();
             }
         }
-
+        public bool ShowGateEntryWarning
+        {
+            get => global::Protes.Properties.Settings.Default.ShowGateEntryWarning;
+            set
+            {
+                global::Protes.Properties.Settings.Default.ShowGateEntryWarning = value;
+                Save();
+            }
+        }
         #endregion
 
         #region Application Integration

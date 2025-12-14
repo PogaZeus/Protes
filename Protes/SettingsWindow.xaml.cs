@@ -1059,6 +1059,10 @@ namespace Protes.Views
         {
             _settings.NotifyPasted = NotifyPastedCheckBox.IsChecked == true;
         }
+        private void ShowGateEntryWarningCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            _settings.ShowGateEntryWarning = ShowGateEntryWarningCheckBox.IsChecked == true;
+        }
         #endregion
 
         #region Toolbar - Visibility & Icons

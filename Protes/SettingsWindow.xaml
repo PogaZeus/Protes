@@ -334,6 +334,12 @@
                                           Checked="NotifyPastedCheckBox_Changed"
                                           Unchecked="NotifyPastedCheckBox_Changed"
                                           Margin="0,5,0,0"/>
+                                <CheckBox x:Name="ShowGateEntryWarningCheckBox"
+                                          Content="Show security warning when locking database."
+                                         Checked="ShowGateEntryWarningCheckBox_Changed"
+                                          Unchecked="ShowGateEntryWarningCheckBox_Changed"
+                                         Margin="0,5,0,0"
+                                         ToolTip="Displays a detailed security disclaimer when setting a database password for the first time."/>
                             </StackPanel>
                         </GroupBox>
 
