@@ -988,7 +988,17 @@ namespace Protes
                             if (reader.Read())
                             {
                                 string pwd = reader["Sp00ns"]?.ToString() ?? "";
-                                bool locked = Convert.ToBoolean(reader["IsL0ck3d"]);
+                                var lockedValue = reader["IsL0ck3d"];
+                                bool locked = false;
+                                if (lockedValue is int i)
+                                {
+                                    locked = i != 0;
+                                }
+                                // SQLite may also return long in some cases
+                                else if (lockedValue is long l)
+                                {
+                                    locked = l != 0;
+                                }
                                 string salt = reader["EncryptionSalt"]?.ToString() ?? "";
                                 return (pwd, locked, salt);
                             }
@@ -1006,7 +1016,24 @@ namespace Protes
                             if (reader.Read())
                             {
                                 string pwd = reader["Sp00ns"]?.ToString() ?? "";
-                                bool locked = Convert.ToBoolean(reader["IsL0ck3d"]);
+                                var lockedValue = reader["IsL0ck3d"];
+                                bool locked = false;
+                                if (lockedValue is byte b)
+                                {
+                                    locked = b != 0;
+                                }
+                                else if (lockedValue is sbyte sb)
+                                {
+                                    locked = sb != 0;
+                                }
+                                else if (lockedValue is int i)
+                                {
+                                    locked = i != 0;
+                                }
+                                else if (lockedValue is long l)
+                                {
+                                    locked = l != 0;
+                                }
                                 string salt = reader["EncryptionSalt"]?.ToString() ?? "";
                                 return (pwd, locked, salt);
                             }
@@ -1016,7 +1043,7 @@ namespace Protes
             }
             catch
             {
-                // ignore
+                // Ignore errors (e.g., table schema mismatch, connection loss)
             }
             return ("", false, "");
         }
