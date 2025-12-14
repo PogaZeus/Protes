@@ -1,9 +1,9 @@
 # 🌟 **[Protes] Pro Notes Database**  
-> **A lightweight, privacy-first note-taking app with database power, built for developers and power users.**
+> **A lightweight, privacy-first note-taking app with database power — built for developers, tinkerers, and anyone who’s tired of juggling endless `.txt` files.**
 
-[![.NET Framework](https://img.shields.io/badge/.NET%204.7.2-512BD4?logo=.net&logoColor=white)](https://dotnet.microsoft.com/)
-[![WPF](https://img.shields.io/badge/WPF-3399FF?logo=windows&logoColor=white)](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/)
-[![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![.NET Framework](https://img.shields.io/badge/.NET%204.7.2-512BD4?logo=.net&logoColor=white)](https://dotnet.microsoft.com/)  
+[![WPF](https://img.shields.io/badge/WPF-3399FF?logo=windows&logoColor=white)](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/)  
+[![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)  
 [![Local First](https://img.shields.io/badge/Local%20First-00C853?logo=offline&logoColor=white)](https://localfirstweb.dev/)
 
 ---
@@ -15,74 +15,90 @@ Tired of managing hundreds of scattered `.txt` files? **Protes** brings that fam
 Think of it as **Notepad, upgraded**:  
 - Your notes live in a clean, searchable database (`.db` or `.prote`).  
 - The **Note Editor** looks and feels like classic Notepad—but now with persistence, tagging, and instant access.  
-- **Import entire folders** of `.txt`, `.md`, or `.csv` files in seconds.  
-- **Export any note** back to `.txt` or `.md` anytime—perfect for sharing or backup.  
-- Double-click a `.prote` file to **open it instantly**—Protes will auto-import and load it if needed.
+- **Import entire folders** of `.txt`, `.md`, or `.csv` files in seconds—perfect for migrating from legacy systems.  
+- **Export any note** back to `.txt` or `.md` anytime—ideal for sharing, backup, or version control.  
+- Double-click a `.prote` file to **open it instantly**—Protes auto-imports and loads it if needed.
 
-And because this is open source—you can **help shape its future**!
+And because this is open source—you can **help shape its future** by getting involved!
+OR perhaps you want to copy this project and make your own?! 
 
-### 🔒 **Privacy & Control**
-- **100% local by default** — your notes never leave your machine unless you choose to connect externally.
-- **Optional MySQL/External DB support** — sync across devices securely when needed.
-- **No telemetry, no cloud, no bloat** — just your notes, your rules.
-- **Scan for Txt, Md or CSV files** — just your notes, your rules.
+### 🔒 **Privacy & Control — Now with Gate Entry Lock & Encryption**
+- **100% local by default** — your notes never leave your machine unless you choose to connect externally.  
+- **Optional MySQL/External DB support** — sync across devices securely when needed.  
+- **No telemetry, no cloud, no bloat** — just your notes, your rules.  
+- **🛡️ Gate Entry System**: Protect your database with a password. When locked, no notes are loaded or decrypted.  
+- **🔑 AES-256 Encryption**: Encrypt *entire notes* (title, tags, and content) with a key derived from your password + salt. Encrypted notes appear as `[Encrypted Data]` in the UI.  
+- **🔐 Transparent security warnings**: Clear alerts and warnings about the potential dangers of password loss..  
+- **🧾 Full audit trail**: Encryption state is always visible—never guess whether your data is secure.
 
-### 🧰 **Powerful UI**
-- **Fully customizable toolbar** — show/hide Connect, Local DB, ACOS, Import/Export, Search, and an easter egg to find!.
-- **Real-time UI updates** — toggle settings anywhere (menu, SettingsWindow) and see changes **instantly** — no restart required.
-- **System tray integration** — minimize to tray, close to tray, or quit fully. Your choice.
-- **Easter eggs & fun** — 2 clicks away from an extra fun button!
+### 🧰 **Powerful, Polished (but basic) UI**
+- **Fully customizable toolbar** — show/hide Connect, Local DB, ACOS, Import/Export, Search, Lock Tool, and more via Settings.  
+- **Real-time UI updates** — toggle settings anywhere (menu, SettingsWindow) and see changes **instantly** — no restart required.  
+- **System tray integration** — minimize to tray, close to tray, or quit fully. Your choice.  
+- **Right-click context menus everywhere** — including database switching and external profile management.  
+- **Easter eggs & fun** — 2 clicks away from an extra surprise button!
 
 ### 🎨 **Personalized Experience**
-- **Per-window font settings**:
-  - `MainWindow`: Database View of your notes, Independent control over `FontFamily`
-  - `NoteEditorWindow`: Same as oldschool Notepad (better font picker?)
-- **Zoomable DataGrid** - instead of Font size (MainWindow)
-- **Persistent UI state** — column visibility, toolbar layout, window positions, and more saved between sessions.
+- **Per-window font settings**:  
+  - `MainWindow`: Database view with independent control over `FontFamily`, `FontWeight`, and `FontStyle`.  
+  - `NoteEditorWindow`: Classic Notepad feel—but with better font support and RTF-like editing.  
+- **Zoomable DataGrid** — adjust note list size with `Ctrl + / - / 0` (independent of font settings).  
+- **Persistent UI state** — customise the toolbar icons.
 
-### 📦 **Database Management**
-- **Local `.db` / `.prote` file support** — with auto-numbered exports to avoid overwrites (`Note.txt`, `Note(1).txt`, etc.).
-- **One-instance enforcement** — opening a `.prote` file activates the existing app window and prompts to switch databases.
-- **Database switching** — right-click system tray icon to switch between available local databases (with current DB marked).
-- **Safe file associations** — `.Prote` extension linked to your app.
+### 📦 **Smart Database Management**
+- **Local `.db` / `.prote` file support** — with auto-numbered exports (`Note.txt`, `Note(1).txt`, etc.) to prevent overwrites.  
+- **One-instance enforcement** — opening a `.prote` file activates the existing app window and prompts to switch databases.  
+- **Database switching** — right-click system tray icon or use the toolbar dropdown to switch between local or external databases.  
+- **Safe file associations** — `.prote` extension linked to your app for seamless double-click loading.  
+- **External DB profiles** — save and switch between multiple MySQL connections with one click.
 
-### ⌨️ **Efficiency & Workflow**
-- **Global keyboard shortcuts**:
-  - `Ctrl+N` — New note (works from tags/title/content boxes)
-  - `F3` / `Shift+F3` — Find next/previous
-  - `F5` — Insert current date & time
-  - `Ctrl +/- / 0` — Zoom in/out/reset
-- **Multi-select notes** — bulk copy, delete, or export.
-- **Inline editing** — edit title/tags directly in the DataGrid.
+### ⌨️ **Efficiency & Workflow in 'Pro Note' editor** 
+- **Global keyboard shortcuts**:  
+  - `Ctrl+N` — New note (works from any text field)  
+  - `F3` / `Shift+F3` — Find next/previous  
+  - `F5` — Insert current date & time  
+  - `Ctrl +/- / 0` — Zoom in/out/reset  
+- **Multi-select notes** — bulk copy, delete, export, or encrypt.  
+- **Inline editing** — edit title/tags directly in the DataGrid with confirmation prompts.  
+- **Send To integration** — right-click any text file → **Send to → Pro Note** to open it instantly in the editor.
+
+### ➗ **Calculator Integration**
+- **Built-in calculator toolbar button** — launches an oldschool style calculator.  
+- **History tracking** (last 100 calculations) with scrollable overlay.  
+- **Insert results as new notes** — with full expression shown (`5 × 5 × 5 = 125`) and auto-tagged as `calculator`.  
+- **Insert into existing notes** — choose from last 10 modified entries via dropdown.
 
 ---
 
 ## 🧩 **Architecture Highlights**
 
-- **.NET 4.7.2 + C# 7.3 + WPF** — clean, responsive, and maintainable.
-- **Single-instance app** — prevents duplicate windows; file opens trigger database switch prompts.
-- **SettingsManager** — wraps `Properties.Settings` with shared instance pattern for live sync across windows.
-- **Modular UI**:
-  - `MainWindow` — core app with DataGrid, toolbar, status bar.
-  - `NoteEditorWindow` — standalone rich-text editor (opens independently from tray).
-  - `SettingsWindow` — organized into **Application**, **Toolbar**, **Database**, **Notifications** tabs.
-  - `CatWindow` — hidden playful dialog (unlocked via Easter egg).
-- **Event-driven refresh** — `OnSettingsChanged` callbacks ensure instant UI updates without restarts.
+- **.NET 4.7.2 + C# 7.3 + WPF** — clean, responsive, and maintainable.  
+- **Single-instance app** — prevents duplicate windows; file opens trigger database switch prompts via named pipes (IPC).  
+- **SettingsManager** — wraps `Properties.Settings` with shared instance pattern for live sync across windows.  
+- **Modular UI**:  
+  - `MainWindow` — core app with DataGrid, dynamic toolbar, status bar, and Gate Entry logic.  
+  - `NoteEditorWindow` — standalone rich-text editor (opens independently from tray or Send To).  
+  - `SettingsWindow` — organized into tabs.  
+  - `CalculatorWindow` — full-featured calculator with note integration.  
+- **Event-driven refresh** — `OnSettingsChanged` callbacks ensure instant UI updates without restarts.  
+- **Repository pattern** — abstracted data access supports both SQLite and MySQL with zero code duplication.
 
 ---
 
 ## 📁 **File Structure (Key Files)**
 
-```
+```text
 Protes/
-├── MainWindow.xaml.cs          # Core app logic, toolbar, DataGrid, event handlers
-├── NoteEditorWindow.xaml.cs    # Standalone note editor (opens from tray/menu)
+├── MainWindow.xaml.cs          # Core app logic, toolbar, DataGrid, Gate Entry, IPC
+├── NoteEditorWindow.xaml.cs    # Standalone note editor (opens from tray/menu/Send To)
 ├── SettingsWindow.xaml.cs      # Unified settings with live preview & save
+├── CalculatorWindow.xaml.cs    # Windows-style calculator with note integration
 ├── CatWindow.xaml.cs           # Easter egg window with toolbar toggle
 ├── AboutWindow.xaml.cs         # About dialog
 ├── SettingsManager.cs          # Wrapper for user settings (shared instance)
-├── Models/                     # NoteItem, FullNote, DbFileInfo
-├── Services/                   # INoteRepository, SQLite/MySQL implementations
+├── Models/                     # NoteItem, FullNote, DbFileInfo, ExternalDbProfile
+├── Services/                   # INoteRepository, SqliteNoteRepository, MySqlNoteRepository
+├── EncryptionService.cs        # AES-256 + HMAC + PBKDF2 key derivation
 └── Assets/
     ├── Protes_W_Trans.ico		# App icon
     ├── ProtesBlackBG.png       # About window background
@@ -91,19 +107,20 @@ Protes/
 
 ## 💖 Support This Project
 
-If you find Protes useful, consider:
-- ⭐ Starring the repo on [GitHub](https://github.com/PogaZeus)
+If you find Protes useful, consider:  
+- ⭐ Starring the repo on [GitHub](https://github.com/PogaZeus)  
 - ☕ Buying me a coffee via [PayPal](https://paypal.me/zxgaming)
+Please note this is my second C# application (3rd or 4th app if you count when I was young playing with C++) I made this because I wanted to prove to myself that I could but honestly without AI, I probably couldn't have made this (at least not in such short time), but because I am well versed in programming languages I was able to produce this in rapid succession (with help from AI). C# is rapidly becoming one of my favourite languages, I believe this is all c# 7.3 compatible, I am still a newbie to developing applications with such tools. Future apps will come but I plan to improve this app further. 
 ---
 
 ## 🎯 **Vision**
 
-> **Protes** is built for **you** — the note-taker, the self-taught creator who values control, simplicity, and likes Notepad but doesn't like 100's of text files. 
+> **Protes** is built for **you** — the note-taker, the self-taught creator who values control, simplicity, and likes Notepad but doesn’t like 100's of text files.  
 > It’s powered by SQLite, wrapped in a responsive WPF shell, and ready to grow with your workflow.
 
 ---
 
-## 📜 License
+## 📜 License  
 This project is licensed under the **MIT License** — see [LICENSE](LICENSE) for details.
 
 ---

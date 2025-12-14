@@ -148,6 +148,7 @@ namespace Protes.Views
 
             var uniqueFiles = dbFiles.GroupBy(f => f.FullPath).Select(g => g.First()).ToList();
             LocalDbList.ItemsSource = uniqueFiles;
+            _mainWindow.LoadAvailableDatabases();
         }
 
         private void LocalDbList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -281,6 +282,7 @@ namespace Protes.Views
             if (selectedItem != null)
             {
                 SwitchToDatabase(selectedItem.FullPath);
+                _mainWindow.LoadAvailableDatabases();
             }
         }
 
