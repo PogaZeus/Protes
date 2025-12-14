@@ -105,6 +105,7 @@
     <Compile Include="CatWindow.xaml.cs">
       <DependentUpon>CatWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="EncryptionService.cs" />
     <Compile Include="ExportFromDBWindow.xaml.cs">
       <DependentUpon>ExportFromDBWindow.xaml</DependentUpon>
     </Compile>

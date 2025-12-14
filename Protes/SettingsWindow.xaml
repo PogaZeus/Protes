@@ -235,13 +235,11 @@
                     </Grid>
                 </ScrollViewer>
             </TabItem>
-
             <!-- APPLICATION TAB -->
             <TabItem Header="Application">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <Grid Margin="5">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -252,108 +250,129 @@
                         <GroupBox Grid.Row="0" Header="Application Settings" Margin="0,0,0,5">
                             <StackPanel>
                                 <CheckBox x:Name="LaunchOnStartupCheckBox"
-                                          Content="Launch Protes on Windows startup"
-                                          Checked="LaunchOnStartupCheckBox_Checked"
-                                          Unchecked="LaunchOnStartupCheckBox_Unchecked"
-                                          Margin="0,5,0,0"/>
+                              Content="Launch Protes on Windows startup"
+                              Checked="LaunchOnStartupCheckBox_Checked"
+                              Unchecked="LaunchOnStartupCheckBox_Unchecked"
+                              Margin="0,5,0,0"/>
                                 <CheckBox x:Name="MinimizeToSystemTray"
-                                          Content="Minimize to system tray instead of taskbar"
-                                          Checked="MinimizeToSystemTray_Checked"
-                                          Unchecked="MinimizeToSystemTray_Checked"
-                                          Margin="0,5,0,0"/>
-                                <!-- NEW SETTING -->
+                              Content="Minimize to system tray instead of taskbar"
+                              Checked="MinimizeToSystemTray_Checked"
+                              Unchecked="MinimizeToSystemTray_Checked"
+                              Margin="0,5,0,0"/>
                                 <CheckBox x:Name="CloseToSystemTray"
-                                          Content="Close to system tray instead of exiting"
-                                          Checked="CloseToSystemTray_Checked"
-                                          Unchecked="CloseToSystemTray_Checked"
-                                          Margin="0,5,0,0"/>
+                              Content="Close to system tray instead of exiting"
+                              Checked="CloseToSystemTray_Checked"
+                              Unchecked="CloseToSystemTray_Checked"
+                              Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
 
                         <GroupBox Grid.Row="1" Header="File Explorer &amp; Context Menu Integration" Margin="0,0,0,5">
                             <StackPanel>
                                 <CheckBox x:Name="ShellNewCheckBox"
-                                          Content="Add to Windows 'New' menu: 'Pro Note'"
-                                          Checked="ShellNewCheckBox_Checked"
-                                          Unchecked="ShellNewCheckBox_Unchecked"
-                                          Margin="0,5,0,0"/>
+                              Content="Add to Windows 'New' menu: 'Pro Note'"
+                              Checked="ShellNewCheckBox_Checked"
+                              Unchecked="ShellNewCheckBox_Unchecked"
+                              Margin="0,5,0,0"/>
                                 <CheckBox x:Name="SendToCheckBox"
-                                          Content="Add to Windows 'Send to' menu: 'Protes (Import)'"
-                                          Checked="SendToCheckBox_Checked"
-                                          Unchecked="SendToCheckBox_Unchecked"
-                                          Margin="0,5,0,0"/>
+                              Content="Add to Windows 'Send to' menu: 'Protes (Import)'"
+                              Checked="SendToCheckBox_Checked"
+                              Unchecked="SendToCheckBox_Unchecked"
+                              Margin="0,5,0,0"/>
                                 <CheckBox x:Name="SendToNoteEditorCheckBox"
-                                          Content="Add to Windows 'Send to' menu: 'Pro Note'"
-                                          Checked="SendToNoteEditorCheckBox_Checked"
-                                          Unchecked="SendToNoteEditorCheckBox_Unchecked"
-                                          Margin="0,5,0,5"/>
+                              Content="Add to Windows 'Send to' menu: 'Pro Note'"
+                              Checked="SendToNoteEditorCheckBox_Checked"
+                              Unchecked="SendToNoteEditorCheckBox_Unchecked"
+                              Margin="0,5,0,5"/>
                             </StackPanel>
-                            
                         </GroupBox>
 
                         <!-- Auto Connect -->
                         <GroupBox Grid.Row="2" Header="Connection Automation" Margin="0,0,0,5">
                             <StackPanel>
                                 <CheckBox x:Name="AutoConnectCheckBox"
-                                          Content="Auto-Connect when program launches"
-                                          Checked="AutoConnectCheckBox_Checked"
-                                          Unchecked="AutoConnectCheckBox_Checked"
-                                          Margin="0,5,0,0"/>
+                              Content="Auto-Connect when program launches"
+                              Checked="AutoConnectCheckBox_Checked"
+                              Unchecked="AutoConnectCheckBox_Checked"
+                              Margin="0,5,0,0"/>
                                 <CheckBox x:Name="AutoConnectOnSwitchCheckBox"
-                                          Content="Auto-Connect when switching database mode from options menu (ACOS)"
-                                          Checked="AutoConnectOnSwitchCheckBox_Checked"
-                                          Unchecked="AutoConnectOnSwitchCheckBox_Checked"
-                                          Margin="0,5,0,0"/>
+                              Content="Auto-Connect when switching database mode from options menu (ACOS)"
+                              Checked="AutoConnectOnSwitchCheckBox_Checked"
+                              Unchecked="AutoConnectOnSwitchCheckBox_Checked"
+                              Margin="0,5,0,0"/>
                                 <CheckBox x:Name="AutoDisconnectOnSwitchCheckBox"
-                                          Content="Disconnect when switching database mode (options menu)"
-                                          Checked="AutoDisconnectOnSwitchCheckBox_Checked"
-                                          Unchecked="AutoDisconnectOnSwitchCheckBox_Checked"
-                                          Margin="0,5,0,0"/>
+                              Content="Disconnect when switching database mode (options menu)"
+                              Checked="AutoDisconnectOnSwitchCheckBox_Checked"
+                              Unchecked="AutoDisconnectOnSwitchCheckBox_Checked"
+                              Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
 
-                        <GroupBox Grid.Row="3" Header="Notifications" Margin="0,0,0,5">
-                            <StackPanel>
-                                <CheckBox x:Name="ShowNotificationsCheckBox"
-                                          Content="Show connected/disconnected notifications"
-                                          Checked="ShowNotificationsCheckBox_Changed"
-                                          Unchecked="ShowNotificationsCheckBox_Changed"
-                                          Margin="0,5,0,0"/>
-                                <CheckBox x:Name="NotifyDeletedCheckBox"
-                                          Content="Show File(s) deleted successfully"
-                                          Checked="NotifyDeletedCheckBox_Changed"
-                                          Unchecked="NotifyDeletedCheckBox_Changed"
-                                          Margin="0,5,0,0"/>
-                                <CheckBox x:Name="NotifyCopiedCheckBox"
-                                          Content="Show File(s) copied successfully"
-                                          Checked="NotifyCopiedCheckBox_Changed"
-                                          Unchecked="NotifyCopiedCheckBox_Changed"
-                                          Margin="0,5,0,0"/>
-                                <CheckBox x:Name="NotifyPastedCheckBox"
-                                          Content="Show File(s) pasted successfully"
-                                          Checked="NotifyPastedCheckBox_Changed"
-                                          Unchecked="NotifyPastedCheckBox_Changed"
-                                          Margin="0,5,0,0"/>
-                                <CheckBox x:Name="ShowGateEntryWarningCheckBox"
-                                          Content="Show security warning when locking database."
-                                         Checked="ShowGateEntryWarningCheckBox_Changed"
-                                          Unchecked="ShowGateEntryWarningCheckBox_Changed"
-                                         Margin="0,5,0,0"
-                                         ToolTip="Displays a detailed security disclaimer when setting a database password for the first time."/>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <!-- ✅ MOVED HERE: Font group at the bottom of Application tab -->
-                        <GroupBox Grid.Row="4" Header="Main Window Font" Margin="0,0,0,5">
+                        <GroupBox Grid.Row="3" Header="Main Window Font" Margin="0,0,0,5">
                             <Button x:Name="MainWindowFontButton"
-                                    Content="Datagrid Font..."
-                                    HorizontalAlignment="Left"
-                                    Style="{StaticResource ConsistentButtonStyle}"
-                                    Click="MainWindowFontButton_Click"/>
+                        Content="Datagrid Font..."
+                        HorizontalAlignment="Left"
+                        Style="{StaticResource ConsistentButtonStyle}"
+                        Click="MainWindowFontButton_Click"/>
                         </GroupBox>
                     </Grid>
                 </ScrollViewer>
             </TabItem>
+
+            <!-- NEW NOTIFICATIONS TAB -->
+            <TabItem Header="Notifications">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <GroupBox Grid.Row="1" Header="Connection Notifications" Margin="0,0,0,5">
+                            <StackPanel>
+                                <CheckBox x:Name="ShowNotificationsCheckBox"
+                              Content="Show connected/disconnected notifications"
+                              Checked="ShowNotificationsCheckBox_Changed"
+                              Unchecked="ShowNotificationsCheckBox_Changed"
+                              Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
+                            
+                        <GroupBox Grid.Row="2" Header="Copy/Paste/Delete Notifications" Margin="0,0,0,5">
+                            <StackPanel>
+                                  <CheckBox x:Name="NotifyCopiedCheckBox"
+                              Content="Show File(s) copied successfully"
+                              Checked="NotifyCopiedCheckBox_Changed"
+                              Unchecked="NotifyCopiedCheckBox_Changed"
+                              Margin="0,5,0,0"/>
+                                <CheckBox x:Name="NotifyPastedCheckBox"
+                              Content="Show File(s) pasted successfully"
+                              Checked="NotifyPastedCheckBox_Changed"
+                              Unchecked="NotifyPastedCheckBox_Changed"
+                              Margin="0,5,0,0"/>
+                            <CheckBox x:Name="NotifyDeletedCheckBox"
+                            Content="Show File(s) deleted successfully"
+                            Checked="NotifyDeletedCheckBox_Changed"
+                            Unchecked="NotifyDeletedCheckBox_Changed"
+                            Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
+                            
+                        <GroupBox Grid.Row="3" Header="Warnings" Margin="0,0,0,5">
+                            <StackPanel>
+                            <CheckBox x:Name="ShowGateEntryWarningCheckBox"
+                              Content="Show security disclaimer when setting a database password (first time setup)."
+                              Checked="ShowGateEntryWarningCheckBox_Changed"
+                              Unchecked="ShowGateEntryWarningCheckBox_Changed"
+                              Margin="0,5,0,0"
+                              ToolTip="Displays a detailed security disclaimer when setting a database password for the first time."/>
+                            </StackPanel>
+                        </GroupBox>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
 
             <!-- NEW TOOLBAR TAB -->
             <TabItem Header="Toolbar">
@@ -364,7 +383,7 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <GroupBox Grid.Row="0" Header="Toolbar Visibility" Margin="0,0,0,10">
+                        <GroupBox Grid.Row="0" Header="Toolbar Visibility" Margin="0,0,0,5">
                             <StackPanel>
                                 <CheckBox x:Name="ViewToolbarMenuItem"
                                           Content="Show Toolbar"
@@ -379,7 +398,7 @@
                             </StackPanel>
                         </GroupBox>
 
-                        <GroupBox Grid.Row="1" Header="Toolbar Icons" Margin="0,0,0,0">
+                        <GroupBox Grid.Row="1" Header="Toolbar Icons" Margin="0,0,0,5">
                             <StackPanel>
                                 <CheckBox x:Name="ViewToolbarConnectMenuItem" Content="Connect/Disconnect" Checked="ViewToolbarConnectMenuItem_Checked" Unchecked="ViewToolbarConnectMenuItem_Checked" Margin="0,5,0,0"/>
                                 <CheckBox x:Name="ViewToolbarACOSMenuItem" Content="ACOS - Auto Connect on Switch (local/external)" Checked="ViewToolbarACOSMenuItem_Checked" Unchecked="ViewToolbarACOSMenuItem_Checked" Margin="0,5,0,0"/>

@@ -51,10 +51,15 @@ namespace Protes.Views
             AutoConnectCheckBox.IsChecked = _settings.AutoConnect;
             AutoConnectOnSwitchCheckBox.IsChecked = _settings.AutoConnectOnSwitch;
             AutoDisconnectOnSwitchCheckBox.IsChecked = _settings.AutoDisconnectOnSwitch;
+
+            //Notifications
             ShowNotificationsCheckBox.IsChecked = _settings.ShowNotifications;
             NotifyDeletedCheckBox.IsChecked = _settings.NotifyDeleted;
             NotifyCopiedCheckBox.IsChecked = _settings.NotifyCopied;
             NotifyPastedCheckBox.IsChecked = _settings.NotifyPasted;
+            ShowGateEntryWarningCheckBox.IsChecked = _settings.ShowGateEntryWarning;
+
+            //DefaultDBFolder
             DefaultDbFolderText.Text = _appDataFolder;
             SyncAutoSwitchUiState(); // 👈 ensures correct IsEnabled + enforced value
 
@@ -71,7 +76,6 @@ namespace Protes.Views
             ViewToolbarSearchMenuItem.IsChecked = _settings.ViewToolbarSearch;
             ViewToolbarCalcMenuItem.IsChecked = _settings.ViewToolbarCalculator;
             ViewToolbarGateEntryMenuItem.IsChecked = _settings.ViewToolbarGateEntry;
-
 
             //Systray
             LaunchOnStartupCheckBox.IsChecked = _settings.LaunchOnStartup;

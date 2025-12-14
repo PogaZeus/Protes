@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -50,6 +51,9 @@ namespace Protes
         private bool _isGateLocked = false;
         private bool _hasGatePassword = false; // true if EntryGate table exists and has a password
         private const string GATE_TABLE_NAME = "EntryGate";
+        // Encryption key derived from Gate password (cleared when locked/disconnected)
+        private byte[] _cachedEncryptionKey = null;
+        private byte[] _cachedEncryptionSalt = null; // Optional: store for diagnostics
 
         #region Constructor and Initialization
         public MainWindow()
@@ -229,6 +233,9 @@ namespace Protes
             _isConnected = false;
             _connectedMode = DatabaseMode.None;
             _pendingModeSwitch = DatabaseMode.None;
+
+            _cachedEncryptionKey = null;
+            _cachedEncryptionSalt = null;
 
             _isGateLocked = false;
             _hasGatePassword = false;
@@ -504,10 +511,12 @@ namespace Protes
             bool hasGate = DoesGateTableExist();
             string hashedPassword = "";
             bool isLocked = false;
+            string encryptionSalt = "";
 
             if (hasGate)
             {
-                (hashedPassword, isLocked) = ReadGateState();
+                // 🔑 READ SALT TOO
+                (hashedPassword, isLocked, encryptionSalt) = ReadGateState();
                 _hasGatePassword = !string.IsNullOrEmpty(hashedPassword);
                 _isGateLocked = isLocked && _hasGatePassword;
             }
@@ -539,6 +548,7 @@ namespace Protes
             _isConnected = true;
             _connectedMode = _currentMode;
             _pendingModeSwitch = DatabaseMode.None;
+
             LoadNotesFromDatabase();
             NotesDataGrid.Visibility = Visibility.Visible;
             DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
@@ -549,6 +559,15 @@ namespace Protes
 
             if (_settings.ShowNotifications)
                 MessageBox.Show("Connected successfully!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+            if (_fullNotesCache.Any(n => n.Content.StartsWith("ENC::")))
+            {
+                MessageBox.Show(
+                    "⚠️ Warning: This database contains encrypted notes, but it was left unlocked.\n" +
+                    "You will not be able to decrypt this data or edit/remove password unless you lock and unlock again.",
+                    "Protes",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
         public void ConnectToExternalProfileTemporary(ExternalDbProfile profile)
         {
@@ -838,6 +857,11 @@ namespace Protes
         }
         private string GetFirstTwoLines(string content, int softLimit = 200)
         {
+            // If encrypted, show ciphertext preview
+            if (content.StartsWith("ENC::"))
+            {
+                return "(Encrypted data)";
+            }
             if (string.IsNullOrEmpty(content)) return "";
             var lines = content.Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
             var result = lines.Take(2).Select(line =>
@@ -854,24 +878,27 @@ namespace Protes
                 NoteCountText.Text = "";
                 return;
             }
-
+      
             try
             {
                 var fullNotes = _noteRepository.LoadNotes(searchTerm, searchField);
                 _fullNotesCache = fullNotes;
-                var noteItems = fullNotes.Select(note => new NoteItem
-                {
-                    Id = note.Id,
-                    Title = note.Title,
-                    Preview = GetFirstTwoLines(note.Content),
-                    Tags = note.Tags,
-                    LastModified = note.LastModified,
+                var noteItems = fullNotes.Select(note => {
+                    bool isEncrypted = note.Content.StartsWith("ENC::");
+                    return new NoteItem
+                    {
+                        Id = note.Id,
+                        Title = isEncrypted ? "[Encrypted Data]" : note.Title,
+                        Preview = isEncrypted ? note.Content : GetFirstTwoLines(note.Content),
+                        Tags = isEncrypted ? "[Encrypted Data]" : note.Tags,
+                        LastModified = note.LastModified,
+                    };
                 }).ToList();
 
                 NotesDataGrid.ItemsSource = noteItems;
                 AllItemsAreChecked = false;
                 NoteCountText.Text = $"{noteItems.Count} Note{(noteItems.Count == 1 ? "" : "s")}";
-                // ⚠️ Do NOT touch DisconnectedPlaceholder here!
+
             }
             catch (Exception ex)
             {
@@ -928,28 +955,28 @@ namespace Protes
             }
         }
 
-        private (string hashedPassword, bool isLocked) ReadGateState()
+        private (string hashedPassword, bool isLocked, string encryptionSalt) ReadGateState()
         {
             if (!DoesGateTableExist())
-                return ("", false);
+                return ("", false, "");
 
             try
             {
-                string query = "SELECT Sp00ns, IsL0ck3d FROM EntryGate LIMIT 1";
-
+                string query = "SELECT Sp00ns, IsL0ck3d, EncryptionSalt FROM EntryGate LIMIT 1";
                 if (_currentMode == DatabaseMode.Local)
                 {
                     using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
                     {
                         conn.Open();
                         using (var cmd = new SQLiteCommand(query, conn))
-                        using (var reader = cmd.ExecuteReader()) // 👈 USING
+                        using (var reader = cmd.ExecuteReader())
                         {
                             if (reader.Read())
                             {
                                 string pwd = reader["Sp00ns"]?.ToString() ?? "";
                                 bool locked = Convert.ToBoolean(reader["IsL0ck3d"]);
-                                return (pwd, locked);
+                                string salt = reader["EncryptionSalt"]?.ToString() ?? "";
+                                return (pwd, locked, salt);
                             }
                         }
                     }
@@ -960,13 +987,14 @@ namespace Protes
                     {
                         conn.Open();
                         using (var cmd = new MySqlCommand(query, conn))
-                        using (var reader = cmd.ExecuteReader()) // 👈 USING
+                        using (var reader = cmd.ExecuteReader())
                         {
                             if (reader.Read())
                             {
                                 string pwd = reader["Sp00ns"]?.ToString() ?? "";
                                 bool locked = Convert.ToBoolean(reader["IsL0ck3d"]);
-                                return (pwd, locked);
+                                string salt = reader["EncryptionSalt"]?.ToString() ?? "";
+                                return (pwd, locked, salt);
                             }
                         }
                     }
@@ -976,23 +1004,65 @@ namespace Protes
             {
                 // ignore
             }
-
-            return ("", false);
+            return ("", false, "");
         }
-
-        private void SaveGateState(string hashedPassword, bool isLocked)
+        private void EnsureGateTableExists()
         {
-            // ✅ ASSUME TABLE EXISTS — caller must ensure that!
+            if (!DoesGateTableExist())
+            {
+                try
+                {
+                    if (_currentMode == DatabaseMode.Local)
+                    {
+                        using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                        {
+                            conn.Open();
+                            using (var cmd = new SQLiteCommand(@"
+                        CREATE TABLE EntryGate (
+                            Sp00ns TEXT,
+                            IsL0ck3d INTEGER DEFAULT 1,
+                            EncryptionSalt TEXT
+                        )", conn))
+                            {
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        using (var conn = new MySqlConnection(_externalConnectionString))
+                        {
+                            conn.Open();
+                            using (var cmd = new MySqlCommand(@"
+                        CREATE TABLE EntryGate (
+                            Sp00ns TEXT,
+                            IsL0ck3d TINYINT(1) DEFAULT 1,
+                            EncryptionSalt TEXT
+                        )", conn))
+                            {
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to create EntryGate table:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+        private void SaveGateState(string hashedPassword, bool isLocked, string encryptionSalt = null)
+        {
             string cmdText;
             if (_currentMode == DatabaseMode.Local)
             {
-                cmdText = "INSERT OR REPLACE INTO EntryGate (rowid, Sp00ns, IsL0ck3d) VALUES (1, @pwd, @locked)";
+                cmdText = "INSERT OR REPLACE INTO EntryGate (rowid, Sp00ns, IsL0ck3d, EncryptionSalt) VALUES (1, @pwd, @locked, @salt)";
             }
             else
             {
                 cmdText = @"
-            INSERT INTO EntryGate (Sp00ns, IsL0ck3d) VALUES (@pwd, @locked)
-            ON DUPLICATE KEY UPDATE Sp00ns = @pwd, IsL0ck3d = @locked";
+            INSERT INTO EntryGate (Sp00ns, IsL0ck3d, EncryptionSalt) VALUES (@pwd, @locked, @salt)
+            ON DUPLICATE KEY UPDATE Sp00ns = @pwd, IsL0ck3d = @locked, EncryptionSalt = @salt";
             }
 
             if (_currentMode == DatabaseMode.Local)
@@ -1004,6 +1074,7 @@ namespace Protes
                     {
                         cmd.Parameters.AddWithValue("@pwd", hashedPassword ?? "");
                         cmd.Parameters.AddWithValue("@locked", isLocked ? 1 : 0);
+                        cmd.Parameters.AddWithValue("@salt", encryptionSalt ?? "");
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -1017,6 +1088,7 @@ namespace Protes
                     {
                         cmd.Parameters.AddWithValue("@pwd", hashedPassword ?? "");
                         cmd.Parameters.AddWithValue("@locked", isLocked);
+                        cmd.Parameters.AddWithValue("@salt", encryptionSalt ?? "");
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -1028,19 +1100,25 @@ namespace Protes
             {
                 GateLockButton.Content = "🔓";
                 GateSettingsButton.Visibility = Visibility.Collapsed;
+                EncryptNotesButton.Visibility = Visibility.Collapsed;
+                DecryptNotesButton.Visibility = Visibility.Collapsed;
             }
             else if (_isGateLocked)
             {
                 GateLockButton.Content = "🔒";
                 GateSettingsButton.Visibility = Visibility.Collapsed;
+                EncryptNotesButton.Visibility = Visibility.Collapsed;
+                DecryptNotesButton.Visibility = Visibility.Collapsed;
             }
             else
             {
                 GateLockButton.Content = "🔓";
                 GateSettingsButton.Visibility = Visibility.Visible;
+                EncryptNotesButton.Visibility = Visibility.Visible;
+                DecryptNotesButton.Visibility = Visibility.Visible;
             }
 
-            // Disable note actions when locked
+            // Existing enable/disable logic...
             bool canEdit = _isConnected && !_isGateLocked;
             NewNoteButton.IsEnabled = canEdit;
             EditNoteButton.IsEnabled = canEdit && GetSelectedNoteCount() == 1;
@@ -1073,9 +1151,12 @@ namespace Protes
                             using (var cmd = new SQLiteCommand(@"
                         CREATE TABLE IF NOT EXISTS EntryGate (
                             Sp00ns TEXT,
-                            IsL0ck3d INTEGER DEFAULT 1
+                            IsL0ck3d INTEGER DEFAULT 1,
+                            EncryptionSalt TEXT
                         )", conn))
+                            {
                                 cmd.ExecuteNonQuery();
+                            }
                         }
                     }
                     else
@@ -1086,16 +1167,31 @@ namespace Protes
                             using (var cmd = new MySqlCommand(@"
                         CREATE TABLE IF NOT EXISTS EntryGate (
                             Sp00ns TEXT,
-                            IsL0ck3d TINYINT(1) DEFAULT 1
+                            IsL0ck3d TINYINT(1) DEFAULT 1,
+                            EncryptionSalt TEXT
                         )", conn))
+                            {
                                 cmd.ExecuteNonQuery();
+                            }
                         }
                     }
 
                     string hash = HashPassword(pwdWindow.Password);
-                    SaveGateState(hash, isLocked: true);
                     _hasGatePassword = true;
                     _isGateLocked = true;
+
+                    // 🔑 Generate and store encryption salt
+                    var saltBytes = new byte[16];
+                    using (var rng = RandomNumberGenerator.Create())
+                        rng.GetBytes(saltBytes);
+                    string saltBase64 = Convert.ToBase64String(saltBytes);
+
+                    SaveGateState(hash, isLocked: true, encryptionSalt: saltBase64);
+
+                    // Clear cached key (not applicable yet)
+                    _cachedEncryptionKey = null;
+                    _cachedEncryptionSalt = null;
+
                     UpdateGateUI();
                     RefreshToolbarSettings();
                     ShowGatePlaceholder("🔒 Database is now locked.");
@@ -1109,33 +1205,52 @@ namespace Protes
             {
                 // === UNLOCK ===
                 string dbName = _currentMode == DatabaseMode.Local
-    ? Path.GetFileName(_databasePath)
-    : $"{_settings.External_Host}/{_settings.External_Database}";
-
+                    ? Path.GetFileName(_databasePath)
+                    : $"{_settings.External_Host}/{_settings.External_Database}";
                 var pwdWindow = new GatePasswordWindow(dbName, isSettingPassword: false, isChanging: false);
                 pwdWindow.Owner = this;
                 if (pwdWindow.ShowDialog() != true)
                     return;
 
                 string enteredHash = HashPassword(pwdWindow.Password);
-                var (savedHash, _) = ReadGateState();
+                var (savedHash, _, encryptionSalt) = ReadGateState(); // 🔑 Get salt
 
                 if (enteredHash == savedHash)
                 {
                     // ✅ HIDE PLACEHOLDER IMMEDIATELY
                     NotesDataGrid.Visibility = Visibility.Visible;
                     DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
+                    SaveGateState(savedHash, isLocked: false, encryptionSalt: encryptionSalt);
 
-                    SaveGateState(savedHash, isLocked: false);
                     _isGateLocked = false;
-                    UpdateGateUI();
 
+                    // 🔑 DERIVE AND CACHE ENCRYPTION KEY FROM PASSWORD + SALT
+                    if (!string.IsNullOrEmpty(encryptionSalt))
+                    {
+                        try
+                        {
+                            byte[] saltBytes = Convert.FromBase64String(encryptionSalt);
+                            _cachedEncryptionSalt = saltBytes;
+                            _cachedEncryptionKey = EncryptionService.DeriveKey(pwdWindow.Password, saltBytes);
+                        }
+                        catch
+                        {
+                            _cachedEncryptionKey = null;
+                            _cachedEncryptionSalt = null;
+                        }
+                    }
+                    else
+                    {
+                        _cachedEncryptionKey = null;
+                        _cachedEncryptionSalt = null;
+                    }
+
+                    UpdateGateUI();
                     // Recreate repo and load notes
                     if (_currentMode == DatabaseMode.Local)
                         _noteRepository = new SqliteNoteRepository(_databasePath);
                     else
                         _noteRepository = new MySqlNoteRepository(_externalConnectionString);
-
                     LoadNotesFromDatabase();
                 }
                 else
@@ -1146,9 +1261,14 @@ namespace Protes
             else
             {
                 // === RE-LOCK ===
-                var (savedHash, _) = ReadGateState();
-                SaveGateState(savedHash, isLocked: true);
+                var (savedHash, _, encryptionSalt) = ReadGateState();
+                SaveGateState(savedHash, isLocked: true, encryptionSalt: encryptionSalt);
                 _isGateLocked = true;
+
+                // 🔑 Clear key on re-lock
+                _cachedEncryptionKey = null;
+                _cachedEncryptionSalt = null;
+
                 UpdateGateUI();
                 ShowGatePlaceholder("🔒 Database locked.");
             }
@@ -1165,7 +1285,20 @@ namespace Protes
             {
                 if (pwdWindow.WantsToRemovePassword)
                 {
-                    // ✅ Simply drop the table — no password validation needed
+                    // BLOCK removal if any note is encrypted
+                    bool hasEncryptedNotes = _fullNotesCache.Any(note => note.Content.StartsWith("ENC::"));
+                    if (hasEncryptedNotes)
+                    {
+                        MessageBox.Show(
+                            "You cannot remove the password while notes are encrypted.\n" +
+                            "Please decrypt all notes first, or keep the password to retain access to your data.",
+                            "Protes",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    // Remove password
                     try
                     {
                         string dropCmd = "DROP TABLE EntryGate";
@@ -1201,7 +1334,19 @@ namespace Protes
                 }
                 else if (!string.IsNullOrWhiteSpace(pwdWindow.Password))
                 {
-                    // ✅ Set new password — no current password check
+                    // BLOCK password change if any note is encrypted
+                    bool hasEncryptedNotes = _fullNotesCache.Any(note => note.Content.StartsWith("ENC::"));
+                    if (hasEncryptedNotes)
+                    {
+                        MessageBox.Show(
+                            "You cannot change the password while notes are encrypted.\n" +
+                            "Please decrypt all notes first, or keep the current password to retain access to your data.",
+                            "Protes",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                        return;
+                    }
+
                     string hash = HashPassword(pwdWindow.Password);
                     SaveGateState(hash, isLocked: _isGateLocked);
                     MessageBox.Show("Password updated.", "Gate Entry", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1224,6 +1369,145 @@ namespace Protes
             return NotesDataGrid.SelectedItem != null ? 1 : 0;
         }
 
+        #endregion
+
+        #region Gate Entry Encryption Methods
+        private void EncryptNotes_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_isConnected || _isGateLocked || _noteRepository == null)
+            {
+                MessageBox.Show("You must be connected and unlocked to encrypt notes.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (_cachedEncryptionKey == null)
+            {
+                MessageBox.Show("Encryption key not available. Please unlock the database again.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                var notes = _fullNotesCache.ToList();
+                bool anyEncrypted = false;
+                foreach (var note in notes)
+                {
+                    if (note.Content.StartsWith("ENC::")) continue;
+
+                    // Combine all fields into JSON
+                    var noteData = new
+                    {
+                        Title = note.Title,
+                        Tags = note.Tags,
+                        Content = note.Content
+                    };
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(noteData);
+
+                    var (iv, encrypted, hmac) = EncryptionService.EncryptWithKey(json, _cachedEncryptionKey);
+                    string encryptedBlob = $"ENC::{Convert.ToBase64String(iv)}|{Convert.ToBase64String(hmac)}|{Convert.ToBase64String(encrypted)}";
+
+                    // Save blob to Content field
+                    _noteRepository.UpdateNote(note.Id, "", encryptedBlob, "");
+                    note.Title = "";
+                    note.Tags = "";
+                    note.Content = encryptedBlob;
+                    anyEncrypted = true;
+                }
+
+                if (anyEncrypted)
+                {
+                    LoadNotesFromDatabase();
+                    MessageBox.Show("Notes encrypted successfully.\nAll fields (title, tags, content) now appear as encrypted data.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("All notes are already encrypted.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Encryption failed:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
+            // ✅ Update button states to reflect new encryption state
+            UpdateButtonStates();
+        }
+        private void DecryptNotes_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_isConnected || _isGateLocked || _noteRepository == null)
+            {
+                MessageBox.Show("You must be connected and unlocked to decrypt notes.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (_cachedEncryptionKey == null)
+            {
+                MessageBox.Show("Decryption key not available. Please unlock the database again.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                var notes = _fullNotesCache.Where(n => n.Content.StartsWith("ENC::")).ToList();
+                if (!notes.Any())
+                {
+                    MessageBox.Show("No encrypted notes found.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                int decryptedCount = 0;
+                foreach (var note in notes)
+                {
+                    try
+                    {
+                        var parts = note.Content.Substring(5).Split('|');
+                        if (parts.Length != 3) continue;
+
+                        var iv = Convert.FromBase64String(parts[0]);
+                        var hmac = Convert.FromBase64String(parts[1]);
+                        var encrypted = Convert.FromBase64String(parts[2]);
+
+                        string json = EncryptionService.DecryptWithKey(iv, encrypted, hmac, _cachedEncryptionKey);
+                        var noteData = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(json);
+
+                        string title = noteData?.Title?.ToString() ?? "";
+                        string tags = noteData?.Tags?.ToString() ?? "";
+                        string content = noteData?.Content?.ToString() ?? "";
+
+                        _noteRepository.UpdateNote(note.Id, title, content, tags);
+                        note.Title = title;
+                        note.Tags = tags;
+                        note.Content = content;
+                        decryptedCount++;
+                    }
+                    catch (CryptographicException)
+                    {
+                        continue; // Skip on HMAC failure
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                }
+
+                if (decryptedCount > 0)
+                {
+                    LoadNotesFromDatabase();
+                    MessageBox.Show($"{decryptedCount} note{(decryptedCount == 1 ? "" : "s")} decrypted (title, tags, and content).", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Decryption failed. Data may be corrupted or key is invalid.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Decryption error:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
+            // ✅ Update button states to reflect new decryption state
+            UpdateButtonStates();
+        }
         #endregion
 
         #region DataGrid Event Handlers
@@ -1436,7 +1720,6 @@ namespace Protes
             CopyNoteButton.IsEnabled = isConnected && selectedCount >= 1;
             PasteNoteButton.IsEnabled = isConnected && _copiedNotes.Any();
 
-            // File menu
             // File menu — direct access via x:Name
             NewNoteMenuItem.IsEnabled = isConnected;
             EditNoteMenuItem.IsEnabled = isConnected && selectedCount == 1;
@@ -1450,6 +1733,13 @@ namespace Protes
             // Disable local DB switcher unless in Local mode
             DatabaseOrConnectionComboBox.IsEnabled = true;
             LoadSelectedDbButton.IsEnabled = true;
+
+            // Encryption button states
+            bool hasEncryptedNotes = _fullNotesCache.Any(note => note.Content.StartsWith("ENC::"));
+            bool hasUnencryptedNotes = _fullNotesCache.Any(note => !note.Content.StartsWith("ENC::"));
+
+            EncryptNotesButton.IsEnabled = isConnected && isEditable && hasUnencryptedNotes;
+            DecryptNotesButton.IsEnabled = isConnected && isEditable && hasEncryptedNotes;
         }
         public void UpdateStatusBar()
         {
@@ -2771,25 +3061,25 @@ namespace Protes
             ViewToolbarCalcMenuItem.IsChecked = _settings.ViewToolbarCalculator;
             ViewToolbarGateEntryMenuItem.IsChecked = _settings.ViewToolbarGateEntry;
 
-        // 3. Update visibility of toolbar stackpanels
-        ConnectDisconnectGroup.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
-    AcosGroup.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
-    SettingsGroup.Visibility = _settings.ViewToolbarSettings ? Visibility.Visible : Visibility.Collapsed;
-    LocalDbGroup.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
-    ImportExportGroup.Visibility = _settings.ViewToolbarImpEx ? Visibility.Visible : Visibility.Collapsed;
-    NoteToolsGroup.Visibility = _settings.ViewToolbarNoteTools ? Visibility.Visible : Visibility.Collapsed;
-    CopyPasteGroup.Visibility = _settings.ViewToolbarCopyPaste ? Visibility.Visible : Visibility.Collapsed;
-    SearchGroup.Visibility = _settings.ViewToolbarSearch ? Visibility.Visible : Visibility.Collapsed;
-    CalculatorGroup.Visibility = _settings.ViewToolbarCalculator ? Visibility.Visible : Visibility.Collapsed;
-    CatButtonGroup.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
+           // 3. Update visibility of toolbar stackpanels
+            ConnectDisconnectGroup.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
+            AcosGroup.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
+            SettingsGroup.Visibility = _settings.ViewToolbarSettings ? Visibility.Visible : Visibility.Collapsed;
+            LocalDbGroup.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
+            ImportExportGroup.Visibility = _settings.ViewToolbarImpEx ? Visibility.Visible : Visibility.Collapsed;
+            NoteToolsGroup.Visibility = _settings.ViewToolbarNoteTools ? Visibility.Visible : Visibility.Collapsed;
+            CopyPasteGroup.Visibility = _settings.ViewToolbarCopyPaste ? Visibility.Visible : Visibility.Collapsed;
+            SearchGroup.Visibility = _settings.ViewToolbarSearch ? Visibility.Visible : Visibility.Collapsed;
+            CalculatorGroup.Visibility = _settings.ViewToolbarCalculator ? Visibility.Visible : Visibility.Collapsed;
+            CatButtonGroup.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
 
-    bool shouldShowGateGroup = _hasGatePassword || _settings.ViewToolbarGateEntry;
-    GateEntryGroup.Visibility = shouldShowGateGroup ? Visibility.Visible : Visibility.Collapsed;
+            bool shouldShowGateGroup = _hasGatePassword || _settings.ViewToolbarGateEntry;
+            GateEntryGroup.Visibility = shouldShowGateGroup ? Visibility.Visible : Visibility.Collapsed;
 
-    // GateSettingsButton: only visible when unlocked AND password exists
-    GateSettingsButton.Visibility = (_hasGatePassword && !_isGateLocked) 
-        ? Visibility.Visible 
-        : Visibility.Collapsed;
+           // only visible when unlocked AND password exists
+            GateSettingsButton.Visibility = (_hasGatePassword && !_isGateLocked) ? Visibility.Visible : Visibility.Collapsed;
+            EncryptNotesButton.Visibility = (_hasGatePassword && !_isGateLocked) ? Visibility.Visible : Visibility.Collapsed;
+            DecryptNotesButton.Visibility = (_hasGatePassword && !_isGateLocked) ? Visibility.Visible : Visibility.Collapsed;
 
             // Add to RefreshToolbarSettingsFromSettingsManager()
             ViewTitleMenuItem.IsChecked = _settings.ViewMainWindowTitle;
