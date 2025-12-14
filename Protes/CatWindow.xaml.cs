@@ -35,7 +35,7 @@ namespace Protes
         {
             _settings.ViewToolbarCat = ShowCatButtonInToolbarCheckBox.IsChecked == true;
             _settings.Save(); // Persist to disk
-            _onSettingsChanged?.Invoke(); // Notify listener (e.g., MainWindow)
+            _onSettingsChanged?.Invoke(); 
         }
 
         private void RevealRiddle1(object sender, RoutedEventArgs e)

@@ -813,7 +813,7 @@ namespace Protes.Views
             if (MessageBox.Show(
                 "This will add 'Protes (Import)' to the Windows 'Send to' context menu.\n\n" +
                 "When you right-click a file in File Explorer and choose 'Send to → Protes (Import)',\n" +
-                "the file will be imported into your current Protes database.\n\n" +
+                "the (*.txt, *.md or correct format CSV) file will be imported into your current Protes database.\n\n" +
                 "Allow this?",
                 "Protes", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
@@ -1069,74 +1069,74 @@ namespace Protes.Views
         private void ViewToolbarOptionsInMenuCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarOptionsInMenu = ViewToolbarOptionsInMenuCheckBox.IsChecked == true;
-            _mainWindow.RefreshToolbarSettingsFromSettingsManager();
+            _mainWindow.RefreshToolbarSettings();
         }
 
         private void ViewToolbarConnectMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarConnect = ViewToolbarConnectMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.UpdateToolbarIconVisibility(); // 👈 notify MainWindow
+            _mainWindow.RefreshToolbarSettings();
         }
 
         private void ViewToolbarLocalDBMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarLocalDB = ViewToolbarLocalDBMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.UpdateToolbarIconVisibility();
+            _mainWindow.RefreshToolbarSettings();
         }
 
         private void ViewToolbarACOSMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarACOS = ViewToolbarACOSMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.UpdateToolbarIconVisibility();
+            _mainWindow.RefreshToolbarSettings();
         }
 
         private void ViewToolbarImpExMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarImpEx = ViewToolbarImpExMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.UpdateToolbarIconVisibility();
+            _mainWindow.RefreshToolbarSettings();
         }
 
         private void ViewToolbarSearchMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarSearch = ViewToolbarSearchMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.UpdateToolbarIconVisibility();
+            _mainWindow.RefreshToolbarSettings();
         }
         private void ViewToolbarCalcMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarCalculator = ViewToolbarCalcMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.UpdateToolbarIconVisibility();
+            _mainWindow.RefreshToolbarSettings();
         }
         private void ViewToolbarGateEntryMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarGateEntry = ViewToolbarGateEntryMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.UpdateToolbarIconVisibility(); // Notify MainWindow to refresh toolbar
+            _mainWindow.RefreshToolbarSettings();
         }
         private void ViewToolbarSettingsMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarSettings = ViewToolbarSettingsMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.UpdateToolbarIconVisibility();
+            _mainWindow.RefreshToolbarSettings();
         }
 
         private void ViewToolbarNoteToolsMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarNoteTools = ViewToolbarNoteToolsMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.UpdateToolbarIconVisibility();
+            _mainWindow.RefreshToolbarSettings();
         }
 
         private void ViewToolbarCopyPasteMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarCopyPaste = ViewToolbarCopyPasteMenuItem.IsChecked == true;
             _settings.Save();
-            _mainWindow?.UpdateToolbarIconVisibility();
+            _mainWindow.RefreshToolbarSettings();
         }
         #endregion
 

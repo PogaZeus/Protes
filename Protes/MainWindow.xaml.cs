@@ -79,9 +79,7 @@ namespace Protes
             SetupNotifyIcon();
             ApplyMainFontToDataGrid();
             UpdateDataGridColumns();
-            UpdateToolbarVisibility();
-            UpdateToolbarIconVisibility();
-            UpdateFileMenuVisibility();
+            RefreshToolbarSettings();
             RefreshLocalDbControls();
 
             // Load View settings
@@ -528,7 +526,7 @@ namespace Protes
                 ShowGatePlaceholder("🔒 This database is protected. Click the lock icon in the toolbar to unlock.");
                 UpdateGateUI();
                 UpdateStatusBar();
-                UpdateToolbarIconVisibility();
+                RefreshToolbarSettings();
                 return;
             }
 
@@ -547,7 +545,7 @@ namespace Protes
             UpdateGateUI();
             UpdateStatusBar();
             UpdateButtonStates();
-            UpdateToolbarIconVisibility();
+            RefreshToolbarSettings();
 
             if (_settings.ShowNotifications)
                 MessageBox.Show("Connected successfully!", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1143,7 +1141,7 @@ namespace Protes
                     _hasGatePassword = true;
                     _isGateLocked = true;
                     UpdateGateUI();
-                    UpdateToolbarIconVisibility();
+                    RefreshToolbarSettings();
                     ShowGatePlaceholder("🔒 Database is now locked.");
                 }
                 catch (Exception ex)
@@ -1237,7 +1235,7 @@ namespace Protes
                         _isGateLocked = false;
                         UpdateGateUI();
                         LoadNotesFromDatabase();
-                        UpdateToolbarIconVisibility();
+                        RefreshToolbarSettings();
                         MessageBox.Show("Password removed. Database is no longer protected.", "Gate Entry", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     catch (Exception ex)
@@ -1565,43 +1563,6 @@ namespace Protes
                 toolbar.Visibility = _isToolbarVisible ? Visibility.Visible : Visibility.Collapsed;
             }
         }
-public void UpdateToolbarIconVisibility()
-{
-    // Standard groups — respect user settings
-    ConnectDisconnectGroup.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
-    AcosGroup.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
-    SettingsGroup.Visibility = _settings.ViewToolbarSettings ? Visibility.Visible : Visibility.Collapsed;
-    LocalDbGroup.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
-    ImportExportGroup.Visibility = _settings.ViewToolbarImpEx ? Visibility.Visible : Visibility.Collapsed;
-    NoteToolsGroup.Visibility = _settings.ViewToolbarNoteTools ? Visibility.Visible : Visibility.Collapsed;
-    CopyPasteGroup.Visibility = _settings.ViewToolbarCopyPaste ? Visibility.Visible : Visibility.Collapsed;
-    SearchGroup.Visibility = _settings.ViewToolbarSearch ? Visibility.Visible : Visibility.Collapsed;
-    CalculatorGroup.Visibility = _settings.ViewToolbarCalculator ? Visibility.Visible : Visibility.Collapsed;
-    CatButtonGroup.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
-
-    bool shouldShowGateGroup = _hasGatePassword || _settings.ViewToolbarGateEntry;
-    GateEntryGroup.Visibility = shouldShowGateGroup ? Visibility.Visible : Visibility.Collapsed;
-
-    // GateSettingsButton: only visible when unlocked AND password exists
-    GateSettingsButton.Visibility = (_hasGatePassword && !_isGateLocked) 
-        ? Visibility.Visible 
-        : Visibility.Collapsed;
-        }
-
-        public void UpdateFileMenuVisibility() 
-        {
-            // Load Toolbar Submenu Settings
-            ViewToolbarConnectMenuItem.IsChecked = _settings.ViewToolbarConnect;
-            ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
-            ViewToolbarSettingsMenuItem.IsChecked = _settings.ViewToolbarSettings;
-            ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
-            ViewToolbarImpExMenuItem.IsChecked = _settings.ViewToolbarImpEx;
-            ViewToolbarNoteToolsMenuItem.IsChecked = _settings.ViewToolbarNoteTools;
-            ViewToolbarCopyPasteMenuItem.IsChecked = _settings.ViewToolbarCopyPaste;
-            ViewToolbarSearchMenuItem.IsChecked = _settings.ViewToolbarSearch;
-            ViewToolbarGateEntryMenuItem.IsChecked = _settings.ViewToolbarGateEntry;
-        }
-
         #endregion
 
         #region View Menu Handlers
@@ -1637,70 +1598,70 @@ public void UpdateToolbarIconVisibility()
         {
             _settings.ViewToolbarConnect = ViewToolbarConnectMenuItem.IsChecked == true;
             _settings.Save();
-            UpdateToolbarIconVisibility();
+            RefreshToolbarSettings();
         }
 
         private void ViewToolbarACOSMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarACOS = ViewToolbarACOSMenuItem.IsChecked == true;
             _settings.Save();
-            UpdateToolbarIconVisibility();
+            RefreshToolbarSettings();
         }
 
         private void ViewToolbarSettingsMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarSettings = ViewToolbarSettingsMenuItem.IsChecked == true;
             _settings.Save();
-            UpdateToolbarIconVisibility();
+            RefreshToolbarSettings();
         }
 
         private void ViewToolbarLocalDBMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarLocalDB = ViewToolbarLocalDBMenuItem.IsChecked == true;
             _settings.Save();
-            UpdateToolbarIconVisibility();
+            RefreshToolbarSettings();
         }
 
         private void ViewToolbarImpExMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarImpEx = ViewToolbarImpExMenuItem.IsChecked == true;
             _settings.Save();
-            UpdateToolbarIconVisibility();
+            RefreshToolbarSettings();
         }
 
         private void ViewToolbarNoteToolsMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarNoteTools = ViewToolbarNoteToolsMenuItem.IsChecked == true;
             _settings.Save();
-            UpdateToolbarIconVisibility();
+            RefreshToolbarSettings();
         }
 
         private void ViewToolbarCopyPasteMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarCopyPaste = ViewToolbarCopyPasteMenuItem.IsChecked == true;
             _settings.Save();
-            UpdateToolbarIconVisibility();
+            RefreshToolbarSettings();
         }
 
         private void ViewToolbarSearchMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarSearch = ViewToolbarSearchMenuItem.IsChecked == true;
             _settings.Save();
-            UpdateToolbarIconVisibility();
+            RefreshToolbarSettings();
         }
 
         private void ViewToolbarCalcMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarCalculator = ViewToolbarCalcMenuItem.IsChecked == true;
             _settings.Save();
-            UpdateToolbarIconVisibility();
+            RefreshToolbarSettings();
         }
 
         private void ViewToolbarGateEntryMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             _settings.ViewToolbarGateEntry = ViewToolbarGateEntryMenuItem.IsChecked == true;
             _settings.Save();
-            UpdateToolbarIconVisibility();
+            RefreshToolbarSettings();
         }
 
         #endregion
@@ -2827,11 +2788,11 @@ public void UpdateToolbarIconVisibility()
             if (result == true || result == false) // Either OK or Close
             {
                 // 👇 Refresh toolbar UI from saved settings
-                RefreshToolbarSettingsFromSettingsManager();
+                RefreshToolbarSettings();
             }
         }
 
-        public void RefreshToolbarSettingsFromSettingsManager()
+        public void RefreshToolbarSettings()
         {
 
             // 1. Reload toolbar visibility
@@ -2845,19 +2806,34 @@ public void UpdateToolbarIconVisibility()
             // 2. Reload submenu item states
             ViewToolbarConnectMenuItem.IsChecked = _settings.ViewToolbarConnect;
             ViewToolbarACOSMenuItem.IsChecked = _settings.ViewToolbarACOS;
+            ViewToolbarSettingsMenuItem.IsChecked = _settings.ViewToolbarSettings;
             ViewToolbarLocalDBMenuItem.IsChecked = _settings.ViewToolbarLocalDB;
             ViewToolbarImpExMenuItem.IsChecked = _settings.ViewToolbarImpEx;
+            ViewToolbarNoteToolsMenuItem.IsChecked = _settings.ViewToolbarNoteTools;
+            ViewToolbarCopyPasteMenuItem.IsChecked = _settings.ViewToolbarCopyPaste;
             ViewToolbarSearchMenuItem.IsChecked = _settings.ViewToolbarSearch;
+            ViewToolbarCalcMenuItem.IsChecked = _settings.ViewToolbarCalculator;
+            ViewToolbarGateEntryMenuItem.IsChecked = _settings.ViewToolbarGateEntry;
 
-            // 3. Update visibility of toolbar containers
-            ConnectDisconnectGroup.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
-            AcosGroup.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
-            SettingsGroup.Visibility = _settings.ViewToolbarSettings ? Visibility.Visible : Visibility.Collapsed;
-            LocalDbGroup.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
-            ImportExportGroup.Visibility = _settings.ViewToolbarImpEx ? Visibility.Visible : Visibility.Collapsed;
-            NoteToolsGroup.Visibility = _settings.ViewToolbarNoteTools ? Visibility.Visible : Visibility.Collapsed;
-            CopyPasteGroup.Visibility = _settings.ViewToolbarCopyPaste ? Visibility.Visible : Visibility.Collapsed;
-            SearchGroup.Visibility = _settings.ViewToolbarSearch ? Visibility.Visible : Visibility.Collapsed;
+        // 3. Update visibility of toolbar stackpanels
+        ConnectDisconnectGroup.Visibility = _settings.ViewToolbarConnect ? Visibility.Visible : Visibility.Collapsed;
+    AcosGroup.Visibility = _settings.ViewToolbarACOS ? Visibility.Visible : Visibility.Collapsed;
+    SettingsGroup.Visibility = _settings.ViewToolbarSettings ? Visibility.Visible : Visibility.Collapsed;
+    LocalDbGroup.Visibility = _settings.ViewToolbarLocalDB ? Visibility.Visible : Visibility.Collapsed;
+    ImportExportGroup.Visibility = _settings.ViewToolbarImpEx ? Visibility.Visible : Visibility.Collapsed;
+    NoteToolsGroup.Visibility = _settings.ViewToolbarNoteTools ? Visibility.Visible : Visibility.Collapsed;
+    CopyPasteGroup.Visibility = _settings.ViewToolbarCopyPaste ? Visibility.Visible : Visibility.Collapsed;
+    SearchGroup.Visibility = _settings.ViewToolbarSearch ? Visibility.Visible : Visibility.Collapsed;
+    CalculatorGroup.Visibility = _settings.ViewToolbarCalculator ? Visibility.Visible : Visibility.Collapsed;
+    CatButtonGroup.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
+
+    bool shouldShowGateGroup = _hasGatePassword || _settings.ViewToolbarGateEntry;
+    GateEntryGroup.Visibility = shouldShowGateGroup ? Visibility.Visible : Visibility.Collapsed;
+
+    // GateSettingsButton: only visible when unlocked AND password exists
+    GateSettingsButton.Visibility = (_hasGatePassword && !_isGateLocked) 
+        ? Visibility.Visible 
+        : Visibility.Collapsed;
 
             // Add to RefreshToolbarSettingsFromSettingsManager()
             ViewTitleMenuItem.IsChecked = _settings.ViewMainWindowTitle;
@@ -3152,10 +3128,7 @@ public void UpdateToolbarIconVisibility()
         #region Toolbar and Misc UI
         private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var aboutWindow = new Protes.Views.AboutWindow(_settings, () =>
-            {
-                CatButton.Visibility = _settings.ViewToolbarCat ? Visibility.Visible : Visibility.Collapsed;
-            });
+            var aboutWindow = new Protes.Views.AboutWindow(_settings, RefreshToolbarSettings);
             aboutWindow.Owner = this;
             aboutWindow.ShowDialog();
         }
