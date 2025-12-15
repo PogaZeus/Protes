@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -55,6 +56,10 @@ namespace Protes
         // Encryption key derived from Gate password (cleared when locked/disconnected)
         private byte[] _cachedEncryptionKey = null;
         private byte[] _cachedEncryptionSalt = null; // Optional: store for diagnostics
+        // slow down search from causing race conditions
+        private CancellationTokenSource _loadCancellation;
+        private readonly SemaphoreSlim _loadSemaphore = new SemaphoreSlim(1, 1);
+        private DispatcherTimer _searchDebounceTimer;
 
         #region Constructor and Initialization
         public MainWindow()
@@ -142,7 +147,17 @@ namespace Protes
                     }
                 }
             };
-
+            _searchDebounceTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(300)
+            };
+            _searchDebounceTimer.Tick += (s, e) =>
+            {
+                _searchDebounceTimer.Stop();
+                string searchTerm = SearchBox.Text;
+                string searchField = (SearchFieldComboBox.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Title";
+                LoadNotesFromDatabase(searchTerm, searchField);
+            };
             Loaded += MainWindow_Loaded;
         }
 
@@ -241,6 +256,9 @@ namespace Protes
             _isGateLocked = false;
             _hasGatePassword = false;
             UpdateGateUI();
+
+            _noteRepository?.Dispose();
+            _noteRepository = null;
 
             NotesDataGrid.ItemsSource = null;
             NotesDataGrid.Visibility = Visibility.Collapsed;
@@ -852,8 +870,9 @@ namespace Protes
         {
             if (_isConnected)
             {
-                string selectedField = (SearchFieldComboBox.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Title";
-                LoadNotesFromDatabase(SearchBox.Text, selectedField);
+                // Restart the timer on each keystroke
+                _searchDebounceTimer.Stop();
+                _searchDebounceTimer.Start();
             }
         }
         private string GetFirstTwoLines(string content, int softLimit = 200)
@@ -872,6 +891,11 @@ namespace Protes
         }
         private async void LoadNotesFromDatabase(string searchTerm = "", string searchField = "All")
         {
+            // Cancel any ongoing load
+            DisposeCancellationToken();
+            _loadCancellation = new CancellationTokenSource();
+            var token = _loadCancellation.Token;
+
             if (_noteRepository == null)
             {
                 NotesDataGrid.ItemsSource = null;
@@ -882,19 +906,34 @@ namespace Protes
                 return;
             }
 
+            // Use semaphore to prevent concurrent loads
+            if (!await _loadSemaphore.WaitAsync(0, token))
+            {
+                // Another load is already in progress, let it finish
+                return;
+            }
+
             try
             {
+                // Show loading state
                 NotesDataGrid.Visibility = Visibility.Collapsed;
                 DisconnectedPlaceholder.Visibility = Visibility.Visible;
                 DisconnectedPlaceholder.Text = "Loading notes...";
 
-                // Load data OFF the UI thread
+                // Load data off UI thread with cancellation support
                 var fullNotes = await Task.Run(() =>
-                    _noteRepository.LoadNotes(searchTerm, searchField)
-                );
+                {
+                    token.ThrowIfCancellationRequested();
+                    return _noteRepository.LoadNotes(searchTerm, searchField);
+                }, token);
 
-                // Update cache and UI on UI thread
+                // Check cancellation before updating UI
+                token.ThrowIfCancellationRequested();
+
+                // Update cache (thread-safe since we're back on UI thread)
                 _fullNotesCache = fullNotes;
+
+                // Transform to UI items
                 var noteItems = fullNotes.Select(note => {
                     bool isEncrypted = note.Content.StartsWith("ENC::");
                     return new NoteItem
@@ -907,19 +946,45 @@ namespace Protes
                     };
                 }).ToList();
 
+                // Update UI
                 NotesDataGrid.ItemsSource = noteItems;
                 NoteCountText.Text = $"{noteItems.Count} Note{(noteItems.Count == 1 ? "" : "s")}";
                 NotesDataGrid.Visibility = Visibility.Visible;
                 DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
             }
+            catch (OperationCanceledException)
+            {
+                // Silently ignore cancellation - this is expected behavior
+            }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to load notes:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
-                NotesDataGrid.ItemsSource = null;
-                _fullNotesCache.Clear();
-                NoteCountText.Text = "";
-                DisconnectedPlaceholder.Text = "Error loading notes.";
-                DisconnectedPlaceholder.Visibility = Visibility.Visible;
+                // Only show error if not cancelled
+                if (!token.IsCancellationRequested)
+                {
+                    MessageBox.Show($"Failed to load notes:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
+                    NotesDataGrid.ItemsSource = null;
+                    _fullNotesCache.Clear();
+                    NoteCountText.Text = "";
+                    DisconnectedPlaceholder.Text = "Error loading notes.";
+                    DisconnectedPlaceholder.Visibility = Visibility.Visible;
+                }
+            }
+            finally
+            {
+                _loadSemaphore.Release();
+            }
+        }
+        private void DisposeCancellationToken()
+        {
+            try
+            {
+                _loadCancellation?.Cancel();
+            }
+            catch { }
+            finally
+            {
+                _loadCancellation?.Dispose();
+                _loadCancellation = null;
             }
         }
         #endregion
@@ -1259,7 +1324,6 @@ namespace Protes
         if (enteredHash == savedHash)
         {
                     
-                    Dispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
            SaveGateState(savedHash, isLocked: false, encryptionSalt: encryptionSalt);
             _isGateLocked = false;
 
@@ -3348,6 +3412,15 @@ namespace Protes
         }
         protected override void OnClosed(EventArgs e)
         {
+            DisposeCancellationToken();
+
+            // Cleanup semaphore
+            _loadSemaphore?.Dispose();
+
+            // Cleanup timers
+            _searchDebounceTimer?.Stop();
+            _importDebounceTimer?.Stop();
+
             if (_notifyIcon != null)
             {
                 _notifyIcon.Visible = false;

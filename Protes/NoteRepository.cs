@@ -4,13 +4,14 @@ using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
+using System.Threading;
 
 namespace Protes
 {
     public interface INoteRepository : IDisposable
     {
         void EnsureSchemaExists();
-        List<FullNote> LoadNotes(string searchTerm = "", string searchField = "All");
+        List<FullNote> LoadNotes(string searchTerm = "", string searchField = "All", CancellationToken cancellationToken = default);
         void SaveNote(string title, string content, string tags);
         void UpdateNote(long id, string title, string content, string tags);
         void DeleteNote(long id);
@@ -25,10 +26,12 @@ namespace Protes
             _databasePath = databasePath ?? throw new ArgumentNullException(nameof(databasePath));
             EnsureAppDataFolder();
         }
+
         public void Dispose()
         {
             // No-op — connections are opened/closed per method
         }
+
         private void EnsureAppDataFolder()
         {
             var folder = Path.GetDirectoryName(_databasePath);
@@ -105,7 +108,8 @@ namespace Protes
             }
         }
 
-        public List<FullNote> LoadNotes(string searchTerm = "", string searchField = "All")
+        // ✅ UPDATED: Now uses CancellationToken
+        public List<FullNote> LoadNotes(string searchTerm = "", string searchField = "All", CancellationToken cancellationToken = default)
         {
             var notes = new List<FullNote>();
             string likePattern = EscapeLikePattern(searchTerm);
@@ -121,6 +125,8 @@ namespace Protes
                     {
                         while (reader.Read())
                         {
+                            // ✅ Check for cancellation between rows
+                            cancellationToken.ThrowIfCancellationRequested();
                             AppendNote(reader, notes, isExternal: false);
                         }
                     }
@@ -213,10 +219,12 @@ namespace Protes
                 }
             }
         }
+
         public void Dispose()
         {
             // No-op — connections are opened/closed per method
         }
+
         public void SaveNote(string title, string content, string tags)
         {
             using (var conn = new MySqlConnection(_connectionString))
@@ -267,7 +275,8 @@ namespace Protes
             }
         }
 
-        public List<FullNote> LoadNotes(string searchTerm = "", string searchField = "All")
+        // ✅ UPDATED: Now uses CancellationToken
+        public List<FullNote> LoadNotes(string searchTerm = "", string searchField = "All", CancellationToken cancellationToken = default)
         {
             var notes = new List<FullNote>();
             string likePattern = EscapeLikePattern(searchTerm);
@@ -283,6 +292,8 @@ namespace Protes
                     {
                         while (reader.Read())
                         {
+                            // ✅ Check for cancellation between rows
+                            cancellationToken.ThrowIfCancellationRequested();
                             AppendNote(reader, notes, isExternal: true);
                         }
                     }
