@@ -306,6 +306,7 @@ namespace Protes
         {
             if (_isConnected)
             {
+                LockDatabaseIfProtected();
                 // If already connected to Local, just clear pending
                 if (_connectedMode == DatabaseMode.Local)
                 {
@@ -389,6 +390,7 @@ namespace Protes
 
                 if (_isConnected && _settings.AutoDisconnectOnSwitch)
                 {
+                    LockDatabaseIfProtected();
                     Disconnect_Click(this, new RoutedEventArgs());
                 }
 
@@ -410,6 +412,7 @@ namespace Protes
         {
             if (_isConnected)
             {
+                LockDatabaseIfProtected();
                 // If already connected to External, just clear pending
                 if (_connectedMode == DatabaseMode.External)
                 {
@@ -536,6 +539,7 @@ namespace Protes
             {
                 // 🔑 READ SALT TOO
                 (hashedPassword, isLocked, encryptionSalt) = ReadGateState();
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] ReadGateState → hasGate: true, isLocked: {isLocked}, pwd: {(string.IsNullOrEmpty(hashedPassword) ? "NULL" : "SET")}");
                 _hasGatePassword = !string.IsNullOrEmpty(hashedPassword);
                 _isGateLocked = isLocked && _hasGatePassword;
             }
@@ -550,6 +554,7 @@ namespace Protes
             {
                 _isConnected = true;
                 _connectedMode = _currentMode;
+                _noteRepository?.Dispose(); 
                 _noteRepository = null; // Do not load notes
                 ShowGatePlaceholder("🔒 This database is protected. Click the lock icon in the toolbar to unlock.");
                 UpdateGateUI();
@@ -558,7 +563,7 @@ namespace Protes
                 return;
             }
 
-            // ✅ Normal flow: create repo and load notes
+            // Normal flow: create repo and load notes
             if (_currentMode == DatabaseMode.Local)
                 _noteRepository = new SqliteNoteRepository(_databasePath);
             else if (_currentMode == DatabaseMode.External)
@@ -1084,21 +1089,23 @@ namespace Protes
                                 var lockedValue = reader["IsL0ck3d"];
                                 bool locked = false;
                                 if (lockedValue is byte b)
-                                {
                                     locked = b != 0;
-                                }
                                 else if (lockedValue is sbyte sb)
-                                {
                                     locked = sb != 0;
-                                }
+                                else if (lockedValue is short sh)
+                                    locked = sh != 0;
                                 else if (lockedValue is int i)
-                                {
                                     locked = i != 0;
-                                }
                                 else if (lockedValue is long l)
-                                {
                                     locked = l != 0;
-                                }
+                                else if (lockedValue is bool bo)
+                                    locked = bo;
+                                else if (lockedValue is string s)
+                                    locked = (s == "1") || s.Equals("true", StringComparison.OrdinalIgnoreCase);
+                                else if (lockedValue is decimal d)
+                                    locked = d != 0;
+
+
                                 string salt = reader["EncryptionSalt"]?.ToString() ?? "";
                                 return (pwd, locked, salt);
                             }
@@ -1237,155 +1244,170 @@ namespace Protes
             ExportFilesButton.IsEnabled = canEdit && (_fullNotesCache?.Any() == true);
         }
         private void GateLockButton_Click(object sender, RoutedEventArgs e)
-{
-    if (!_hasGatePassword)
-    {
-        // === SET PASSWORD ===
-        var pwdWindow = new GatePasswordWindow(isSettingPassword: true, isChanging: false);
-        pwdWindow.Owner = this;
-        if (pwdWindow.ShowDialog() != true || string.IsNullOrWhiteSpace(pwdWindow.Password))
-            return;
-
-        try
         {
-            // Create table + lock
-            if (_currentMode == DatabaseMode.Local)
+            if (!_hasGatePassword)
             {
-                using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                // === SET PASSWORD ===
+                var pwdWindow = new GatePasswordWindow(isSettingPassword: true, isChanging: false);
+                pwdWindow.Owner = this;
+                if (pwdWindow.ShowDialog() != true || string.IsNullOrWhiteSpace(pwdWindow.Password))
+                    return;
+
+                try
                 {
-                    conn.Open();
-                    using (var cmd = new SQLiteCommand(@"
+                    // Create table + lock
+                    if (_currentMode == DatabaseMode.Local)
+                    {
+                        using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                        {
+                            conn.Open();
+                            using (var cmd = new SQLiteCommand(@"
                         CREATE TABLE IF NOT EXISTS EntryGate (
                             Sp00ns TEXT,
                             IsL0ck3d INTEGER DEFAULT 1,
                             EncryptionSalt TEXT
                         )", conn))
-                    {
-                        cmd.ExecuteNonQuery();
+                            {
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
                     }
-                }
-            }
-            else
-            {
-                using (var conn = new MySqlConnection(_externalConnectionString))
-                {
-                    conn.Open();
-                    using (var cmd = new MySqlCommand(@"
+                    else
+                    {
+                        using (var conn = new MySqlConnection(_externalConnectionString))
+                        {
+                            conn.Open();
+                            using (var cmd = new MySqlCommand(@"
                         CREATE TABLE IF NOT EXISTS EntryGate (
                             Sp00ns TEXT,
                             IsL0ck3d TINYINT(1) DEFAULT 1,
                             EncryptionSalt TEXT
                         )", conn))
-                    {
-                        cmd.ExecuteNonQuery();
+                            {
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
                     }
-                }
-            }
 
-            string hash = HashPassword(pwdWindow.Password);
-            _hasGatePassword = true;
-            _isGateLocked = true;
+                    string hash = HashPassword(pwdWindow.Password);
 
-            // 🔑 Generate and store encryption salt
-            var saltBytes = new byte[16];
-            using (var rng = RandomNumberGenerator.Create())
-                rng.GetBytes(saltBytes);
-            string saltBase64 = Convert.ToBase64String(saltBytes);
+                    // 🔑 Generate and store encryption salt
+                    var saltBytes = new byte[16];
+                    using (var rng = RandomNumberGenerator.Create())
+                        rng.GetBytes(saltBytes);
+                    string saltBase64 = Convert.ToBase64String(saltBytes);
 
-            SaveGateState(hash, isLocked: true, encryptionSalt: saltBase64);
+                    SaveGateState(hash, isLocked: true, encryptionSalt: saltBase64);
 
-            // Clear cached key (not applicable yet)
-            _cachedEncryptionKey = null;
-            _cachedEncryptionSalt = null;
+                    // ✅ UPDATE IN-MEMORY STATE
+                    _hasGatePassword = true;
+                    _isGateLocked = true;
 
-            UpdateGateUI();
-            RefreshToolbarSettings();
-            ShowGatePlaceholder("🔒 Database is now locked.");
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Failed to protect database:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-    else if (_isGateLocked)
-    {
-        // === UNLOCK ===
-        string dbName = _currentMode == DatabaseMode.Local
-            ? Path.GetFileName(_databasePath)
-            : $"{_settings.External_Host}/{_settings.External_Database}";
-        var pwdWindow = new GatePasswordWindow(dbName, isSettingPassword: false, isChanging: false);
-        pwdWindow.Owner = this;
-        if (pwdWindow.ShowDialog() != true)
-            return;
-
-        string enteredHash = HashPassword(pwdWindow.Password);
-        var (savedHash, _, encryptionSalt) = ReadGateState(); // 🔑 Get salt
-
-        if (enteredHash == savedHash)
-        {
-                    
-           SaveGateState(savedHash, isLocked: false, encryptionSalt: encryptionSalt);
-            _isGateLocked = false;
-
-            // DERIVE AND CACHE ENCRYPTION KEY FROM PASSWORD + SALT
-            if (!string.IsNullOrEmpty(encryptionSalt))
-            {
-                try
-                {
-                    byte[] saltBytes = Convert.FromBase64String(encryptionSalt);
-                    _cachedEncryptionSalt = saltBytes;
-                    _cachedEncryptionKey = EncryptionService.DeriveKey(pwdWindow.Password, saltBytes);
-                }
-                catch
-                {
+                    // ✅ Clear cached key and dispose repository
                     _cachedEncryptionKey = null;
                     _cachedEncryptionSalt = null;
+                    _noteRepository?.Dispose();
+                    _noteRepository = null;
+
+                    // ✅ Update UI to show locked state
+                    UpdateGateUI();
+                    RefreshToolbarSettings();
+                    ShowGatePlaceholder("🔒 Database is now locked.");
+
+                    System.Diagnostics.Debug.WriteLine($"[DEBUG] Password set - Gate locked: {_isGateLocked}, HasPassword: {_hasGatePassword}");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to protect database:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else if (_isGateLocked)
+            {
+                // === UNLOCK ===
+                string dbName = _currentMode == DatabaseMode.Local
+                    ? Path.GetFileName(_databasePath)
+                    : $"{_settings.External_Host}/{_settings.External_Database}";
+                var pwdWindow = new GatePasswordWindow(dbName, isSettingPassword: false, isChanging: false);
+                pwdWindow.Owner = this;
+                if (pwdWindow.ShowDialog() != true)
+                    return;
+
+                string enteredHash = HashPassword(pwdWindow.Password);
+                var (savedHash, _, encryptionSalt) = ReadGateState();
+
+                if (enteredHash == savedHash)
+                {
+                    SaveGateState(savedHash, isLocked: false, encryptionSalt: encryptionSalt);
+                    _isGateLocked = false;
+
+                    // DERIVE AND CACHE ENCRYPTION KEY FROM PASSWORD + SALT
+                    if (!string.IsNullOrEmpty(encryptionSalt))
+                    {
+                        try
+                        {
+                            byte[] saltBytes = Convert.FromBase64String(encryptionSalt);
+                            _cachedEncryptionSalt = saltBytes;
+                            _cachedEncryptionKey = EncryptionService.DeriveKey(pwdWindow.Password, saltBytes);
+                        }
+                        catch
+                        {
+                            _cachedEncryptionKey = null;
+                            _cachedEncryptionSalt = null;
+                        }
+                    }
+                    else
+                    {
+                        _cachedEncryptionKey = null;
+                        _cachedEncryptionSalt = null;
+                    }
+
+                    // Recreate repo and load notes
+                    if (_currentMode == DatabaseMode.Local)
+                        _noteRepository = new SqliteNoteRepository(_databasePath);
+                    else
+                        _noteRepository = new MySqlNoteRepository(_externalConnectionString);
+
+                    LoadNotesFromDatabase();
+                    UpdateGateUI();
+                    UpdateStatusBar();
+                    NotesDataGrid.Visibility = Visibility.Visible;
+                    DisconnectedPlaceholder.Visibility = Visibility.Collapsed;
+
+                    System.Diagnostics.Debug.WriteLine($"[DEBUG] Unlocked - Gate locked: {_isGateLocked}");
+
+                    // Optional: Show warning if DB was left unlocked with encrypted notes
+                    if (_fullNotesCache.Any(n => n.Content.StartsWith("ENC::")))
+                    {
+                        MessageBox.Show(
+                            "⚠️ Warning: This database contains encrypted notes, but it was left unlocked.\n" +
+                            "You will not be able to decrypt this data or edit/remove password unless you lock and unlock again.",
+                            "Protes",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Incorrect password.", "Access Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             else
             {
+                // === RE-LOCK ===
+                var (savedHash, _, encryptionSalt) = ReadGateState();
+                SaveGateState(savedHash, isLocked: true, encryptionSalt: encryptionSalt);
+                _isGateLocked = true;
+
+                // 🔑 Clear key on re-lock
                 _cachedEncryptionKey = null;
                 _cachedEncryptionSalt = null;
-            }
-                    FinishConnection();
 
-            // Recreate repo and load notes
-            if (_currentMode == DatabaseMode.Local)
-                _noteRepository = new SqliteNoteRepository(_databasePath);
-            else
-                _noteRepository = new MySqlNoteRepository(_externalConnectionString);
-            
-            // Optional: Show warning if DB was left unlocked with encrypted notes
-            if (_fullNotesCache.Any(n => n.Content.StartsWith("ENC::")))
-            {
-                MessageBox.Show(
-                    "⚠️ Warning: This database contains encrypted notes, but it was left unlocked.\n" +
-                    "You will not be able to decrypt this data or edit/remove password unless you lock and unlock again.",
-                    "Protes",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                UpdateGateUI();
+                ShowGatePlaceholder("🔒 Database locked.");
+
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] Re-locked - Gate locked: {_isGateLocked}");
             }
         }
-        else
-        {
-            MessageBox.Show("Incorrect password.", "Access Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-    }
-    else
-    {
-        // === RE-LOCK ===
-        var (savedHash, _, encryptionSalt) = ReadGateState();
-        SaveGateState(savedHash, isLocked: true, encryptionSalt: encryptionSalt);
-        _isGateLocked = true;
-
-        // 🔑 Clear key on re-lock
-        _cachedEncryptionKey = null;
-        _cachedEncryptionSalt = null;
-
-        UpdateGateUI();
-        ShowGatePlaceholder("🔒 Database locked.");
-    }
-}
 
         private void GateSettingsButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1394,76 +1416,93 @@ namespace Protes
                 : $"{_settings.External_Host}/{_settings.External_Database}";
 
             var pwdWindow = new GatePasswordWindow(dbName, isSettingPassword: true, isChanging: true);
-            if (pwdWindow.ShowDialog() == true)
+            if (pwdWindow.ShowDialog() != true)
+                return;
+
+            bool hasEncryptedNotes = _fullNotesCache.Any(note => note.Content.StartsWith("ENC::"));
+
+            if (pwdWindow.WantsToRemovePassword)
             {
-                if (pwdWindow.WantsToRemovePassword)
+                // 🔒 CRITICAL: If encrypted notes exist but key is missing, removal is unsafe
+                if (hasEncryptedNotes && _cachedEncryptionKey == null)
                 {
-                    // BLOCK removal if any note is encrypted
-                    bool hasEncryptedNotes = _fullNotesCache.Any(note => note.Content.StartsWith("ENC::"));
-                    if (hasEncryptedNotes)
+                    MessageBox.Show(
+                        "This database contains encrypted notes, but the encryption key is not available.\n" +
+                        "You must lock the database and unlock it with the correct password before you can remove the password.",
+                        "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (hasEncryptedNotes)
+                {
+                    MessageBox.Show(
+                        "You cannot remove the password while notes are encrypted.\n" +
+                        "Please decrypt all notes first, or keep the password to retain access to your data.",
+                        "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // ✅ Safe to remove
+                try
+                {
+                    string dropCmd = "DROP TABLE EntryGate";
+                    if (_connectedMode == DatabaseMode.Local)
                     {
-                        MessageBox.Show(
-                            "You cannot remove the password while notes are encrypted.\n" +
-                            "Please decrypt all notes first, or keep the password to retain access to your data.",
-                            "Protes",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Warning);
-                        return;
+                        using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                        {
+                            conn.Open();
+                            using (var cmd = new SQLiteCommand(dropCmd, conn))
+                                cmd.ExecuteNonQuery();
+                        }
+                    }
+                    else if (_connectedMode == DatabaseMode.External)
+                    {
+                        using (var conn = new MySqlConnection(_externalConnectionString))
+                        {
+                            conn.Open();
+                            using (var cmd = new MySqlCommand(dropCmd, conn))
+                                cmd.ExecuteNonQuery();
+                        }
                     }
 
-                    // Remove password
-                    try
-                    {
-                        string dropCmd = "DROP TABLE EntryGate";
-                        if (_currentMode == DatabaseMode.Local)
-                        {
-                            using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
-                            {
-                                conn.Open();
-                                using (var cmd = new SQLiteCommand(dropCmd, conn))
-                                    cmd.ExecuteNonQuery();
-                            }
-                        }
-                        else
-                        {
-                            using (var conn = new MySqlConnection(_externalConnectionString))
-                            {
-                                conn.Open();
-                                using (var cmd = new MySqlCommand(dropCmd, conn))
-                                    cmd.ExecuteNonQuery();
-                            }
-                        }
-                        _hasGatePassword = false;
-                        _isGateLocked = false;
-                        UpdateGateUI();
-                        LoadNotesFromDatabase();
-                        RefreshToolbarSettings();
-                        MessageBox.Show("Password removed. Database is no longer protected.", "Gate Entry", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Failed to remove password:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
+                    _hasGatePassword = false;
+                    _isGateLocked = false;
+                    _cachedEncryptionKey = null;
+                    _cachedEncryptionSalt = null;
+                    UpdateGateUI();
+                    LoadNotesFromDatabase();
+                    RefreshToolbarSettings();
+                    MessageBox.Show("Password removed.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
-                else if (!string.IsNullOrWhiteSpace(pwdWindow.Password))
+                catch (Exception ex)
                 {
-                    // BLOCK password change if any note is encrypted
-                    bool hasEncryptedNotes = _fullNotesCache.Any(note => note.Content.StartsWith("ENC::"));
-                    if (hasEncryptedNotes)
-                    {
-                        MessageBox.Show(
-                            "You cannot change the password while notes are encrypted.\n" +
-                            "Please decrypt all notes first, or keep the current password to retain access to your data.",
-                            "Protes",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Warning);
-                        return;
-                    }
-
-                    string hash = HashPassword(pwdWindow.Password);
-                    SaveGateState(hash, isLocked: _isGateLocked);
-                    MessageBox.Show("Password updated.", "Gate Entry", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show($"Failed to remove password:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+            }
+            else if (!string.IsNullOrWhiteSpace(pwdWindow.Password))
+            {
+                // 🔒 Block password change under same condition
+                if (hasEncryptedNotes && _cachedEncryptionKey == null)
+                {
+                    MessageBox.Show(
+                        "This database contains encrypted notes, but the encryption key is not available.\n" +
+                        "You must lock and unlock the database with the correct password before you can change it.",
+                        "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (hasEncryptedNotes)
+                {
+                    MessageBox.Show(
+                        "You cannot change the password while notes are encrypted.\n" +
+                        "Please decrypt all notes first, or keep the current password.",
+                        "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                string hash = HashPassword(pwdWindow.Password);
+                SaveGateState(hash, isLocked: _isGateLocked);
+                MessageBox.Show("Password updated.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
         private void ShowGatePlaceholder(string message)
@@ -2357,6 +2396,11 @@ namespace Protes
 
         private void LoadSelectedDbButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_isConnected)
+            {
+                LockDatabaseIfProtected(); // 👈 ADD THIS
+                Disconnect_Click(this, new RoutedEventArgs());
+            }
             if (_currentMode == DatabaseMode.Local)
             {
                 var selectedItem = DatabaseOrConnectionComboBox.SelectedItem as DbFileInfo;
@@ -2386,6 +2430,7 @@ namespace Protes
                         // If already connected, disconnect first
                         if (_isConnected)
                         {
+                            LockDatabaseIfProtected();
                             // auto-disconnect first
                             if (_settings.AutoDisconnectOnSwitch)
                             {
@@ -2393,6 +2438,11 @@ namespace Protes
                             }
                             // Or just reconnect — MySQL connector handles it
                         }
+                        // Clear gate state from previous connection
+                        _hasGatePassword = false;
+                        _isGateLocked = false;
+                        _cachedEncryptionKey = null;
+                        _cachedEncryptionSalt = null;
                         ConnectToExternalDatabase(connStr);
                         UpdateStatusBar();
                     }
@@ -3452,6 +3502,11 @@ namespace Protes
         }
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
+            if (_isConnected)
+            {
+                LockDatabaseIfProtected();
+            }
+
             if (_isExplicitlyExiting)
             {
                 // User clicked "Exit" in tray — fully shut down
@@ -3490,7 +3545,108 @@ namespace Protes
             }
         }
 
+        private void LockDatabaseIfProtected()
+        {
+            if (!_isConnected || _isGateLocked)
+                return;
 
+            try
+            {
+                // Use _connectedMode (not _currentMode!) to read the active DB
+                string savedHash = "";
+                string encryptionSalt = "";
+                bool isLocked = false;
+                bool hasGate = false;
+
+                if (_connectedMode == DatabaseMode.Local)
+                {
+                    using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                    {
+                        conn.Open();
+                        using (var cmd = new SQLiteCommand("SELECT name FROM sqlite_master WHERE type='table' AND name=@name;", conn))
+                        {
+                            cmd.Parameters.AddWithValue("@name", GATE_TABLE_NAME);
+                            hasGate = cmd.ExecuteScalar() != null;
+                        }
+                        if (hasGate)
+                        {
+                            using (var cmd = new SQLiteCommand("SELECT Sp00ns, IsL0ck3d, EncryptionSalt FROM EntryGate LIMIT 1", conn))
+                            using (var reader = cmd.ExecuteReader())
+                            {
+                                if (reader.Read())
+                                {
+                                    savedHash = reader["Sp00ns"]?.ToString() ?? "";
+                                    isLocked = Convert.ToInt32(reader["IsL0ck3d"]) != 0;
+                                    encryptionSalt = reader["EncryptionSalt"]?.ToString() ?? "";
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (_connectedMode == DatabaseMode.External)
+                {
+                    using (var conn = new MySqlConnection(_externalConnectionString))
+                    {
+                        conn.Open();
+                        using (var cmd = new MySqlCommand("SHOW TABLES LIKE @name;", conn))
+                        {
+                            cmd.Parameters.AddWithValue("@name", GATE_TABLE_NAME);
+                            hasGate = cmd.ExecuteScalar() != null;
+                        }
+                        if (hasGate)
+                        {
+                            using (var cmd = new MySqlCommand("SELECT Sp00ns, IsL0ck3d, EncryptionSalt FROM EntryGate LIMIT 1", conn))
+                            using (var reader = cmd.ExecuteReader())
+                            {
+                                // For External (MySQL)
+                                if (reader.Read())
+                                {
+                                    savedHash = reader["Sp00ns"]?.ToString() ?? "";
+                                    var lockedValue = reader["IsL0ck3d"];
+                                    isLocked = false;
+                                    if (lockedValue is byte b)
+                                        isLocked = b != 0;
+                                    else if (lockedValue is sbyte sb)
+                                        isLocked = sb != 0;
+                                    else if (lockedValue is int i)
+                                        isLocked = i != 0;
+                                    else if (lockedValue is long l)
+                                        isLocked = l != 0;
+                                    encryptionSalt = reader["EncryptionSalt"]?.ToString() ?? "";
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (hasGate && !string.IsNullOrEmpty(savedHash) && !isLocked)
+                {
+                    // Lock it in the connected DB
+                    if (_connectedMode == DatabaseMode.Local)
+                    {
+                        using (var conn = new SQLiteConnection($"Data Source={_databasePath};Version=3;"))
+                        {
+                            conn.Open();
+                            using (var cmd = new SQLiteCommand("UPDATE EntryGate SET IsL0ck3d = 1 WHERE rowid = 1", conn))
+                                cmd.ExecuteNonQuery();
+                        }
+                    }
+                    else
+                    {
+                        using (var conn = new MySqlConnection(_externalConnectionString))
+                        {
+                            conn.Open();
+                            using (var cmd = new MySqlCommand("UPDATE EntryGate SET IsL0ck3d = 1 WHERE Sp00ns IS NOT NULL LIMIT 1", conn))
+                                cmd.ExecuteNonQuery();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore — DB may be gone, table missing, etc.
+            }
+        }
         #endregion
 
         #region Toolbar and Misc UI
