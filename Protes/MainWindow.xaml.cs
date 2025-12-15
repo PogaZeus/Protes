@@ -614,7 +614,7 @@ namespace Protes
             _currentMode = DatabaseMode.External;
             UpdateDatabaseModeCheckmarks();
             UpdateStatusBar();
-
+            RefreshLocalDbControls();
             // Use your EXISTING connection logic
             TriggerConnect();
         }
@@ -1864,7 +1864,7 @@ namespace Protes
             EditNoteButton.IsEnabled = isConnected && selectedCount == 1;
             DeleteNoteButton.IsEnabled = isConnected && selectedCount >= 1;
             SearchBox.IsEnabled = isConnected && !_isSelectMode;
-            ConnectIconBtn.IsEnabled = !isConnected;
+            ConnectIconBtn.IsEnabled = !isConnected && _isGateLocked;
             DisconnectIconBtn.IsEnabled = isConnected;
             SelectNotesButton.IsEnabled = isConnected;
             ImportFilesButton.IsEnabled = isConnected;
