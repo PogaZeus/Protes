@@ -57,6 +57,10 @@ namespace Protes.Views
             NotifyDeletedCheckBox.IsChecked = _settings.NotifyDeleted;
             NotifyCopiedCheckBox.IsChecked = _settings.NotifyCopied;
             NotifyPastedCheckBox.IsChecked = _settings.NotifyPasted;
+            NotifyNewDBSuccessCheckBox.IsChecked = _settings.NotifyNewDBSuccess;
+            NotifyTitleChangeCheckBox.IsChecked = _settings.NotifyTitleChange;
+            NotifyNotesEncryptedCheckBox.IsChecked = _settings.NotifyNotesEncrypted;
+            NotifyNotesDecryptedCheckBox.IsChecked = _settings.NotifyNotesDecrypted;
             ShowGateEntryWarningCheckBox.IsChecked = _settings.ShowGateEntryWarning;
 
             //DefaultDBFolder
@@ -1068,6 +1072,25 @@ namespace Protes.Views
         private void ShowGateEntryWarningCheckBox_Changed(object sender, RoutedEventArgs e)
         {
             _settings.ShowGateEntryWarning = ShowGateEntryWarningCheckBox.IsChecked == true;
+        }
+        private void NotifyNewDBSuccessCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            _settings.NotifyNewDBSuccess = NotifyNewDBSuccessCheckBox.IsChecked == true;
+        }
+
+        private void NotifyTitleChangeCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            _settings.NotifyTitleChange = NotifyTitleChangeCheckBox.IsChecked == true;
+        }
+
+        private void NotifyNotesEncryptedCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            _settings.NotifyNotesEncrypted = NotifyNotesEncryptedCheckBox.IsChecked == true;
+        }
+
+        private void NotifyNotesDecryptedCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            _settings.NotifyNotesDecrypted = NotifyNotesDecryptedCheckBox.IsChecked == true;
         }
         #endregion
 

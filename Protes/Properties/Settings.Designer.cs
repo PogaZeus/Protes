@@ -622,5 +622,53 @@ namespace Protes.Properties {
                 this["ShowGateEntryWarning"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool NotifyNewDBSuccess {
+            get {
+                return ((bool)(this["NotifyNewDBSuccess"]));
+            }
+            set {
+                this["NotifyNewDBSuccess"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool NotifyTitleChange {
+            get {
+                return ((bool)(this["NotifyTitleChange"]));
+            }
+            set {
+                this["NotifyTitleChange"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool NotifyNotesEncrypted {
+            get {
+                return ((bool)(this["NotifyNotesEncrypted"]));
+            }
+            set {
+                this["NotifyNotesEncrypted"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool NotifyNotesDecrypted {
+            get {
+                return ((bool)(this["NotifyNotesDecrypted"]));
+            }
+            set {
+                this["NotifyNotesDecrypted"] = value;
+            }
+        }
     }
 }

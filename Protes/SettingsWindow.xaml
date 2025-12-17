@@ -82,19 +82,19 @@
                                 <!-- Action buttons inside Available Databases box -->
                                 <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,0">
                                     <Button x:Name="LoadSelectedButton"
-                                            Content="Load..."
+                                            Content=" Load... "
                                             Padding="6,5"
                                             Style="{StaticResource ActionButtonStyle}"
                                             Margin="0,0,10,0"
                                             Click="LoadSelectedButton_Click"/>
                                     <Button x:Name="RemoveFromListButton"
-                                            Content="Remove..."
+                                            Content=" Remove... "
                                             Padding="6,5"
                                             Style="{StaticResource ActionButtonStyle}"
                                             Margin="0,0,10,0"
                                             Click="RemoveFromListButton_Click"/>
                                     <Button x:Name="DeleteDatabaseButton"
-                                            Content="Delete..."
+                                            Content=" Delete... "
                                             Padding="6,5"
                                             Style="{StaticResource ActionButtonStyle}"
                                             Margin="0,0,10,0"
@@ -328,7 +328,22 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
+
+                        <!-- Application -->
+                        <GroupBox Grid.Row="0" Header="Application" Margin="0,0,0,5">
+                            <StackPanel>
+                                <CheckBox x:Name="NotifyNewDBSuccessCheckBox"
+                              Content="Show new database created successfully"
+                              Checked="NotifyNewDBSuccessCheckBox_Changed"
+                              Unchecked="NotifyNewDBSuccessCheckBox_Changed"
+                              Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- Connection Notifications -->
                         <GroupBox Grid.Row="1" Header="Connection Notifications" Margin="0,0,0,5">
                             <StackPanel>
                                 <CheckBox x:Name="ShowNotificationsCheckBox"
@@ -338,10 +353,11 @@
                               Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
-                            
+
+                        <!-- Copy/Paste/Delete Notifications -->
                         <GroupBox Grid.Row="2" Header="Copy/Paste/Delete Notifications" Margin="0,0,0,5">
                             <StackPanel>
-                                  <CheckBox x:Name="NotifyCopiedCheckBox"
+                                <CheckBox x:Name="NotifyCopiedCheckBox"
                               Content="Show File(s) copied successfully"
                               Checked="NotifyCopiedCheckBox_Changed"
                               Unchecked="NotifyCopiedCheckBox_Changed"
@@ -351,17 +367,47 @@
                               Checked="NotifyPastedCheckBox_Changed"
                               Unchecked="NotifyPastedCheckBox_Changed"
                               Margin="0,5,0,0"/>
-                            <CheckBox x:Name="NotifyDeletedCheckBox"
-                            Content="Show File(s) deleted successfully"
-                            Checked="NotifyDeletedCheckBox_Changed"
-                            Unchecked="NotifyDeletedCheckBox_Changed"
-                            Margin="0,5,0,0"/>
+                                <CheckBox x:Name="NotifyDeletedCheckBox"
+                              Content="Show File(s) deleted successfully"
+                              Checked="NotifyDeletedCheckBox_Changed"
+                              Unchecked="NotifyDeletedCheckBox_Changed"
+                              Margin="0,5,0,0"/>
                             </StackPanel>
                         </GroupBox>
-                            
-                        <GroupBox Grid.Row="3" Header="Warnings" Margin="0,0,0,5">
+
+
+                        <!-- Encryption/Decryption -->
+                        <GroupBox Grid.Row="3" Header="Encryption/Decryption" Margin="0,0,0,5">
                             <StackPanel>
-                            <CheckBox x:Name="ShowGateEntryWarningCheckBox"
+                                <CheckBox x:Name="NotifyNotesEncryptedCheckBox"
+                              Content="Show message when notes are encrypted"
+                              Checked="NotifyNotesEncryptedCheckBox_Changed"
+                              Unchecked="NotifyNotesEncryptedCheckBox_Changed"
+                              Margin="0,5,0,0"/>
+                                <CheckBox x:Name="NotifyNotesDecryptedCheckBox"
+                              Content="Show message when notes are decrypted"
+                              Checked="NotifyNotesDecryptedCheckBox_Changed"
+                              Unchecked="NotifyNotesDecryptedCheckBox_Changed"
+                              Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- Inline Editor -->
+                        <GroupBox Grid.Row="4" Header="Inline Editor" Margin="0,0,0,5">
+                            <StackPanel>
+                                <CheckBox x:Name="NotifyTitleChangeCheckBox"
+                              Content="Confirm title changes in the DataGrid"
+                              Checked="NotifyTitleChangeCheckBox_Changed"
+                              Unchecked="NotifyTitleChangeCheckBox_Changed"
+                              Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
+
+
+                        <!-- Warnings -->
+                        <GroupBox Grid.Row="5" Header="Warnings" Margin="0,0,0,5">
+                            <StackPanel>
+                                <CheckBox x:Name="ShowGateEntryWarningCheckBox"
                               Content="Show security disclaimer when setting a database password (first time setup)."
                               Checked="ShowGateEntryWarningCheckBox_Changed"
                               Unchecked="ShowGateEntryWarningCheckBox_Changed"

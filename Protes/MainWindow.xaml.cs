@@ -1642,7 +1642,10 @@ namespace Protes
                 if (anyEncrypted)
                 {
                     LoadNotesFromDatabase();
-                    MessageBox.Show("Notes encrypted successfully.\nAll fields (title, tags, content) now appear as encrypted data.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (_settings.NotifyNotesEncrypted && anyEncrypted)
+                    {
+                        MessageBox.Show("Notes encrypted successfully.\nAll fields (title, tags, content) now appear as encrypted data.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
                 }
                 else
                 {
@@ -1718,7 +1721,10 @@ namespace Protes
                 if (decryptedCount > 0)
                 {
                     LoadNotesFromDatabase();
-                    MessageBox.Show($"{decryptedCount} note{(decryptedCount == 1 ? "" : "s")} decrypted (title, tags, and content).", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (_settings.NotifyNotesDecrypted && decryptedCount > 0)
+                    {
+                        MessageBox.Show($"{decryptedCount} note{(decryptedCount == 1 ? "" : "s")} decrypted (title, tags, and content).", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
                 }
                 else
                 {
@@ -1820,20 +1826,29 @@ namespace Protes
                 var newTitle = textBox.Text;
                 if (newTitle == _originalTitle) return;
 
-                // Show confirmation dialog for Title
-                var result = MessageBox.Show(
-                    $"Update note title from:\n\n\"{_originalTitle}\"\n\nto:\n\n\"{newTitle}\"?",
-                    "Confirm Title Change",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (result == MessageBoxResult.Yes)
+                // ✅ Respect NotifyTitleChange setting
+                if (_settings.NotifyTitleChange)
                 {
-                    UpdateNoteTitle(newTitle);
+                    // Show confirmation dialog only if setting is ON
+                    var result = MessageBox.Show(
+                        $"Update note title from:\n\n\"{_originalTitle}\"\n\nto:\n\n\"{newTitle}\"?",
+                        "Confirm Title Change",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        UpdateNoteTitle(newTitle);
+                    }
+                    else
+                    {
+                        _editingItem.Title = _originalTitle;
+                    }
                 }
                 else
                 {
-                    _editingItem.Title = _originalTitle;
+                    // If notifications are OFF, auto-accept the change
+                    UpdateNoteTitle(newTitle);
                 }
             }
             else if (columnHeader == "Tags")
@@ -2351,7 +2366,10 @@ namespace Protes
                     // ✅ Ensure the AvailableDatabasesComboBox and related UI are refreshed
                     LoadAvailableDatabases();
 
-                    MessageBox.Show("New database created successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (_settings.NotifyNewDBSuccess)
+                    {
+                        MessageBox.Show("New database created successfully.", "Protes", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
                 }
                 catch (Exception ex)
                 {

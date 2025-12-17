@@ -195,6 +195,44 @@ namespace Protes
                 Save();
             }
         }
+
+        public bool NotifyNewDBSuccess
+        {
+            get => global::Protes.Properties.Settings.Default.NotifyNewDBSuccess;
+            set
+            {
+                global::Protes.Properties.Settings.Default.NotifyNewDBSuccess = value;
+                Save();
+            }
+        }
+
+        public bool NotifyTitleChange
+        {
+            get => global::Protes.Properties.Settings.Default.NotifyTitleChange;
+            set
+            {
+                global::Protes.Properties.Settings.Default.NotifyTitleChange = value;
+                Save();
+            }
+        }
+        public bool NotifyNotesEncrypted
+        {
+            get => global::Protes.Properties.Settings.Default.NotifyNotesEncrypted;
+            set
+            {
+                global::Protes.Properties.Settings.Default.NotifyNotesEncrypted = value;
+                Save();
+            }
+        }
+        public bool NotifyNotesDecrypted
+        {
+            get => global::Protes.Properties.Settings.Default.NotifyNotesDecrypted;
+            set
+            {
+                global::Protes.Properties.Settings.Default.NotifyNotesDecrypted = value;
+                Save();
+            }
+        }
         #endregion
 
         #region Application Integration
