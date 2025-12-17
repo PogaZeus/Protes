@@ -138,14 +138,14 @@
                 <MenuItem x:Name="ToolbarOptionsMenu" Header="Toolbar Icons">
                     <MenuItem x:Name="ViewToolbarConnectMenuItem" Header="Connect/Disconnect" IsCheckable="True" Checked="ViewToolbarConnectMenuItem_Checked" Unchecked="ViewToolbarConnectMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarACOSMenuItem" Header="ACOS - Auto Connect on Switch" IsCheckable="True" Checked="ViewToolbarACOSMenuItem_Checked" Unchecked="ViewToolbarACOSMenuItem_Checked"/>
-                    <MenuItem x:Name="ViewToolbarSettingsMenuItem" Header="Settings Button" IsCheckable="True" Checked="ViewToolbarSettingsMenuItem_Checked" Unchecked="ViewToolbarSettingsMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarSettingsMenuItem" Header="Settings" IsCheckable="True" Checked="ViewToolbarSettingsMenuItem_Checked" Unchecked="ViewToolbarSettingsMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarLocalDBMenuItem" Header="Local Databases - Dropdown &amp; Load" IsCheckable="True" Checked="ViewToolbarLocalDBMenuItem_Checked" Unchecked="ViewToolbarLocalDBMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarImpExMenuItem" Header="Import/Export" IsCheckable="True" Checked="ViewToolbarImpExMenuItem_Checked" Unchecked="ViewToolbarImpExMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarNoteToolsMenuItem" Header="Note Tools (New/Edit/Select/Delete)" IsCheckable="True" Checked="ViewToolbarNoteToolsMenuItem_Checked" Unchecked="ViewToolbarNoteToolsMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarCopyPasteMenuItem" Header="Copy/Paste Buttons" IsCheckable="True" Checked="ViewToolbarCopyPasteMenuItem_Checked" Unchecked="ViewToolbarCopyPasteMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarSearchMenuItem" Header="Search Database" IsCheckable="True" Checked="ViewToolbarSearchMenuItem_Checked" Unchecked="ViewToolbarSearchMenuItem_Checked"/>
                     <MenuItem x:Name="ViewToolbarCalcMenuItem" Header="Calculator" IsCheckable="True" Checked="ViewToolbarCalcMenuItem_Checked" Unchecked="ViewToolbarCalcMenuItem_Checked"/>
-                    <MenuItem x:Name="ViewToolbarGateEntryMenuItem" Header="Gate Entry (Lock/Settings)" IsCheckable="True" Checked="ViewToolbarGateEntryMenuItem_Checked" Unchecked="ViewToolbarGateEntryMenuItem_Checked"/>
+                    <MenuItem x:Name="ViewToolbarGateEntryMenuItem" Header="Lock &amp; Encryption" IsCheckable="True" Checked="ViewToolbarGateEntryMenuItem_Checked" Unchecked="ViewToolbarGateEntryMenuItem_Checked"/>
                 </MenuItem>
             </MenuItem>
 

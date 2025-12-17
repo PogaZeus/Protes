@@ -77,7 +77,7 @@ namespace Protes
                 // Fallback to default location
                 _databasePath = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "Protes", "notes.db"
+                    "Protes", "pro.protes"
                 );
             }
             InitializeComponent();
@@ -383,6 +383,7 @@ namespace Protes
             _databasePath = databasePath;
             _settings.SetDatabaseMode(DatabaseMode.Local);
             _settings.LastLocalDatabasePath = databasePath;
+            UpdateDatabaseModeCheckmarks();
 
             try
             {
@@ -396,15 +397,24 @@ namespace Protes
 
                 _noteRepository = new SqliteNoteRepository(_databasePath);
                 FinishConnection(); // ✅ This handles lock detection, placeholder, and UI
+                LoadAvailableDatabases();
+                UpdateButtonStates();
+                UpdateStatusBar();
+                RefreshToolbarSettings();
+                RefreshLocalDbControls();
+
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to connect to local database:\n{ex.Message}", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
                 _isConnected = false;
                 _connectedMode = DatabaseMode.None;
+                UpdateDatabaseModeCheckmarks();
                 LoadAvailableDatabases();
                 UpdateButtonStates();
                 UpdateStatusBar();
+                RefreshToolbarSettings();
+                RefreshLocalDbControls();
             }
         }
 
@@ -1245,6 +1255,11 @@ namespace Protes
         }
         private void GateLockButton_Click(object sender, RoutedEventArgs e)
         {
+            if (!_isConnected)
+            {
+                MessageBox.Show("You must be connected to a database to set or manage a password.", "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
             if (!_hasGatePassword)
             {
                 // === SET PASSWORD ===
@@ -1864,7 +1879,7 @@ namespace Protes
             EditNoteButton.IsEnabled = isConnected && selectedCount == 1;
             DeleteNoteButton.IsEnabled = isConnected && selectedCount >= 1;
             SearchBox.IsEnabled = isConnected && !_isSelectMode;
-            ConnectIconBtn.IsEnabled = !isConnected && _isGateLocked;
+            ConnectIconBtn.IsEnabled = !isConnected && !_hasGatePassword;
             DisconnectIconBtn.IsEnabled = isConnected;
             SelectNotesButton.IsEnabled = isConnected;
             ImportFilesButton.IsEnabled = isConnected;
