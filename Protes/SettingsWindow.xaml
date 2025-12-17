@@ -82,17 +82,20 @@
                                 <!-- Action buttons inside Available Databases box -->
                                 <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,0">
                                     <Button x:Name="LoadSelectedButton"
-                                            Content=" Load Selected "
+                                            Content="Load..."
+                                            Padding="6,5"
                                             Style="{StaticResource ActionButtonStyle}"
                                             Margin="0,0,10,0"
                                             Click="LoadSelectedButton_Click"/>
                                     <Button x:Name="RemoveFromListButton"
-                                            Content=" Remove from List "
+                                            Content="Remove..."
+                                            Padding="6,5"
                                             Style="{StaticResource ActionButtonStyle}"
                                             Margin="0,0,10,0"
                                             Click="RemoveFromListButton_Click"/>
                                     <Button x:Name="DeleteDatabaseButton"
-                                            Content=" Delete Database "
+                                            Content="Delete..."
+                                            Padding="6,5"
                                             Style="{StaticResource ActionButtonStyle}"
                                             Margin="0,0,10,0"
                                             Click="DeleteDatabaseButton_Click"/>
@@ -220,12 +223,9 @@
 
                         <GroupBox Grid.Row="2" Header="Database Table Requirements" Margin="0,0,0,0">
                             <StackPanel>
-                                <TextBlock Text="External databases need to be setup with a Notes table before connecting."
-                               FontStyle="Italic"
-                               Foreground="Gray"
-                               Margin="0,5,0,0"/>
+                                <TextBlock Text="Protes will attempt to create the required table once you successfully connect to an external database." FontStyle="Normal" TextWrapping="WrapWithOverflow" Margin="0,5,0,0"/>
                                 <Button x:Name="RequirementsButton"
-                            Content="Info..."
+                            Content="Requirements"
                             HorizontalAlignment="Left"
                             Margin="0,5,0,0"
                             Padding="10,5"

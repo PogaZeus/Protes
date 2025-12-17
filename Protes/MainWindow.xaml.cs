@@ -228,7 +228,7 @@ namespace Protes
                         MessageBox.Show("External database configuration is incomplete.", "Protes", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
-                    TestExternalConnection(connString);
+                    EnsureNotesTableExistsExternal(connString);
                     _externalConnectionString = connString;
                     _noteRepository = new MySqlNoteRepository(connString);
                 }
@@ -490,10 +490,21 @@ namespace Protes
         {
             try
             {
-                TestExternalConnection(connectionString);
+                // ✅ This now prompts + creates if needed
+                EnsureNotesTableExistsExternal(connectionString);
+
                 _externalConnectionString = connectionString;
                 _noteRepository = new MySqlNoteRepository(connectionString);
-                FinishConnection(); // ✅ All gate and UI logic here
+                FinishConnection();
+            }
+            catch (OperationCanceledException)
+            {
+                // User clicked "No" — do nothing, no error
+                return;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                MessageBox.Show(ex.Message, "Permission Denied", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (InvalidOperationException ex)
             {
@@ -525,15 +536,62 @@ namespace Protes
             }
         }
 
-        private void TestExternalConnection(string connectionString)
+        private bool ShouldCreateNotesTablePrompt()
+        {
+            var result = MessageBox.Show(
+                "The 'Notes' table was not found in the selected database.\n\n" +
+                "Would you like Protes to create it now?",
+                "Table Missing",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            return result == MessageBoxResult.Yes;
+        }
+
+        private void EnsureNotesTableExistsExternal(string connectionString)
         {
             using (var conn = new MySqlConnection(connectionString))
             {
                 conn.Open();
-                using (var cmd = new MySqlCommand("SHOW TABLES LIKE 'Notes';", conn))
+
+                // Check if table exists
+                using (var checkCmd = new MySqlCommand("SHOW TABLES LIKE 'Notes';", conn))
                 {
-                    if (cmd.ExecuteScalar() == null)
-                        throw new InvalidOperationException("Table 'Notes' not found in the external database.");
+                    if (checkCmd.ExecuteScalar() != null)
+                        return; // Table exists — all good
+                }
+
+                // Table missing → ask user
+                if (!ShouldCreateNotesTablePrompt())
+                    throw new OperationCanceledException("User declined to create Notes table.");
+
+                // Try to create it
+                try
+                {
+                    using (var createCmd = new MySqlCommand(@"
+                CREATE TABLE Notes (
+                    Id BIGINT NOT NULL AUTO_INCREMENT,
+                    Title TEXT NOT NULL,
+                    Content LONGTEXT,
+                    Tags TEXT,
+                    LastModified DATETIME,
+                    PRIMARY KEY (Id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;", conn))
+                    {
+                        createCmd.ExecuteNonQuery();
+                    }
+                }
+                catch (MySqlException ex) when (ex.Number == 1142) // ER_TABLEACCESS_DENIED_ERROR
+                {
+                    throw new UnauthorizedAccessException(
+                        "You do not have 'CREATE' permissions on this database.\n" +
+                        "Please check your database user privileges or contact your database administrator.");
+                }
+                catch (MySqlException ex)
+                {
+                    // Generic MySQL error (could be syntax, missing engine, etc.)
+                    throw new InvalidOperationException(
+                        $"Failed to create 'Notes' table:\n{ex.Message}");
                 }
             }
         }
@@ -2618,9 +2676,9 @@ namespace Protes
                     // Only allow ONE file for Note Editor
                     if (args.Count > 1)
                     {
-                        ActivateWindow();
+                        ActivateNoteEditorFromSendTo();
                         MessageBox.Show(this,
-                            "The Note Editor only supports opening one file at a time.\n\n" +
+                            "The Note Editor only supports opening one file at a time, try Import instead.\n\n" +
                             $"You selected {args.Count} files. Only the first will be opened.",
                             "Protes", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
@@ -3455,7 +3513,22 @@ namespace Protes
         public void ActivateWindow()
         {
             Show();
-            WindowState = WindowState.Normal;
+            Activate();
+        }
+        private void ActivateNoteEditorFromSendTo()
+        {
+            
+            if (!IsVisible)
+            {
+                Show();
+            }
+
+            if (WindowState == WindowState.Minimized)
+            {
+                // Temporarily restore so MessageBox appears correctly
+                WindowState = WindowState.Normal;
+            }
+
             Activate();
         }
         #endregion

@@ -976,7 +976,7 @@ namespace Protes.Views
             dynamic shortcut = shell.CreateShortcut(shortcutPath);
 
             shortcut.TargetPath = exePath;
-            shortcut.Arguments = "-noteeditor"; // ✅ REMOVED "%1"
+            shortcut.Arguments = "-noteeditor"; 
             shortcut.WindowStyle = 1;
             shortcut.Description = "Open file content in Pro Note Editor";
             shortcut.IconLocation = exePath + ",0";

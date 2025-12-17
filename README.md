@@ -12,17 +12,15 @@
 
 Tired of managing hundreds of scattered `.txt` files? **Protes** brings that familiar simplicity into a powerful, organized database—without sacrificing the feel you love.
 
-Think of it as **Notepad, upgraded**:  
-- Your notes live in a clean, searchable database (`.db` or `.prote`).  
+Think of it as **Notepad, in a database**:  
+- Your notes live in a clean, searchable file (`.db` or `.prote`) or works with external databases.  
 - The **Note Editor** looks and feels like classic Notepad—but now with persistence, tagging, and instant access.  
 - **Import entire folders** of `.txt`, `.md`, or `.csv` files in seconds—perfect for migrating from legacy systems.  
 - **Export any note** back to `.txt` or `.md` anytime—ideal for sharing, backup, or version control.  
 - Double-click a `.prote` file to **open it instantly**—Protes auto-imports and loads it if needed.
 
-And because this is open source—you can **help shape its future** by getting involved!
-OR perhaps you want to copy this project and make your own?! 
 
-### 🔒 **Privacy & Control — Now with Gate Entry Lock & Encryption**
+### 🔒 **Privacy & Control — Now with Gate Entry Lock & Encryption, Use at your own risk**
 - **100% local by default** — your notes never leave your machine unless you choose to connect externally.  
 - **Optional MySQL/External DB support** — sync across devices securely when needed.  
 - **No telemetry, no cloud, no bloat** — just your notes, your rules.  
@@ -46,7 +44,7 @@ OR perhaps you want to copy this project and make your own?!
 - **Persistent UI state** — customise the toolbar icons.
 
 ### 📦 **Smart Database Management**
-- **Local `.db` / `.prote` file support** — with auto-numbered exports (`Note.txt`, `Note(1).txt`, etc.) to prevent overwrites.  
+- **Local `.prote` or `.db` file support** — with auto-numbered exports (`Note.txt`, `Note(1).txt`, etc.) to prevent overwrites.  
 - **One-instance enforcement** — opening a `.prote` file activates the existing app window and prompts to switch databases.  
 - **Database switching** — right-click system tray icon or use the toolbar dropdown to switch between local or external databases.  
 - **Safe file associations** — `.prote` extension linked to your app for seamless double-click loading.  
@@ -113,10 +111,12 @@ If you find Protes useful, consider:
 Please note this is my second C# application (3rd or 4th app if you count when I was young playing with C++) I made this because I wanted to prove to myself that I could but honestly without AI, I probably couldn't have made this (at least not in such short time), but because I am well versed in programming languages I was able to produce this in rapid succession (with help from AI). C# is rapidly becoming one of my favourite languages, I believe this is all c# 7.3 compatible, I am still a newbie to developing applications with such tools. Future apps will come but I plan to improve this app further. 
 ---
 
-## 🎯 **Vision**
+## 🎯 **Future Goals**
 
-> **Protes** is built for **you** — the note-taker, the self-taught creator who values control, simplicity, and likes Notepad but doesn’t like 100's of text files.  
-> It’s powered by SQLite, wrapped in a responsive WPF shell, and ready to grow with your workflow.
+> Improve any bugs that are found
+> Improve the import (add importing large amounts of files to the progress bar, currently only works on the scan)
+> Improve the copy/paste (when copying large amounts of data, notify the user or add a progress bar)
+> More settings (Notifications)
 
 ---
 
