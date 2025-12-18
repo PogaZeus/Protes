@@ -1,0 +1,207 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <configSections>
+    <sectionGroup name="userSettings" type="System.Configuration.UserSettingsGroup, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+      <section name="Protes.Properties.Settings" type="System.Configuration.ClientSettingsSection, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" allowExeDefinition="MachineToLocalUser" requirePermission="false" />
+    </sectionGroup>
+    <!-- For more information on Entity Framework configuration, visit http://go.microsoft.com/fwlink/?LinkID=237468 -->
+    <section name="entityFramework" type="System.Data.Entity.Internal.ConfigFile.EntityFrameworkSection, EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" requirePermission="false" />
+  </configSections>
+  <startup>
+    <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.7.2" />
+  </startup>
+  <entityFramework>
+    <providers>
+      <provider invariantName="System.Data.SqlClient" type="System.Data.Entity.SqlServer.SqlProviderServices, EntityFramework.SqlServer" />
+      <provider invariantName="System.Data.SQLite.EF6" type="System.Data.SQLite.EF6.SQLiteProviderServices, System.Data.SQLite.EF6" />
+    </providers>
+  </entityFramework>
+  <system.data>
+    <DbProviderFactories>
+      <remove invariant="System.Data.SQLite.EF6" />
+      <add name="SQLite Data Provider (Entity Framework 6)" invariant="System.Data.SQLite.EF6" description=".NET Framework Data Provider for SQLite (Entity Framework 6)" type="System.Data.SQLite.EF6.SQLiteProviderFactory, System.Data.SQLite.EF6" />
+      <remove invariant="System.Data.SQLite" />
+      <add name="SQLite Data Provider" invariant="System.Data.SQLite" description=".NET Framework Data Provider for SQLite" type="System.Data.SQLite.SQLiteFactory, System.Data.SQLite" />
+    </DbProviderFactories>
+  </system.data>
+  <userSettings>
+    <Protes.Properties.Settings>
+      <setting name="DatabaseMode" serializeAs="String">
+        <value>Local</value>
+      </setting>
+      <setting name="AutoConnect" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="External_Host" serializeAs="String">
+        <value />
+      </setting>
+      <setting name="External_Port" serializeAs="String">
+        <value>1433</value>
+      </setting>
+      <setting name="External_Database" serializeAs="String">
+        <value />
+      </setting>
+      <setting name="External_Username" serializeAs="String">
+        <value />
+      </setting>
+      <setting name="External_Password" serializeAs="String">
+        <value />
+      </setting>
+      <setting name="LastLocalDatabasePath" serializeAs="String">
+        <value />
+      </setting>
+      <setting name="DisplayTitle" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="DisplayTags" serializeAs="String">
+        <value>False</value>
+      </setting>
+      <setting name="ImportedDatabasePaths" serializeAs="String">
+        <value />
+      </setting>
+      <setting name="ShowNotifications" serializeAs="String">
+        <value>False</value>
+      </setting>
+      <setting name="DefaultDatabaseFolder" serializeAs="String">
+        <value />
+      </setting>
+      <setting name="AutoConnectOnSwitch" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="AutoDisconnectOnSwitch" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="ViewMainWindowTitle" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="ViewMainWindowTags" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="ViewMainWindowMod" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="ViewMainToolbar" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="ViewToolbarLocalDB" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="ViewToolbarSearch" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="ViewToolbarACOS" serializeAs="String">
+        <value>False</value>
+      </setting>
+      <setting name="ViewToolbarConnect" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="ViewToolbarOptionsInMenu" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="DataGridZoom" serializeAs="String">
+        <value>11</value>
+      </setting>
+      <setting name="DefaultNoteEditorFontFamily" serializeAs="String">
+        <value>Consolas</value>
+      </setting>
+      <setting name="DefaultNoteEditorFontSize" serializeAs="String">
+        <value>11</value>
+      </setting>
+      <setting name="DefaultNoteEditorFontWeight" serializeAs="String">
+        <value>Normal</value>
+      </setting>
+      <setting name="DefaultNoteEditorFontStyle" serializeAs="String">
+        <value>Normal</value>
+      </setting>
+      <setting name="NotifyDeleted" serializeAs="String">
+        <value>False</value>
+      </setting>
+      <setting name="NotifyCopied" serializeAs="String">
+        <value>False</value>
+      </setting>
+      <setting name="NotifyPasted" serializeAs="String">
+        <value>False</value>
+      </setting>
+      <setting name="MinimizeToTray" serializeAs="String">
+        <value>False</value>
+      </setting>
+      <setting name="ShellNewIntegrationEnabled" serializeAs="String">
+        <value>False</value>
+      </setting>
+      <setting name="ViewToolbarImpEx" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="ViewToolbarCat" serializeAs="String">
+        <value>False</value>
+      </setting>
+      <setting name="CloseToTray" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="DefaultMainFontFamily" serializeAs="String">
+        <value>Segoe UI</value>
+      </setting>
+      <setting name="DefaultMainFontWeight" serializeAs="String">
+        <value>Normal</value>
+      </setting>
+      <setting name="DefaultMainFontStyle" serializeAs="String">
+        <value>Normal</value>
+      </setting>
+      <setting name="SendToIntegrationEnabled" serializeAs="String">
+        <value>False</value>
+      </setting>
+      <setting name="LaunchOnStartup" serializeAs="String">
+        <value>False</value>
+      </setting>
+      <setting name="ExternalConnectionsSerialized" serializeAs="String">
+        <value />
+      </setting>
+      <setting name="SendToNoteEditorEnabled" serializeAs="String">
+        <value>False</value>
+      </setting>
+      <setting name="ViewToolbarGateEntry" serializeAs="String">
+        <value>False</value>
+      </setting>
+      <setting name="ViewToolbarSettings" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="ViewToolbarNoteTools" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="ViewToolbarCopyPaste" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="ViewToolbarCalculator" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="ShowGateEntryWarning" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="NotifyNewDBSuccess" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="NotifyTitleChange" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="NotifyNotesEncrypted" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="NotifyNotesDecrypted" serializeAs="String">
+        <value>True</value>
+      </setting>
+      <setting name="ShowTitleList" serializeAs="String">
+        <value>False</value>
+      </setting>
+      <setting name="TitleListWidth" serializeAs="String">
+        <value>450</value>
+      </setting>
+    </Protes.Properties.Settings>
+  </userSettings>
+  <runtime>
+    <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+      <dependentAssembly>
+        <assemblyIdentity name="System.Runtime.CompilerServices.Unsafe" publicKeyToken="b03f5f7f11d50a3a" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-6.0.0.0" newVersion="6.0.0.0" />
+      </dependentAssembly>
+    </assemblyBinding>
+  </runtime>
+</configuration>
