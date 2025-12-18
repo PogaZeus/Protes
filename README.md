@@ -23,9 +23,9 @@ Think of it as **Notepad, in a database**:
 - **100% local by default** — your notes never leave your machine unless you choose to connect externally.  
 - **Optional MySQL/External DB support** — sync across devices securely when needed.  
 - **No telemetry, no cloud, no bloat** — just your notes, your rules.  
-- **🛡️ Password/Lock System**: Not safe from hackers without Encryption but protects your file with a password inside Protes.  
+- **🛡️ Password/Lock System**: Your password is SHA256 Encrypted. Data is not safe from hackers without Encryption but protects your file with a password inside Protes.  
 - **🔑 AES-256 Encryption**: Encrypt *entire notes* (title, tags, and content) with a key derived from your password + salt. Encrypted notes appear as `[Encrypted Data]` in the UI.  
-- **🔐 Transparent security warnings**: Clear alerts and warnings about the potential dangers of password loss.  
+- **🔐 Transparent security warnings**: Clear alerts and warnings about the potential dangers of password and data loss - USE AT YOUR OWN RISK BASICALLY.  
 - **🧾 Data trail **: Encryption state is always visible—never guess whether your data is secure.
 
 ### 🧰 **Powerful, Polished (but basic) UI**
