@@ -670,5 +670,29 @@ namespace Protes.Properties {
                 this["NotifyNotesDecrypted"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ShowTitleList {
+            get {
+                return ((bool)(this["ShowTitleList"]));
+            }
+            set {
+                this["ShowTitleList"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("450")]
+        public double TitleListWidth {
+            get {
+                return ((double)(this["TitleListWidth"]));
+            }
+            set {
+                this["TitleListWidth"] = value;
+            }
+        }
     }
 }

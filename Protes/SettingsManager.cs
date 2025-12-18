@@ -233,6 +233,24 @@ namespace Protes
                 Save();
             }
         }
+        public bool ShowTitleList
+        {
+            get => Properties.Settings.Default.ShowTitleList;
+            set
+            {
+                Properties.Settings.Default.ShowTitleList = value;
+                Save();
+            }
+        }
+        public double TitleListWidth
+        {
+            get => Properties.Settings.Default.TitleListWidth;
+            set
+            {
+                Properties.Settings.Default.TitleListWidth = value;
+                Save();
+            }
+        }
         #endregion
 
         #region Application Integration

@@ -45,6 +45,7 @@ namespace Protes
         private bool _isConnected = false;
         private bool _isExplicitlyExiting = false;
         private bool _isDisposed = false;
+        private bool _showTitleList = false;
         // Zoom settings
         private const double DEFAULT_ZOOM_POINTS = 11.0;
         private const double MIN_ZOOM_POINTS = 8.0;
@@ -100,6 +101,9 @@ namespace Protes
             ViewTagsMenuItem.IsChecked = _settings.ViewMainWindowTags;
             ViewModifiedMenuItem.IsChecked = _settings.ViewMainWindowMod;
             ViewToolbarMenuItem.IsChecked = _settings.ViewMainToolbar;
+            _showTitleList = _settings.ShowTitleList;
+            ViewTitleListMenuItem.IsChecked = _showTitleList;
+            TitleListColumn.Width = _showTitleList ? new GridLength(_settings.TitleListWidth) : new GridLength(0);
 
             // Load zoom level
             double zoomPoints = _settings.DataGridZoom;
@@ -1580,6 +1584,8 @@ namespace Protes
         }
         private void ShowGatePlaceholder(string message)
         {
+            // Clear data (security)
+            NotesDataGrid.ItemsSource = null;
             NotesDataGrid.Visibility = Visibility.Collapsed;
             DisconnectedPlaceholder.Text = message;
             DisconnectedPlaceholder.Visibility = Visibility.Visible;
@@ -1774,7 +1780,14 @@ namespace Protes
                 //e.Handled = true;
             }
         }
-
+        private void NotesListView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var item = FindVisualParent<ListViewItem>((DependencyObject)e.OriginalSource);
+            if (item != null)
+            {
+                NotesListView.SelectedItem = item.Content;
+            }
+        }
         public static T FindVisualParent<T>(DependencyObject child) where T : DependencyObject
         {
             while (child != null && !(child is T))
@@ -1797,6 +1810,27 @@ namespace Protes
             // Proceed with edit only if a note is selected
             EditNoteButton_Click(sender, e);
         }
+
+        private void NotesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Prevent infinite loop
+            if (NotesListView.SelectedItem != null && NotesDataGrid.SelectedItem != NotesListView.SelectedItem)
+            {
+                NotesDataGrid.SelectedItem = NotesListView.SelectedItem;
+                // Optional: scroll into view
+                NotesDataGrid.ScrollIntoView(NotesListView.SelectedItem);
+            }
+        }
+
+        private void NotesDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (NotesDataGrid.SelectedItem != null && NotesListView.SelectedItem != NotesDataGrid.SelectedItem)
+            {
+                NotesListView.SelectedItem = NotesDataGrid.SelectedItem;
+                NotesListView.ScrollIntoView(NotesDataGrid.SelectedItem);
+            }
+        }
+
         private void NotesDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
         {
             var columnHeader = e.Column.Header?.ToString();
@@ -2149,7 +2183,44 @@ namespace Protes
             _settings.Save();
             RefreshToolbarSettings();
         }
+        private void ViewTitleListMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            bool show = ViewTitleListMenuItem.IsChecked;
+            _settings.ShowTitleList = show;
+            _settings.Save();
 
+            if (show)
+            {
+                // Restore last width or default to 450
+                TitleListColumn.Width = new GridLength(_settings.TitleListWidth);
+            }
+            else
+            {
+                // Remember current width before hiding
+                _settings.TitleListWidth = TitleListColumn.ActualWidth;
+                TitleListColumn.Width = new GridLength(0);
+            }
+        }
+
+        // Double-click handler
+        private void NotesListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (NotesListView.SelectedItem is NoteItem selectedNote)
+            {
+                var fullNote = _fullNotesCache.FirstOrDefault(n => n.Id == selectedNote.Id);
+                if (fullNote != null)
+                {
+                    var editor = new NoteEditorWindow(
+                        title: fullNote.Title,
+                        content: fullNote.Content,
+                        tags: fullNote.Tags,
+                        noteId: fullNote.Id,
+                        onSaveRequested: OnSaveNoteRequested
+                    );
+                    editor.Show();
+                }
+            }
+        }
         #endregion
 
         #region Zoom Controls

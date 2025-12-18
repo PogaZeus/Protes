@@ -84,7 +84,7 @@
 
     <!-- ✅ ROOT WRAPPER GRID: captures right-click anywhere -->
     <Grid x:Name="MainContentGrid" 
-      Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
+          Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <!-- Menu -->
@@ -127,6 +127,7 @@
                 <MenuItem x:Name="ViewTitleMenuItem" Header="Title" IsCheckable="True" Checked="ViewTitleMenuItem_Checked" Unchecked="ViewTitleMenuItem_Checked"/>
                 <MenuItem x:Name="ViewTagsMenuItem" Header="Tags" IsCheckable="True" Checked="ViewTagsMenuItem_Checked" Unchecked="ViewTagsMenuItem_Checked"/>
                 <MenuItem x:Name="ViewModifiedMenuItem" Header="Modified" IsCheckable="True" Checked="ViewModifiedMenuItem_Checked" Unchecked="ViewModifiedMenuItem_Checked"/>
+                <MenuItem x:Name="ViewTitleListMenuItem" Header="Title List" IsCheckable="True" Checked="ViewTitleListMenuItem_Checked" Unchecked="ViewTitleListMenuItem_Checked"/>
                 <Separator/>
                 <MenuItem Header="_Zoom">
                     <MenuItem Header="Zoom _In" Click="ZoomInMenuItem_Click" InputGestureText="Ctrl+Plus"/>
@@ -156,14 +157,14 @@
 
         <!-- === TOOLBAR === -->
         <StackPanel x:Name="ToolbarStackPanel" Grid.Row="1" Orientation="Horizontal" Margin="5,5"
-    HorizontalAlignment="Left" VerticalAlignment="Top">
+                    HorizontalAlignment="Left" VerticalAlignment="Top">
 
             <!-- Connect / Disconnect -->
             <StackPanel x:Name="ConnectDisconnectGroup" Orientation="Horizontal" VerticalAlignment="Center">
                 <Button x:Name="ConnectIconBtn" Content="🔌" Padding="6,5" FontSize="16" 
-            ToolTip="Connect" Click="Connect_Click" Margin="0,0,8,0"/>
+                        ToolTip="Connect" Click="Connect_Click" Margin="0,0,8,0"/>
                 <Button x:Name="DisconnectIconBtn" Content="🚫" Padding="6,5" FontSize="16" 
-            ToolTip="Disconnect" Click="Disconnect_Click" Margin="0,0,8,0"/>
+                        ToolTip="Disconnect" Click="Disconnect_Click" Margin="0,0,8,0"/>
             </StackPanel>
 
             <!-- ACOS -->
@@ -171,10 +172,10 @@
                 <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
                 <Border x:Name="AutoConnectOSContainer">
                     <CheckBox x:Name="AutoConnectOnSwitchCheckBox" x:Uid="AutoConnectOnSwitchCheckBox"
-                Content="ACOS" 
-                VerticalAlignment="Center"
-                Checked="AutoConnectOnSwitchCheckBox_Checked"
-                Unchecked="AutoConnectOnSwitchCheckBox_Checked" Margin="0,0,8,0"/>
+                              Content="ACOS" 
+                              VerticalAlignment="Center"
+                              Checked="AutoConnectOnSwitchCheckBox_Checked"
+                              Unchecked="AutoConnectOnSwitchCheckBox_Checked" Margin="0,0,8,0"/>
                 </Border>
             </StackPanel>
 
@@ -182,7 +183,7 @@
             <StackPanel x:Name="SettingsGroup" Orientation="Horizontal" VerticalAlignment="Center">
                 <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
                 <Button x:Name="SettingsIconBtn" Content="⚙️" Padding="6,5" FontSize="16" 
-            ToolTip="Settings" Click="OpenSettings_Click" Margin="0,0,8,0"/>
+                        ToolTip="Settings" Click="OpenSettings_Click" Margin="0,0,8,0"/>
             </StackPanel>
 
             <!-- Local DB Controls -->
@@ -191,38 +192,38 @@
                 <TextBlock x:Name="DatabaseModeLabel" Text="Local:" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <ComboBox x:Name="DatabaseOrConnectionComboBox" MinWidth="150" Margin="0,0,8,0" VerticalContentAlignment="Center" Height="28"/>
                 <Button x:Name="LoadSelectedDbButton" Content="🔄" Padding="6,5" FontSize="16"
-            ToolTip="Load Selected Database or Connection" Click="LoadSelectedDbButton_Click" Margin="0,0,8,0"/>
+                        ToolTip="Load Selected Database or Connection" Click="LoadSelectedDbButton_Click" Margin="0,0,8,0"/>
             </StackPanel>
 
             <!-- Import/Export -->
             <StackPanel x:Name="ImportExportGroup" Orientation="Horizontal" VerticalAlignment="Center">
                 <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
                 <Button x:Name="ImportFilesButton" Content="📁" Padding="6,5"
-            FontSize="16" Click="ImportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Import Files"/>
+                        FontSize="16" Click="ImportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Import Files"/>
                 <Button x:Name="ExportFilesButton" Content="📤" Padding="6,5"
-            FontSize="16" Click="ExportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Export Files"/>
+                        FontSize="16" Click="ExportFilesMenuItem_Click" Margin="0,0,8,0" ToolTip="Export Files"/>
             </StackPanel>
 
             <!-- Note Tools (New, Edit, Select, Delete) -->
             <StackPanel x:Name="NoteToolsGroup" Orientation="Horizontal" VerticalAlignment="Center">
                 <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
                 <Button x:Name="NewNoteButton" Content="➕" Padding="6,5"
-            FontSize="16" Click="NewNoteButton_Click" Margin="0,0,8,0" ToolTip="New"/>
+                        FontSize="16" Click="NewNoteButton_Click" Margin="0,0,8,0" ToolTip="New"/>
                 <Button x:Name="EditNoteButton" Content="🖊️" Padding="6,5"
-            FontSize="16" Click="EditNoteButton_Click" Margin="0,0,8,0" ToolTip="Edit"/>
+                        FontSize="16" Click="EditNoteButton_Click" Margin="0,0,8,0" ToolTip="Edit"/>
                 <Button x:Name="SelectNotesButton" Content="✅" Padding="6,5"
-            FontSize="16" Click="SelectNotesButton_Click" Margin="0,0,8,0" ToolTip="Select"/>
+                        FontSize="16" Click="SelectNotesButton_Click" Margin="0,0,8,0" ToolTip="Select"/>
                 <Button x:Name="DeleteNoteButton" Content="🗑️" Padding="6,5"
-            FontSize="16" Click="DeleteNoteButton_Click" Margin="0,0,8,0" ToolTip="Delete"/>
+                        FontSize="16" Click="DeleteNoteButton_Click" Margin="0,0,8,0" ToolTip="Delete"/>
             </StackPanel>
 
             <!-- Copy/Paste -->
             <StackPanel x:Name="CopyPasteGroup" Orientation="Horizontal" VerticalAlignment="Center">
                 <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
                 <Button x:Name="CopyNoteButton" Content="📋" Padding="6,5"
-            FontSize="16" Click="CopyNoteButton_Click" Margin="0,0,8,0" ToolTip="Copy Note(s)"/>
+                        FontSize="16" Click="CopyNoteButton_Click" Margin="0,0,8,0" ToolTip="Copy Note(s)"/>
                 <Button x:Name="PasteNoteButton" Content="📄" Padding="6,5"
-            FontSize="16" Click="PasteNoteButton_Click" Margin="0,0,8,0" ToolTip="Paste Note(s)"/>
+                        FontSize="16" Click="PasteNoteButton_Click" Margin="0,0,8,0" ToolTip="Paste Note(s)"/>
             </StackPanel>
 
             <!-- Search -->
@@ -237,131 +238,220 @@
                     <ComboBoxItem Content="Modified"/>
                 </ComboBox>
                 <TextBox x:Name="SearchBox" Width="200" Height="28"
-            VerticalContentAlignment="Center"
-            TextChanged="SearchBox_TextChanged"
-            VerticalAlignment="Center" Margin="0,0,8,0"/>
+                         VerticalContentAlignment="Center"
+                         TextChanged="SearchBox_TextChanged"
+                         VerticalAlignment="Center" Margin="0,0,8,0"/>
             </StackPanel>
-            
+
             <!-- Calculator -->
             <StackPanel x:Name="CalculatorGroup" Orientation="Horizontal" VerticalAlignment="Center">
                 <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
                 <Button x:Name="CalculatorButton" Content="🔢"  Padding="6,5" FontSize="16"
-            Margin="0,0,8,0" ToolTip="Open Calculator" Click="CalculatorButton_Click"/>
+                        Margin="0,0,8,0" ToolTip="Open Calculator" Click="CalculatorButton_Click"/>
             </StackPanel>
-            
+
             <!-- Gate Entry -->
             <StackPanel x:Name="GateEntryGroup" Orientation="Horizontal" VerticalAlignment="Center">
                 <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
                 <Button x:Name="GateLockButton"
-            Content="🔓"
-            Padding="6,5"
-            FontSize="16"
-            Click="GateLockButton_Click"
-            Margin="0,0,8,0"
-            ToolTip="Lock/Unlock Database"/>
+                        Content="🔓"
+                        Padding="6,5"
+                        FontSize="16"
+                        Click="GateLockButton_Click"
+                        Margin="0,0,8,0"
+                        ToolTip="Lock/Unlock Database"/>
                 <Button x:Name="EncryptNotesButton"
-            Content="⚔️"
-            Padding="6,5"
-                                    FontSize="16"
-            Click="EncryptNotes_Click"
-            ToolTip="Manually encrypt all notes"
-            Margin="0,0,5,0"/>
+                        Content="⚔️"
+                        Padding="6,5"
+                        FontSize="16"
+                        Click="EncryptNotes_Click"
+                        ToolTip="Manually encrypt all notes"
+                        Margin="0,0,5,0"/>
                 <Button x:Name="DecryptNotesButton"
-            Content="👁️"
-            Padding="6,5"
-                                    FontSize="16"
-            Click="DecryptNotes_Click"
-            ToolTip="Manually decrypt all encrypted notes"
-            Margin="0,0,5,0"/>
+                        Content="👁️"
+                        Padding="6,5"
+                        FontSize="16"
+                        Click="DecryptNotes_Click"
+                        ToolTip="Manually decrypt all encrypted notes"
+                        Margin="0,0,5,0"/>
                 <Button x:Name="GateSettingsButton"
-            Content="🔑"
-            Padding="6,5"
-            FontSize="16"
-            Click="GateSettingsButton_Click"
-            Margin="0,0,8,0"
-            ToolTip="Password Settings"
-            Visibility="Collapsed"/>
-                
+                        Content="🔑"
+                        Padding="6,5"
+                        FontSize="16"
+                        Click="GateSettingsButton_Click"
+                        Margin="0,0,8,0"
+                        ToolTip="Password Settings"
+                        Visibility="Collapsed"/>
             </StackPanel>
 
             <!-- Cat Button Group -->
             <StackPanel x:Name="CatButtonGroup" Orientation="Horizontal" VerticalAlignment="Center">
                 <Rectangle Fill="Gray" Width="1" Height="24" Margin="0,0,8,0" Opacity="0.6"/>
                 <Button x:Name="CatButton" Content="🐾" Padding="6,5" FontSize="16" Margin="0,0,8,0"
-            ToolTip="Open Cat Wisdom" Click="OpenCatWindow_Click"/>
+                        ToolTip="Open Cat Wisdom" Click="OpenCatWindow_Click"/>
             </StackPanel>
         </StackPanel>
 
-        <!-- === NOTES TABLE (DATA GRID) === -->
-        <DataGrid Grid.Row="2" x:Name="NotesDataGrid"
-                  ContextMenuOpening="NotesDataGrid_ContextMenuOpening"
-                  PreviewMouseDown="NotesDataGrid_PreviewMouseDown" 
-                  VerticalScrollBarVisibility="Auto"
-                  Margin="0"
-                  AutoGenerateColumns="False"
-                  IsReadOnly="False"    
-                  CanUserAddRows="False" 
-                  SelectionMode="Extended"
-                  SelectionUnit="FullRow"
-                  Visibility="Collapsed"
-                  ScrollViewer.CanContentScroll="True"
-                  VirtualizingPanel.IsVirtualizing="True"
-                  VirtualizingPanel.VirtualizationMode="Recycling"
-                  BeginningEdit="NotesDataGrid_BeginningEdit"
-                  CellEditEnding="NotesDataGrid_CellEditEnding"
-                  MouseDoubleClick="NotesDataGrid_MouseDoubleClick">
-            <DataGrid.Resources>
-                <Style TargetType="ScrollBar">
-                    <Setter Property="IsHitTestVisible" Value="True"/>
-                    <Setter Property="Focusable" Value="True"/>
-                </Style>
-            </DataGrid.Resources>
+        <!-- === SPLIT VIEW: Title List + DataGrid with Resizable GridSplitter === -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="TitleListColumn" Width="450"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-            <DataGrid.Columns>
-                <DataGridTemplateColumn 
-                    x:Name="SelectCheckBoxColumn"
-                    Width="40"
-                    CanUserResize="False"
-                    Visibility="Collapsed">
-                    <DataGridTemplateColumn.HeaderTemplate>
-                        <DataTemplate>
-                            <CheckBox 
-                                IsChecked="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}, Path=DataContext.AllItemsAreChecked, Mode=TwoWay}"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Margin="6,0"
-                                Focusable="True"
-                                IsHitTestVisible="True" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.HeaderTemplate>
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+            <!-- LEFT: Title List (File Explorer "Details" view) -->
+            <ListView x:Name="NotesListView"
+              Grid.Column="0"
+              ItemsSource="{Binding ElementName=NotesDataGrid, Path=ItemsSource}"
+              SelectionMode="Single"
+              SelectionChanged="NotesListView_SelectionChanged"            
+              MouseDoubleClick="NotesListView_MouseDoubleClick"
+              PreviewMouseLeftButtonDown="NotesListView_PreviewMouseLeftButtonDown"
+              Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
+              BorderBrush="LightGray"
+              BorderThickness="0,0,0,0"
+              FontFamily="Segoe UI"
+              FontSize="12"
+              ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListView.View>
+                    <GridView>
+                        <!-- Icon -->
+                        <GridViewColumn Header="" Width="24">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="📝"
+                                       FontSize="12"
+                                       Foreground="SteelBlue"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
 
-                <DataGridTextColumn Header="Title" Binding="{Binding Title, UpdateSourceTrigger=PropertyChanged}" Width="1*"/>
-                <DataGridTextColumn Header="Preview" Binding="{Binding Preview}" IsReadOnly="True" Width="3*">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="VerticalAlignment" Value="Top"/>
-                            <Setter Property="ToolTip" Value="{Binding Preview}"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
-                <DataGridTextColumn Header="Tags" Binding="{Binding Tags, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
-                <DataGridTextColumn Header="Modified" Binding="{Binding LastModified}" IsReadOnly="True" Width="120"/>
-            </DataGrid.Columns>
-        </DataGrid>
+                        <!-- Name (Title) -->
+                        <GridViewColumn Header="Name" Width="280">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Title}"
+                                       FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis"
+                                       Margin="4,2,0,0"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
 
-        <!-- Placeholder when disconnected -->
-        <TextBlock Grid.Row="2" x:Name="DisconnectedPlaceholder"
-           Text="Not connected to a database. Choose 'Local' or 'External Database' from Options."
-           HorizontalAlignment="Center" VerticalAlignment="Center"
-           FontSize="16" Foreground="Gray" TextWrapping="Wrap" Margin="20"/>
+                        <!-- Date Modified -->
+                        <GridViewColumn Header="Date Modified" Width="120">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding LastModified}"
+                                       Foreground="DarkGray"
+                                       FontSize="11"
+                                       TextTrimming="CharacterEllipsis"
+                                       Margin="4,2,0,0"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Height" Value="24"/>
+                        <Setter Property="Focusable" Value="False"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+
+            <!-- RESIZABLE SPLITTER -->
+            <GridSplitter Grid.Column="1"
+                  Width="5"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  Background="Transparent"
+                  ResizeBehavior="PreviousAndNext"
+                  ResizeDirection="Columns"
+                  DragIncrement="1"
+                  SnapsToDevicePixels="True"/>
+
+            <!-- RIGHT: Your original DataGrid (unchanged) -->
+            <DataGrid Grid.Column="2" x:Name="NotesDataGrid"
+              ContextMenuOpening="NotesDataGrid_ContextMenuOpening"
+              PreviewMouseDown="NotesDataGrid_PreviewMouseDown" 
+              VerticalScrollBarVisibility="Auto"
+              Margin="0"
+              AutoGenerateColumns="False"
+              IsReadOnly="False"    
+              CanUserAddRows="False" 
+              SelectionMode="Extended"
+              SelectionUnit="FullRow"
+              Visibility="Collapsed"
+              ScrollViewer.CanContentScroll="True"
+              VirtualizingPanel.IsVirtualizing="True"
+              VirtualizingPanel.VirtualizationMode="Recycling"
+              BeginningEdit="NotesDataGrid_BeginningEdit"
+              CellEditEnding="NotesDataGrid_CellEditEnding"
+              SelectionChanged="NotesDataGrid_SelectionChanged"
+              MouseDoubleClick="NotesDataGrid_MouseDoubleClick">
+                <DataGrid.Resources>
+                    <Style TargetType="ScrollBar">
+                        <Setter Property="IsHitTestVisible" Value="True"/>
+                        <Setter Property="Focusable" Value="True"/>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn 
+                x:Name="SelectCheckBoxColumn"
+                Width="40"
+                CanUserResize="False"
+                Visibility="Collapsed">
+                        <DataGridTemplateColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <CheckBox 
+                            IsChecked="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}, Path=DataContext.AllItemsAreChecked, Mode=TwoWay}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Margin="6,0"
+                            Focusable="True"
+                            IsHitTestVisible="True" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.HeaderTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTextColumn Header="Title" Binding="{Binding Title, UpdateSourceTrigger=PropertyChanged}" Width="1*"/>
+                    <DataGridTextColumn Header="Preview" Binding="{Binding Preview}" IsReadOnly="True" Width="3*">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="VerticalAlignment" Value="Top"/>
+                                <Setter Property="ToolTip" Value="{Binding Preview}"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Tags" Binding="{Binding Tags, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+                    <DataGridTextColumn Header="Modified" Binding="{Binding LastModified}" IsReadOnly="True" Width="120"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- ✅ PLACEHOLDER OVER ENTIRE ROW (covers both panes) -->
+            <TextBlock x:Name="DisconnectedPlaceholder"
+               Grid.ColumnSpan="3"
+               Text="Not connected to a database. Choose 'Local' or 'External Database' from Options."
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               FontSize="16"
+               Foreground="Gray"
+               TextWrapping="Wrap"
+               Margin="20"
+               Visibility="Collapsed" />
+        </Grid>
 
         <!-- === STATUS BAR === -->
         <StatusBar Grid.Row="3">
