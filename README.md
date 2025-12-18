@@ -124,7 +124,7 @@ Protes/
 If you find Protes useful, consider:  
 - ⭐ Starring the repo on [GitHub](https://github.com/PogaZeus)  
 - ☕ Buying me a coffee via [PayPal](https://paypal.me/zxgaming)
-- ⭐ My current website & hosting [Z3U5](https://www.Z3U5.org)
+- ⭐ Visiting my current website & hosting [Z3U5](https://www.Z3U5.org)
 
 > Please note this is my second C# application (3rd or 4th app if you count when I was young playing with C++). I made this because I wanted to prove to myself that I could—but honestly, without AI, I probably couldn’t have made this (at least not in such a short time). Because I’m already well versed in programming languages, I was able to produce this in rapid succession with AI assistance. C# is rapidly becoming one of my favorite languages, and I believe this codebase is fully C# 7.3 compatible. I’m still a newcomer to building desktop apps with these tools—but future apps are coming, and I plan to keep improving Protes!
 
