@@ -1,5 +1,3 @@
----
-
 # 🌟 **[Protes] Pro Notes Database**  
 > **A lightweight, privacy-first note-taking app with database power — built for developers, tinkerers, and anyone who’s tired of juggling endless `.txt` files.**
 
