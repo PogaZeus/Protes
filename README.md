@@ -1,7 +1,9 @@
+---
+
 # 🌟 **[Protes] Pro Notes Database**  
 > **A lightweight, privacy-first note-taking app with database power — built for developers, tinkerers, and anyone who’s tired of juggling endless `.txt` files.**
 
-[![.NET Framework](https://img.shields.io/badge/.NET%204.7.2-512BD4?logo=.net&logoColor=white)](https://dotnet.microsoft.com/)  
+[![.NT Framework](https://img.shields.io/badge/.NET%204.7.2-512BD4?logo=.net&logoColor=white)](https://dotnet.microsoft.com/)  
 [![WPF](https://img.shields.io/badge/WPF-3399FF?logo=windows&logoColor=white)](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/)  
 [![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)  
 [![Local First](https://img.shields.io/badge/Local%20First-00C853?logo=offline&logoColor=white)](https://localfirstweb.dev/)
@@ -19,22 +21,20 @@ Think of it as **Notepad, in a database**:
 - **Export any note** back to `.txt` or `.md` anytime—ideal for sharing, backup, or version control.  
 - Double-click a `.prote` file to **open it instantly**—Protes auto-imports and loads it if needed.
 
-
 ### 🔒 **Privacy & Control — Now with Gate Entry Lock & Encryption, Use at your own risk**
 - **100% local by default** — your notes never leave your machine unless you choose to connect externally.  
 - **Optional MySQL/External DB support** — sync across devices securely when needed.  
 - **No telemetry, no cloud, no bloat** — just your notes, your rules.  
-- **🛡️ Gate Entry System**: Protect your database with a password. When locked, no notes are loaded or decrypted.  
+- **🛡️ Password/Lock System**: Not safe from hackers without Encryption but protects your file with a password inside Protes.  
 - **🔑 AES-256 Encryption**: Encrypt *entire notes* (title, tags, and content) with a key derived from your password + salt. Encrypted notes appear as `[Encrypted Data]` in the UI.  
-- **🔐 Transparent security warnings**: Clear alerts and warnings about the potential dangers of password loss..  
-- **🧾 Full audit trail**: Encryption state is always visible—never guess whether your data is secure.
+- **🔐 Transparent security warnings**: Clear alerts and warnings about the potential dangers of password loss.  
+- **🧾 Data trail **: Encryption state is always visible—never guess whether your data is secure.
 
 ### 🧰 **Powerful, Polished (but basic) UI**
 - **Fully customizable toolbar** — show/hide Connect, Local DB, ACOS, Import/Export, Search, Lock Tool, and more via Settings.  
 - **Real-time UI updates** — toggle settings anywhere (menu, SettingsWindow) and see changes **instantly** — no restart required.  
 - **System tray integration** — minimize to tray, close to tray, or quit fully. Your choice.  
 - **Right-click context menus everywhere** — including database switching and external profile management.  
-- **Easter eggs & fun** — 2 clicks away from an extra surprise button!
 
 ### 🎨 **Personalized Experience**
 - **Per-window font settings**:  
@@ -68,6 +68,21 @@ Think of it as **Notepad, in a database**:
 
 ---
 
+## 📸 **Screenshots**
+
+See Protes in action!
+
+| Feature | Preview |
+|--------|---------|
+| **Settings Window** | ![Settings Example](https://www.z3u5.org/protes/SettingsExample.png) |
+| **Import Files** | ![Import Example](https://www.z3u5.org/protes/ImportExample.png) |
+| **Export Notes** | ![Export Example](https://www.z3u5.org/protes/ExportExample.png) |
+| **Locked Database** | ![Locked Example](https://www.z3u5.org/protes/LockedExample.png) |
+| **Encrypted Notes** | ![Encrypted Example](https://www.z3u5.org/protes/EncryptedExample.png) |
+| **Decrypted Notes** | ![Decrypted Example](https://www.z3u5.org/protes/DecryptedExample.png) |
+
+---
+
 ## 🧩 **Architecture Highlights**
 
 - **.NET 4.7.2 + C# 7.3 + WPF** — clean, responsive, and maintainable.  
@@ -80,6 +95,9 @@ Think of it as **Notepad, in a database**:
   - `CalculatorWindow` — full-featured calculator with note integration.  
 - **Event-driven refresh** — `OnSettingsChanged` callbacks ensure instant UI updates without restarts.  
 - **Repository pattern** — abstracted data access supports both SQLite and MySQL with zero code duplication.
+
+🔑 AES-256 Encryption:
+Each note’s title, tags, and content are encrypted individually using AES-256 in CBC mode with a unique initialization vector (IV). The encryption key is derived from your password using PBKDF2-HMAC-SHA256 with 100,000+ iterations and a per-database random salt (stored in the DB). No part of your password is ever saved. If you forget it, encrypted data cannot be recovered—by design. Non-sensitive metadata (e.g., timestamps, IDs) remains unencrypted for usability.
 
 ---
 
@@ -108,15 +126,23 @@ Protes/
 If you find Protes useful, consider:  
 - ⭐ Starring the repo on [GitHub](https://github.com/PogaZeus)  
 - ☕ Buying me a coffee via [PayPal](https://paypal.me/zxgaming)
-Please note this is my second C# application (3rd or 4th app if you count when I was young playing with C++) I made this because I wanted to prove to myself that I could but honestly without AI, I probably couldn't have made this (at least not in such short time), but because I am well versed in programming languages I was able to produce this in rapid succession (with help from AI). C# is rapidly becoming one of my favourite languages, I believe this is all c# 7.3 compatible, I am still a newbie to developing applications with such tools. Future apps will come but I plan to improve this app further. 
+- ⭐ My current website & hosting [Z3U5](https://www.Z3U5.org)
+
+> Please note this is my second C# application (3rd or 4th app if you count when I was young playing with C++). I made this because I wanted to prove to myself that I could—but honestly, without AI, I probably couldn’t have made this (at least not in such a short time). Because I’m already well versed in programming languages, I was able to produce this in rapid succession with AI assistance. C# is rapidly becoming one of my favorite languages, and I believe this codebase is fully C# 7.3 compatible. I’m still a newcomer to building desktop apps with these tools—but future apps are coming, and I plan to keep improving Protes!
+
 ---
 
-## 🎯 **Future Goals**
+## 🎯 **Future Goals & Known Issues**
 
-> Improve any bugs that are found
-> Improve the import (add importing large amounts of files to the progress bar, currently only works on the scan)
-> Improve the copy/paste (when copying large amounts of data, notify the user or add a progress bar)
-> More settings (Notifications)
+### 🐞 Known Issues
+- **Large data handling**: The app may appear unresponsive when importing, copying, or encrypting large amounts of data, with no visual progress feedback.
+- **Progress visibility**: Current progress bars only cover file scanning during import—not the full import/encryption/export pipeline.
+
+### 🚧 Planned Improvements
+- **Enhanced progress feedback**: Show progress during large imports, exports, copy/paste, and encryption/decryption operations.
+- **Add Theme System**: Light or Dark mode possibly.
+- **More granular settings**: Additional user preferences for UI behavior, performance thresholds, and warning suppressions.
+- **Performance optimizations**: Reduce UI lag during bulk operations and improve memory efficiency.
 
 ---
 
@@ -126,3 +152,5 @@ This project is licensed under the **MIT License** — see [LICENSE](LICENSE) fo
 ---
 
 > 💡 **Protes** — Find the Easter Egg! Cats **always have the last meow**. 🐾
+
+--- 
