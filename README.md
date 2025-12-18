@@ -72,6 +72,7 @@ See Protes in action!
 
 | Feature | Preview |
 |--------|---------|
+| **Pro Note Example** | ![Settings Example](https://www.z3u5.org/protes/ProNoteExample.png) |
 | **Settings Window** | ![Settings Example](https://www.z3u5.org/protes/SettingsExample.png) |
 | **Import Files** | ![Import Example](https://www.z3u5.org/protes/ImportExample.png) |
 | **Export Notes** | ![Export Example](https://www.z3u5.org/protes/ExportExample.png) |
