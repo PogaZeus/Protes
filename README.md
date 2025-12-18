@@ -1,5 +1,5 @@
 # 🌟 **[Protes] Pro Notes Database**  
-> **A lightweight, privacy-first note-taking app with database power — built for developers, tinkerers, and anyone who’s tired of juggling endless `.txt` files.**
+> **A lightweight, privacy-first note-taking app with database power — built for developers or anyone who’s tired of juggling endless `.txt` files.**
 
 [![.NT Framework](https://img.shields.io/badge/.NET%204.7.2-512BD4?logo=.net&logoColor=white)](https://dotnet.microsoft.com/)  
 [![WPF](https://img.shields.io/badge/WPF-3399FF?logo=windows&logoColor=white)](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/)  
