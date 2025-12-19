@@ -1,7 +1,5 @@
----
-
 # 🌟 **[Protes] Pro Notes Database**  
-> **A lightweight, privacy-first note-taking app with database power — built for developers, tinkerers, and anyone who’s tired of juggling endless `.txt` files.**
+> **A lightweight, privacy-first note-taking app with database power — built for developers or anyone who’s tired of juggling endless `.txt` files.**
 
 [![.NT Framework](https://img.shields.io/badge/.NET%204.7.2-512BD4?logo=.net&logoColor=white)](https://dotnet.microsoft.com/)  
 [![WPF](https://img.shields.io/badge/WPF-3399FF?logo=windows&logoColor=white)](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/)  
@@ -25,9 +23,9 @@ Think of it as **Notepad, in a database**:
 - **100% local by default** — your notes never leave your machine unless you choose to connect externally.  
 - **Optional MySQL/External DB support** — sync across devices securely when needed.  
 - **No telemetry, no cloud, no bloat** — just your notes, your rules.  
-- **🛡️ Password/Lock System**: Not safe from hackers without Encryption but protects your file with a password inside Protes.  
+- **🛡️ Password/Lock System**: Your password is SHA256 Encrypted. Data is not safe from hackers without Encryption but protects your file with a password inside Protes.  
 - **🔑 AES-256 Encryption**: Encrypt *entire notes* (title, tags, and content) with a key derived from your password + salt. Encrypted notes appear as `[Encrypted Data]` in the UI.  
-- **🔐 Transparent security warnings**: Clear alerts and warnings about the potential dangers of password loss.  
+- **🔐 Transparent security warnings**: Clear alerts and warnings about the potential dangers of password and data loss - USE AT YOUR OWN RISK BASICALLY.  
 - **🧾 Data trail **: Encryption state is always visible—never guess whether your data is secure.
 
 ### 🧰 **Powerful, Polished (but basic) UI**
@@ -74,6 +72,7 @@ See Protes in action!
 
 | Feature | Preview |
 |--------|---------|
+| **Pro Note Example** | ![Settings Example](https://www.z3u5.org/protes/ProNoteExample.png) |
 | **Settings Window** | ![Settings Example](https://www.z3u5.org/protes/SettingsExample.png) |
 | **Import Files** | ![Import Example](https://www.z3u5.org/protes/ImportExample.png) |
 | **Export Notes** | ![Export Example](https://www.z3u5.org/protes/ExportExample.png) |
@@ -126,7 +125,7 @@ Protes/
 If you find Protes useful, consider:  
 - ⭐ Starring the repo on [GitHub](https://github.com/PogaZeus)  
 - ☕ Buying me a coffee via [PayPal](https://paypal.me/zxgaming)
-- ⭐ My current website & hosting [Z3U5](https://www.Z3U5.org)
+- ⭐ Visiting my current website & hosting [Z3U5](https://www.Z3U5.org)
 
 > Please note this is my second C# application (3rd or 4th app if you count when I was young playing with C++). I made this because I wanted to prove to myself that I could—but honestly, without AI, I probably couldn’t have made this (at least not in such a short time). Because I’m already well versed in programming languages, I was able to produce this in rapid succession with AI assistance. C# is rapidly becoming one of my favorite languages, and I believe this codebase is fully C# 7.3 compatible. I’m still a newcomer to building desktop apps with these tools—but future apps are coming, and I plan to keep improving Protes!
 
