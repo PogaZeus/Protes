@@ -1,10 +1,18 @@
 <Solution>
   <Configurations>
+    <BuildType Name="All" />
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
     <Platform Name="Any CPU" />
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/Solution Items/" />
+  <Project Path="InstallSetup/InstallSetup.aiproj" Type="840c416c-b8f3-42bc-b0dd-f6bb14c9f8cb" Id="7d3bed4f-2921-4016-adf4-d756b48cc049">
+    <BuildType Project="All" />
+    <Platform Project="?" />
+  </Project>
   <Project Path="Protes/Protes.csproj" Id="3248f7de-60ec-412d-9d19-63dae808396d">
+    <BuildType Solution="All|*" Project="Debug" />
     <Platform Solution="*|x86" Project="x86" />
   </Project>
 </Solution>
